@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep the PRO-MOVER frontend as a responsive single-page operational dashboard with local demo interactions until persistent Cloud data is requested; this keeps the current MVP presentation-focused.
