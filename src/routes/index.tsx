@@ -8,6 +8,14 @@ import {
   UserPlus,
   ArrowUpRight,
   Plus,
+  Activity,
+  Users,
+  Gift,
+  ChartNoAxesCombined,
+  Settings,
+  ShieldCheck,
+  MapPin,
+  ChevronDown,
 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
@@ -50,7 +58,7 @@ const appointments = [
 
 function Dashboard() {
   const [dialog, setDialog] = useState<"triage" | "person" | null>(null);
-  const [active, setActive] = useState("Painel");
+  const [active, setActive] = useState("Dashboard");
   const [toast, setToast] = useState("");
 
   const save = (event: FormEvent<HTMLFormElement>) => {
@@ -60,51 +68,73 @@ function Dashboard() {
     window.setTimeout(() => setToast(""), 3200);
   };
 
+  const navigation = [
+    { name: "Dashboard", icon: LayoutDashboard },
+    { name: "Ação de Saúde", icon: HeartPulse },
+    { name: "Participantes", icon: Users },
+    { name: "Prontuários", icon: ClipboardList },
+    { name: "Agenda", icon: CalendarDays },
+    { name: "Sessões Cortesia", icon: Gift },
+    { name: "Indicadores", icon: ChartNoAxesCombined },
+  ];
+  const metrics = [
+    { label: "Participantes registrados", value: "22", detail: "Pessoas acolhidas no evento", icon: Users, tone: "bg-secondary text-secondary-foreground" },
+    { label: "Atendimentos concluídos", value: "11", detail: "Avaliações finalizadas", icon: ClipboardList, tone: "bg-accent text-accent-foreground" },
+    { label: "Exames com alterações", value: "3", detail: "Precisam de acompanhamento", icon: AlertTriangle, tone: "bg-warning text-warning-foreground" },
+    { label: "Encaminhamentos", value: "2", detail: "Para avaliação especializada", icon: ArrowUpRight, tone: "bg-lilac text-lilac-foreground" },
+    { label: "Aguardando triagem", value: "4", detail: "Próximos na fila de cuidado", icon: HeartPulse, tone: "bg-secondary text-secondary-foreground" },
+    { label: "Agendamentos do dia", value: "3", detail: "Atendimentos na agenda", icon: CalendarDays, tone: "bg-info text-info-foreground" },
+  ];
+  const overview = active === "Dashboard" || active === "Ação de Saúde";
+
   return (
-    <div className="min-h-screen bg-background text-foreground antialiased">
-      <header className="bg-card px-6 sm:px-10 lg:px-16">
-        <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-6 sm:flex sm:justify-between">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-secondary text-secondary-foreground"><HeartPulse className="size-5" strokeWidth={1.5} /></span>
-            <div className="min-w-0"><h1 className="truncate font-display text-lg font-medium">PRO-MOVER</h1><p className="mt-0.5 text-xs text-muted-foreground">Saúde comunitária</p></div>
-          </div>
-          <div className="flex shrink-0 items-center gap-3"><span className="hidden text-xs text-muted-foreground sm:block">Adriane Câmara</span><span className="grid size-9 place-items-center rounded-full bg-accent text-xs text-accent-foreground">AC</span></div>
+    <div className="min-h-screen bg-background text-foreground antialiased md:grid md:grid-cols-[224px_minmax(0,1fr)]">
+      <aside className="bg-card px-4 py-6 md:sticky md:top-0 md:flex md:h-screen md:flex-col md:border-r md:border-border md:py-8">
+        <div className="flex min-w-0 items-center gap-3 px-2">
+          <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground"><Activity className="size-6" strokeWidth={1.8} /></span>
+          <div className="min-w-0"><h1 className="truncate font-display text-lg font-semibold">PRO-MOVER.</h1><p className="mt-1 text-[9px] uppercase text-muted-foreground">Saúde em movimento</p></div>
         </div>
-      </header>
-
-      <main className="mx-auto max-w-6xl px-6 pb-16 pt-7 sm:px-10 lg:px-16 lg:pt-10">
-        <nav aria-label="Navegação do painel" className="flex gap-2">
-          {[{ name: "Painel", icon: LayoutDashboard }, { name: "Triagem", icon: HeartPulse }, { name: "Agenda", icon: CalendarDays }].map(({ name, icon: Icon }) => <Button key={name} variant="ghost" onClick={() => setActive(name)} aria-pressed={active === name} className={`gap-2 px-3 font-normal ${active === name ? "bg-secondary text-secondary-foreground" : "text-muted-foreground"}`}><Icon strokeWidth={1.5} />{name}</Button>)}
+        <p className="mb-3 mt-9 hidden px-2 text-[10px] uppercase text-muted-foreground md:block">Área de trabalho</p>
+        <nav aria-label="Navegação do painel" className="mt-5 flex gap-1 overflow-x-auto md:mt-0 md:flex-col md:overflow-visible">
+          {navigation.map(({name, icon: Icon}) => <Button key={name} variant="ghost" onClick={() => setActive(name)} aria-pressed={active === name} className={`h-11 shrink-0 justify-start gap-3 px-3 text-xs font-normal ${active === name ? "bg-secondary text-secondary-foreground" : "text-muted-foreground"}`}><Icon strokeWidth={1.6} />{name}{name === "Ação de Saúde" && <span className="ml-auto hidden size-1.5 rounded-full bg-primary md:block" />}</Button>)}
+          <Button variant="ghost" className="h-11 shrink-0 justify-start gap-3 px-3 text-xs font-normal text-muted-foreground" onClick={() => setToast("Ambiente demonstrativo · configurações não disponíveis.")}><Settings strokeWidth={1.6} />Configurações</Button>
         </nav>
+        <div className="mt-auto hidden pt-6 md:block"><div className="border-t border-border px-2 pt-5"><HeartPulse className="mb-3 size-5 text-primary" strokeWidth={1.5} /><p className="text-xs font-medium">Cuidar conecta pessoas.</p><p className="mt-2 text-[11px] leading-6 text-muted-foreground">Studio Adriane Câmara<br />Farmácia Popular Santa Luzia</p></div></div>
+      </aside>
+      <div className="min-w-0">
+        <header className="grid h-[74px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border bg-card px-5 lg:px-8">
+          <p className="truncate text-xs"><span className="text-muted-foreground">Plataforma comunitária <span className="mx-3">/</span></span>{active}</p>
+          <span className="flex shrink-0 items-center gap-2 rounded-full border border-primary/10 bg-secondary/60 px-3 py-2 text-[10px] text-secondary-foreground"><ShieldCheck className="size-3.5" /><span className="hidden sm:inline">Ambiente demonstrativo</span></span>
+        </header>
+        <main className="mx-auto max-w-[1440px] px-5 py-8 lg:px-8">
+          <section className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
+            <div className="min-w-0"><p className="text-xs text-muted-foreground">Seu cuidado faz a diferença</p><h2 className="mt-2 font-display text-2xl font-medium sm:text-[28px]">{active === "Dashboard" ? <>Bom dia, Natália<span className="text-primary">.</span></> : active}</h2><p className="mt-2 text-sm text-muted-foreground">Acompanhe as atividades do PRO-MOVER</p></div>
+            <Button variant="outline" className="h-10 gap-3 font-normal" onClick={() => setActive("Ação de Saúde")}><CalendarDays className="text-primary" /><span className="hidden xl:inline">Ação comunitária · em andamento</span><ChevronDown className="hidden sm:block" /></Button>
+          </section>
 
-        <section className="mt-10 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-5 sm:flex sm:items-center sm:justify-between lg:mt-14">
-          <div className="min-w-0">
-            <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground"><span className="size-1.5 rounded-full bg-primary-foreground" />Evento em andamento</div>
-            <h2 className="font-display text-3xl font-light leading-tight sm:text-4xl">{active === "Painel" ? "Ação de saúde Santa Luzia" : active === "Triagem" ? "Triagem comunitária" : "Agenda do dia"}</h2>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Studio Adriane Câmara · Farmácia Popular Santa Luzia</p>
-          </div>
-          <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-            <Button variant="ghost" onClick={() => setDialog("person")} aria-label="Cadastrar participante" className="font-normal text-muted-foreground"><UserPlus strokeWidth={1.5} /><span className="hidden lg:inline">Cadastrar</span></Button>
-            <Button onClick={() => setDialog("triage")} aria-label="Nova triagem" className="h-10 font-normal"><Plus strokeWidth={1.5} /><span className="hidden sm:inline">Nova triagem</span></Button>
-          </div>
-        </section>
+          {(overview || active === "Indicadores") && <>
+            <section className="relative mt-7 overflow-hidden rounded-lg bg-secondary px-6 py-7 sm:px-7">
+              <HeartPulse aria-hidden="true" className="pointer-events-none absolute -right-3 top-0 hidden size-40 text-primary/10 lg:block" strokeWidth={0.7} />
+              <div className="relative grid gap-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                <div className="min-w-0"><span className="inline-flex items-center gap-2 rounded-full bg-card/80 px-3 py-1.5 text-[10px] text-secondary-foreground"><span className="size-1.5 rounded-full bg-primary" />EVENTO SELECIONADO</span><h3 className="mt-4 font-display text-lg font-medium">Ação de Saúde Comunitária</h3><div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground"><span className="flex items-center gap-2"><CalendarDays className="size-3.5" />Em andamento</span><span className="flex items-center gap-2"><MapPin className="size-3.5" />Farmácia Popular Santa Luzia</span></div></div>
+                <Button onClick={() => setDialog("triage")} aria-label="Nova triagem" className="h-11 w-fit gap-3 px-5"><Plus />Nova Triagem<ArrowUpRight /></Button>
+              </div>
+            </section>
+            <section aria-label="Resumo do evento" className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-3 2xl:grid-cols-6">
+              {metrics.map(({label,value,detail,icon: Icon,tone}) => <div key={label} className="min-w-0 rounded-lg border border-border bg-card p-5"><div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2"><span className={`grid size-10 place-items-center rounded-lg ${tone}`}><Icon className="size-5" strokeWidth={1.6} /></span><span className="pt-1 text-[9px] text-muted-foreground">Neste evento</span></div><p className="mt-4 font-display text-3xl font-normal">{value}</p><p className="mt-2 text-xs leading-5">{label}</p><p className="mt-1 text-[10px] leading-4 text-muted-foreground">{detail}</p></div>)}
+            </section>
+          </>}
 
-        {active === "Painel" && <section aria-label="Resumo do evento" className="my-10 grid grid-cols-3 gap-5 py-5 sm:my-12 sm:gap-12">
-          {[['Participantes', '22', 'registrados'], ['Concluídos', '11', 'atendimentos'], ['Aguardando', '4', 'para triagem']].map(([label, value, detail]) => <div key={label} className="min-w-0"><p className="text-xs text-muted-foreground sm:text-sm">{label}</p><p className="mt-3 font-display text-4xl font-light sm:text-5xl">{value}</p><p className="mt-2 text-xs text-muted-foreground">{detail}</p></div>)}
-        </section>}
+          <div className="my-6 flex flex-wrap items-center gap-2"><span className="mr-2 text-xs text-muted-foreground">Acesso rápido</span><Button variant="outline" onClick={() => setDialog("person")} className="font-normal"><UserPlus />Novo participante</Button><Button variant="outline" onClick={() => setDialog("triage")} className="font-normal"><ClipboardList />Registrar triagem</Button><Button variant="outline" onClick={() => setActive("Agenda")} className="font-normal"><CalendarDays />Ver agenda</Button></div>
 
-        <div className={`grid gap-12 ${active === "Painel" ? "lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]" : "mt-12"}`}>
-          {active !== "Agenda" && <section className="min-w-0">
-            <div className="mb-5 flex items-center justify-between gap-3"><h3 className="font-display text-base font-medium">Precisam de atenção</h3><span className="rounded-md bg-destructive px-2 py-1 text-xs text-destructive-foreground">3 participantes</span></div>
-            <div className="divide-y divide-border">{alerts.map((alert) => <AlertRow key={alert.time} {...alert} onAction={() => setToast(`Prontuário de ${alert.name} aberto.`)} />)}</div>
-          </section>}
-          {active !== "Triagem" && <section className="min-w-0">
-            <div className="mb-5 flex items-center justify-between gap-3"><h3 className="font-display text-base font-medium">Próximos atendimentos</h3><CalendarDays className="size-4 text-muted-foreground" strokeWidth={1.5} /></div>
-            <div className="divide-y divide-border">{appointments.map(([time, title, person]) => <Button variant="ghost" key={time} onClick={() => setToast(`${title}: ${person}.`)} className="grid h-auto w-full grid-cols-[3rem_minmax(0,1fr)_auto] gap-3 whitespace-normal rounded-none px-0 py-5 text-left font-normal hover:bg-muted"><span className="self-start pt-1 text-xs text-muted-foreground">{time}</span><span className="min-w-0"><span className="block text-sm">{title}</span><span className="mt-1.5 block text-xs text-muted-foreground">{person}</span></span><ArrowUpRight className="text-muted-foreground" strokeWidth={1.5} /></Button>)}</div>
-          </section>}
-        </div>
-        <footer className="mt-14 text-xs text-muted-foreground">PRO-MOVER <span className="mx-2">·</span> Cuidado próximo, movimento para todos.</footer>
-      </main>
+          {(overview || active === "Prontuários" || active === "Agenda") && <div className={`mt-8 grid gap-10 ${overview ? "lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]" : ""}`}>
+            {active !== "Agenda" && <section className="min-w-0"><div className="mb-3 flex items-center justify-between gap-3"><h3 className="font-display text-base font-medium">Acompanhamentos prioritários</h3><span className="rounded-md bg-warning px-2 py-1 text-[10px] text-warning-foreground">3 alterações</span></div><div className="divide-y divide-border">{alerts.map((alert) => <AlertRow key={alert.time} {...alert} onAction={() => setToast(`Prontuário de ${alert.name} aberto em demonstração.`)} />)}</div></section>}
+            {active !== "Prontuários" && <section className="min-w-0"><div className="mb-3 flex items-center justify-between gap-3"><h3 className="font-display text-base font-medium">Agenda do dia</h3><CalendarDays className="size-4 text-primary" strokeWidth={1.5} /></div><div className="divide-y divide-border">{appointments.map(([time,title,person]) => <Button variant="ghost" key={time} onClick={() => setToast(`${title}: ${person}.`)} className="grid h-auto w-full grid-cols-[3rem_minmax(0,1fr)_auto] gap-3 whitespace-normal rounded-none px-0 py-5 text-left font-normal"><span className="self-start pt-1 text-xs text-primary">{time}</span><span className="min-w-0"><span className="block text-sm">{title}</span><span className="mt-1.5 block text-xs text-muted-foreground">{person}</span></span><ArrowUpRight className="text-muted-foreground" strokeWidth={1.5} /></Button>)}</div></section>}
+          </div>}
+          {active === "Participantes" && <section className="mt-8"><h3 className="mb-3 font-display text-base">Participantes recentes</h3><div className="divide-y divide-border">{alerts.map(({name}) => <div key={name} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-5"><span className="text-sm">{name}</span><Button variant="ghost" size="icon" aria-label={`Ver participante ${name}`} onClick={() => setToast(`Cadastro de ${name} · demonstração.`)}><ArrowUpRight /></Button></div>)}</div></section>}
+          {active === "Sessões Cortesia" && <section className="mt-8 py-8"><Gift className="mb-4 size-7 text-primary" strokeWidth={1.5} /><h3 className="font-display text-lg">Sessões cortesia</h3><p className="mt-3 text-sm text-muted-foreground">Nenhuma sessão cortesia registrada neste evento.</p></section>}
+        </main>
+      </div>
       <EntryDialog mode={dialog} open={dialog !== null} onOpenChange={(open) => !open && setDialog(null)} onSave={save} />
       {toast && <div role="status" className="fixed bottom-5 left-5 right-5 z-50 rounded-lg bg-secondary px-4 py-3 text-sm text-secondary-foreground sm:left-auto">{toast}</div>}
     </div>
