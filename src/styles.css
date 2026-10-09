@@ -69,19 +69,21 @@
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-paper: var(--paper);
+  --color-lilac: var(--lilac);
+  --color-lilac-foreground: var(--lilac-foreground);
 }
 
 :root {
   --radius: 0.5rem;
-  --background: oklch(0.986 0.002 240);
-  --foreground: oklch(0.34 0.018 240);
+  --background: oklch(0.976 0.005 165);
+  --foreground: oklch(0.3 0.035 207);
   --card: oklch(1 0 0);
   --card-foreground: var(--foreground);
   --popover: oklch(1 0 0);
   --popover-foreground: var(--foreground);
-  --primary: oklch(0.91 0.047 166);
-  --primary-foreground: oklch(0.36 0.054 167);
-  --secondary: oklch(0.955 0.023 166);
+  --primary: oklch(0.52 0.095 170);
+  --primary-foreground: oklch(0.99 0.002 170);
+  --secondary: oklch(0.949 0.023 166);
   --secondary-foreground: oklch(0.4 0.05 166);
   --muted: oklch(0.96 0.005 240);
   --muted-foreground: oklch(0.54 0.017 240);
@@ -96,6 +98,8 @@
   --info-foreground: oklch(0.42 0.065 225);
   --warning: oklch(0.955 0.042 85);
   --warning-foreground: oklch(0.46 0.065 75);
+  --lilac: oklch(0.963 0.023 300);
+  --lilac-foreground: oklch(0.55 0.16 300);
   --success: var(--primary);
   --success-foreground: var(--primary-foreground);
   --paper: var(--background);
@@ -136,6 +140,8 @@
   --info-foreground: oklch(0.85 0.04 225);
   --warning: oklch(0.34 0.03 85);
   --warning-foreground: oklch(0.87 0.04 85);
+  --lilac: oklch(0.32 0.04 300);
+  --lilac-foreground: oklch(0.84 0.07 300);
 }
 
 @layer base {

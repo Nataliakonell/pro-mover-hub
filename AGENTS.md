@@ -10,4 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Keep the PRO-MOVER frontend as a responsive single-page operational dashboard with local demo interactions until persistent Cloud data is requested; this keeps the current MVP presentation-focused.
-- Keep overview metrics and operational lists as unframed sections on the single-page dashboard; this keeps essential information easy to scan without nested cards.
+- Keep sidebar-selected views within the single-page dashboard, with individual metric cards and unframed operational lists; this follows the reference layout without nested cards or separate page navigation.
