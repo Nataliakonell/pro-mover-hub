@@ -75,7 +75,9 @@ function ConfiguracaoPage() {
     const updated = updateSettings({
       eventDate: formState.eventDate,
       eventLocation: formState.eventLocation,
+      systolicMin: Number(formState.systolicMin),
       systolicMax: Number(formState.systolicMax),
+      diastolicMin: Number(formState.diastolicMin),
       diastolicMax: Number(formState.diastolicMax),
       glucoseMax: Number(formState.glucoseMax),
       oxygenMin: Number(formState.oxygenMin),
@@ -193,35 +195,85 @@ function ConfiguracaoPage() {
             </div>
           </div>
 
-          {/* Grid dos 6 campos numéricos */}
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="systolicMax" className="text-xs font-medium">Sistólica alterada a partir de (mmHg)</Label>
-              <Input
-                id="systolicMax"
-                type="number"
-                min="50"
-                max="250"
-                value={formState.systolicMax}
-                onChange={(e) => handleInputChange("systolicMax", e.target.value)}
-                required
-              />
-              <p className="text-[10px] text-muted-foreground">Padrão sugerido: 140 mmHg</p>
-            </div>
+          {/* Faixas de Pressão Arterial (Mínima e Máxima) */}
+          <div className="mb-6 rounded-lg border border-border bg-muted/20 p-4">
+            <h4 className="text-xs font-semibold text-foreground mb-1 flex items-center gap-1.5">
+              <HeartPulse className="size-4 text-primary" />
+              Faixas de Referência para Pressão Arterial (mmHg)
+            </h4>
+            <p className="text-[11px] text-muted-foreground mb-4">
+              A pressão arterial possui um valor médio de referência (ex: 120 x 80 mmHg). Se a medição do participante estiver <strong>abaixo do mínimo</strong> (hipotensão) ou <strong>acima do máximo</strong> (hipertensão), a triagem será classificada como <strong>Alterada</strong>.
+            </p>
 
-            <div className="space-y-2">
-              <Label htmlFor="diastolicMax" className="text-xs font-medium">Diastólica alterada a partir de (mmHg)</Label>
-              <Input
-                id="diastolicMax"
-                type="number"
-                min="30"
-                max="150"
-                value={formState.diastolicMax}
-                onChange={(e) => handleInputChange("diastolicMax", e.target.value)}
-                required
-              />
-              <p className="text-[10px] text-muted-foreground">Padrão sugerido: 90 mmHg</p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-3 rounded-md border border-border/60 bg-card p-3.5">
+                <span className="text-xs font-medium text-foreground block">Pressão Sistólica (máxima)</span>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="systolicMin" className="text-[11px] text-muted-foreground">Mínima (mmHg)</Label>
+                    <Input
+                      id="systolicMin"
+                      type="number"
+                      min="50"
+                      max="150"
+                      value={formState.systolicMin}
+                      onChange={(e) => handleInputChange("systolicMin", e.target.value)}
+                      required
+                    />
+                    <p className="text-[9px] text-muted-foreground">Padrão: 90 mmHg</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="systolicMax" className="text-[11px] text-muted-foreground">Máxima (mmHg)</Label>
+                    <Input
+                      id="systolicMax"
+                      type="number"
+                      min="100"
+                      max="250"
+                      value={formState.systolicMax}
+                      onChange={(e) => handleInputChange("systolicMax", e.target.value)}
+                      required
+                    />
+                    <p className="text-[9px] text-muted-foreground">Padrão: 140 mmHg</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3 rounded-md border border-border/60 bg-card p-3.5">
+                <span className="text-xs font-medium text-foreground block">Pressão Diastólica (mínima)</span>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="diastolicMin" className="text-[11px] text-muted-foreground">Mínima (mmHg)</Label>
+                    <Input
+                      id="diastolicMin"
+                      type="number"
+                      min="30"
+                      max="100"
+                      value={formState.diastolicMin}
+                      onChange={(e) => handleInputChange("diastolicMin", e.target.value)}
+                      required
+                    />
+                    <p className="text-[9px] text-muted-foreground">Padrão: 60 mmHg</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="diastolicMax" className="text-[11px] text-muted-foreground">Máxima (mmHg)</Label>
+                    <Input
+                      id="diastolicMax"
+                      type="number"
+                      min="60"
+                      max="150"
+                      value={formState.diastolicMax}
+                      onChange={(e) => handleInputChange("diastolicMax", e.target.value)}
+                      required
+                    />
+                    <p className="text-[9px] text-muted-foreground">Padrão: 90 mmHg</p>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
+
+          {/* Demais parâmetros numéricos */}
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
 
             <div className="space-y-2">
               <Label htmlFor="glucoseMax" className="text-xs font-medium">Glicemia alterada a partir de (mg/dL)</Label>

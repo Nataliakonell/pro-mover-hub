@@ -59,7 +59,7 @@ export const Route = createFileRoute("/")({
 function DashboardPage() {
   const { user } = useAuth();
   const { settings } = useSettings();
-  const { addParticipant, getAgeDistribution, getExtraCount } = useParticipants();
+  const { participants, addParticipant, getAgeDistribution, getExtraCount } = useParticipants();
   const { events, refreshEvents } = useDashboardEvents();
 
   // 1. Extração do primeiro nome da conta autenticada
@@ -77,6 +77,7 @@ function DashboardPage() {
 
   // Formulário de Triagem
   const [triageForm, setTriageForm] = useState({
+    participantId: "",
     participantName: "",
     pa: "120/80",
     glucose: 98,
@@ -127,14 +128,27 @@ function DashboardPage() {
     const dia = parseInt(diaStr) || 80;
 
     let status: "Normal" | "Atenção" | "Alterado" = "Normal";
-    if (sys >= settings.systolicMax || dia >= settings.diastolicMax || triageForm.glucose >= settings.glucoseMax) {
+
+    // Regra da Pressão Arterial: se passar de ambos (abaixo do mínimo ou acima do máximo), indica alterado
+    const sysAlterado = sys < settings.systolicMin || sys > settings.systolicMax;
+    const diaAlterado = dia < settings.diastolicMin || dia > settings.diastolicMax;
+    const glicemiaAlterada = triageForm.glucose >= settings.glucoseMax;
+    const spo2Alterada = triageForm.spo2 < settings.oxygenMin;
+    const fcAlterada = triageForm.heartRate < settings.heartRateMin || triageForm.heartRate > settings.heartRateMax;
+
+    if (sysAlterado || diaAlterado || glicemiaAlterada || spo2Alterada || fcAlterada) {
       status = "Alterado";
-    } else if (sys >= 130 || dia >= 85 || triageForm.glucose >= 110) {
+    } else if (
+      sys >= 130 || sys <= 95 ||
+      dia >= 85 || dia <= 65 ||
+      triageForm.glucose >= 110
+    ) {
       status = "Atenção";
     }
 
     try {
       await createTriageApi({
+        participantId: triageForm.participantId || undefined,
         participantName: triageForm.participantName,
         eventId: selectedEvent.id,
         responsible: user.name || "Profissional Clínico",
@@ -148,7 +162,7 @@ function DashboardPage() {
       });
       await refreshEvents();
       setTriageDialogOpen(false);
-      setTriageForm({ participantName: "", pa: "120/80", glucose: 98, spo2: 97, heartRate: 72 });
+      setTriageForm({ participantId: "", participantName: "", pa: "120/80", glucose: 98, spo2: 97, heartRate: 72 });
       showToast("Triagem registrada com sucesso no PostgreSQL!");
     } catch (err: any) {
       setTriageDialogOpen(false);
@@ -590,31 +604,6 @@ function DashboardPage() {
                 Tendência contínua de ampliação do alcance comunitário
               </p>
             </div>
-
-            {/* Gráfico 6: Encaminhamentos (distribuição por destino) */}
-            <div className="rounded-lg border border-border bg-card p-5">
-              <h5 className="text-xs font-semibold text-foreground mb-1">6. Destino dos Encaminhamentos</h5>
-              <p className="text-[11px] text-muted-foreground mb-4">Encaminhados para suporte contínuo</p>
-              <div className="space-y-3">
-                {selectedEvent.charts.referrals.map((ref) => (
-                  <div key={ref.destination} className="space-y-1">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-foreground">{ref.destination}</span>
-                      <span className="font-mono font-medium">{ref.count}</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-secondary overflow-hidden">
-                      <div
-                        className="h-full rounded-full"
-                        style={{
-                          backgroundColor: ref.color,
-                          width: `${(ref.count / selectedEvent.metrics.referrals) * 100}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         </section>
 
@@ -716,20 +705,108 @@ function DashboardPage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSaveTriage} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="t-name" className="text-xs">Nome completo do participante</Label>
-              <Input
-                id="t-name"
-                placeholder="Nome do participante"
-                value={triageForm.participantName}
-                onChange={(e) => setTriageForm({ ...triageForm, participantName: e.target.value })}
-                required
-              />
+            {/* Seletor do Participante (Carrega participantes do banco/API) */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="t-participant-select" className="text-xs font-medium">
+                  Nome completo do participante
+                </Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setTriageDialogOpen(false);
+                    setPersonDialogOpen(true);
+                  }}
+                  className="h-6 px-1.5 text-[10px] text-primary gap-1"
+                >
+                  <Plus className="size-3" />
+                  Novo Cadastro
+                </Button>
+              </div>
+
+              {participants.length > 0 ? (
+                <select
+                  id="t-participant-select"
+                  value={triageForm.participantId}
+                  onChange={(e) => {
+                    const selId = e.target.value;
+                    const p = participants.find((item) => item.id === selId);
+                    setTriageForm({
+                      ...triageForm,
+                      participantId: selId,
+                      participantName: p ? p.name : "",
+                    });
+                  }}
+                  required
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground outline-none focus:ring-2 focus:ring-ring cursor-pointer"
+                >
+                  <option value="">Selecione o participante cadastrado...</option>
+                  {participants.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} — CPF: {p.cpf || "S/ CPF"} ({p.age} anos)
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="rounded-md border border-dashed border-border p-3 text-center space-y-2 bg-muted/20">
+                  <p className="text-xs text-muted-foreground">
+                    Nenhum participante cadastrado ainda no sistema.
+                  </p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setTriageDialogOpen(false);
+                      setPersonDialogOpen(true);
+                    }}
+                    className="text-xs gap-1.5"
+                  >
+                    <UserPlus className="size-3.5 text-primary" />
+                    Cadastrar participante agora
+                  </Button>
+                </div>
+              )}
+
+              {/* Informações detalhadas do participante: WhatsApp e Idade */}
+              {(() => {
+                const activeP = participants.find(
+                  (p) => p.id === triageForm.participantId || (triageForm.participantName && p.name.toLowerCase() === triageForm.participantName.toLowerCase())
+                );
+                if (!activeP) return null;
+                return (
+                  <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs space-y-2 animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between border-b border-primary/15 pb-1.5">
+                      <span className="font-semibold text-foreground flex items-center gap-1.5">
+                        <Users className="size-3.5 text-primary" />
+                        {activeP.name}
+                      </span>
+                      <span className="rounded-full bg-primary/20 text-primary font-semibold px-2 py-0.5 text-[10px]">
+                        Faixa: {activeP.ageGroup} anos
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-muted-foreground pt-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="size-3.5 text-primary shrink-0" />
+                        <span>Idade: <strong className="text-foreground">{activeP.age} anos</strong></span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Phone className="size-3.5 text-primary shrink-0" />
+                        <span>WhatsApp: <strong className="text-foreground font-mono">{activeP.phone || "Não informado"}</strong></span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="t-pa" className="text-xs">Pressão arterial (mmHg)</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="t-pa" className="text-xs">Pressão arterial (mmHg)</Label>
+                </div>
                 <Input
                   id="t-pa"
                   placeholder="120/80"
@@ -737,6 +814,9 @@ function DashboardPage() {
                   onChange={(e) => setTriageForm({ ...triageForm, pa: e.target.value })}
                   required
                 />
+                <p className="text-[10px] text-muted-foreground font-mono">
+                  Ref: {settings.systolicMin}–{settings.systolicMax} x {settings.diastolicMin}–{settings.diastolicMax}
+                </p>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="t-gli" className="text-xs">Glicemia (mg/dL)</Label>

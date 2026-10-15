@@ -145,6 +145,10 @@ model Settings {
   id               Int      @id @default(1)
   eventDate        String
   eventLocation    String
+  sysMinThreshold  Int      @default(90)
+  sysMaxThreshold  Int      @default(140)
+  diaMinThreshold  Int      @default(60)
+  diaMaxThreshold  Int      @default(90)
   sysThreshold     Int      @default(140)
   diaThreshold     Int      @default(90)
   glucoseThreshold Int      @default(140)

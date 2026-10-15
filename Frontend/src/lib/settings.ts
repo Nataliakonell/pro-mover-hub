@@ -6,8 +6,10 @@ export interface AppSettings {
   eventDate: string;
   eventLocation: string;
 
-  // Bloco Parâmetros demonstrativos de alerta
+  // Bloco Parâmetros demonstrativos de alerta (faixas mínimas e máximas)
+  systolicMin: number;
   systolicMax: number;
+  diastolicMin: number;
   diastolicMax: number;
   glucoseMax: number;
   oxygenMin: number;
@@ -18,9 +20,11 @@ export interface AppSettings {
 export const DEFAULT_SETTINGS: AppSettings = {
   eventDate: new Date().toISOString().split("T")[0],
   eventLocation: "Farmácia Popular Santa Luzia",
+  systolicMin: 90,
   systolicMax: 140,
+  diastolicMin: 60,
   diastolicMax: 90,
-  glucoseMax: 180,
+  glucoseMax: 140,
   oxygenMin: 95,
   heartRateMin: 50,
   heartRateMax: 100,
@@ -37,8 +41,10 @@ export function getStoredSettings(): AppSettings {
     return {
       eventDate: parsed.eventDate || DEFAULT_SETTINGS.eventDate,
       eventLocation: parsed.eventLocation || DEFAULT_SETTINGS.eventLocation,
-      systolicMax: Number(parsed.systolicMax) || DEFAULT_SETTINGS.systolicMax,
-      diastolicMax: Number(parsed.diastolicMax) || DEFAULT_SETTINGS.diastolicMax,
+      systolicMin: parsed.systolicMin !== undefined ? Number(parsed.systolicMin) : DEFAULT_SETTINGS.systolicMin,
+      systolicMax: parsed.systolicMax !== undefined ? Number(parsed.systolicMax) : (parsed.sysThreshold ? Number(parsed.sysThreshold) : DEFAULT_SETTINGS.systolicMax),
+      diastolicMin: parsed.diastolicMin !== undefined ? Number(parsed.diastolicMin) : DEFAULT_SETTINGS.diastolicMin,
+      diastolicMax: parsed.diastolicMax !== undefined ? Number(parsed.diastolicMax) : (parsed.diaThreshold ? Number(parsed.diaThreshold) : DEFAULT_SETTINGS.diastolicMax),
       glucoseMax: Number(parsed.glucoseMax) || DEFAULT_SETTINGS.glucoseMax,
       oxygenMin: Number(parsed.oxygenMin) || DEFAULT_SETTINGS.oxygenMin,
       heartRateMin: Number(parsed.heartRateMin) || DEFAULT_SETTINGS.heartRateMin,
@@ -55,7 +61,9 @@ export function saveStoredSettings(settings: Partial<AppSettings>): AppSettings 
   const updated: AppSettings = {
     eventDate: settings.eventDate !== undefined ? String(settings.eventDate) : current.eventDate,
     eventLocation: settings.eventLocation !== undefined ? String(settings.eventLocation).trim() : current.eventLocation,
+    systolicMin: settings.systolicMin !== undefined ? Number(settings.systolicMin) : current.systolicMin,
     systolicMax: settings.systolicMax !== undefined ? Number(settings.systolicMax) : current.systolicMax,
+    diastolicMin: settings.diastolicMin !== undefined ? Number(settings.diastolicMin) : current.diastolicMin,
     diastolicMax: settings.diastolicMax !== undefined ? Number(settings.diastolicMax) : current.diastolicMax,
     glucoseMax: settings.glucoseMax !== undefined ? Number(settings.glucoseMax) : current.glucoseMax,
     oxygenMin: settings.oxygenMin !== undefined ? Number(settings.oxygenMin) : current.oxygenMin,
@@ -79,8 +87,10 @@ export function useSettings() {
           const mapped: AppSettings = {
             eventDate: data.eventDate || DEFAULT_SETTINGS.eventDate,
             eventLocation: data.eventLocation || DEFAULT_SETTINGS.eventLocation,
-            systolicMax: data.sysThreshold ?? DEFAULT_SETTINGS.systolicMax,
-            diastolicMax: data.diaThreshold ?? DEFAULT_SETTINGS.diastolicMax,
+            systolicMin: data.sysMinThreshold ?? DEFAULT_SETTINGS.systolicMin,
+            systolicMax: data.sysMaxThreshold ?? data.sysThreshold ?? DEFAULT_SETTINGS.systolicMax,
+            diastolicMin: data.diaMinThreshold ?? DEFAULT_SETTINGS.diastolicMin,
+            diastolicMax: data.diaMaxThreshold ?? data.diaThreshold ?? DEFAULT_SETTINGS.diastolicMax,
             glucoseMax: data.glucoseThreshold ?? DEFAULT_SETTINGS.glucoseMax,
             oxygenMin: data.spo2Threshold ?? DEFAULT_SETTINGS.oxygenMin,
             heartRateMin: data.hrMinThreshold ?? DEFAULT_SETTINGS.heartRateMin,
@@ -115,6 +125,10 @@ export function useSettings() {
     updateSettingsApi({
       eventDate: saved.eventDate,
       eventLocation: saved.eventLocation,
+      sysMinThreshold: saved.systolicMin,
+      sysMaxThreshold: saved.systolicMax,
+      diaMinThreshold: saved.diastolicMin,
+      diaMaxThreshold: saved.diastolicMax,
       sysThreshold: saved.systolicMax,
       diaThreshold: saved.diastolicMax,
       glucoseThreshold: saved.glucoseMax,
