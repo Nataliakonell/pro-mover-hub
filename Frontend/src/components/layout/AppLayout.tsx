@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard,
+  Users,
   ClipboardList,
   Gift,
   Settings,
@@ -26,6 +27,7 @@ export function AppLayout({ children, title, subtitle, actions }: AppLayoutProps
 
   const navigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
+    { name: "Participantes", href: "/participantes", icon: Users },
     { name: "Prontuários", href: "/prontuarios", icon: ClipboardList },
     { name: "Sessões Cortesia", href: "/sessoes-cortesia", icon: Gift },
     { name: "Configurações", href: "/configuracao", icon: Settings },

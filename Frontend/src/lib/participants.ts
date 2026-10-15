@@ -1,5 +1,16 @@
 import { useState, useEffect } from "react";
 
+export interface AttendanceRecord {
+  id: string;
+  date: string;
+  eventName: string;
+  type: string; // "Triagem de Sinais Vitais" | "Avaliação Funcional" | "Sessão Cortesia" | "Orientações Posturais"
+  responsible: string;
+  summary: string;
+  status: "Normal" | "Atenção" | "Alterado" | "Concluído";
+  medicalRecordId?: string; // Ex: "PR-2026-001"
+}
+
 export interface Participant {
   id: string;
   name: string;
@@ -10,6 +21,7 @@ export interface Participant {
   phone: string;
   eventId: string;
   createdAt: string;
+  attendances: AttendanceRecord[];
 }
 
 const STORAGE_KEY = "pro_mover_participants_list";
@@ -28,6 +40,12 @@ export function formatPhone(value: string): string {
   if (digits.length <= 2) return `(${digits}`;
   if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+}
+
+export function cleanPhoneForWhatsApp(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("55")) return digits;
+  return `55${digits}`;
 }
 
 export function calculateAge(birthDateString: string): { age: number; group: string } | null {
@@ -50,7 +68,7 @@ export function calculateAge(birthDateString: string): { age: number; group: str
   if (age < 0 || isNaN(age)) return null;
 
   let group = "18–30";
-  if (age < 18) group = "18–30"; // aloca na primeira faixa para efeitos da distribuição
+  if (age < 18) group = "18–30";
   else if (age <= 30) group = "18–30";
   else if (age <= 45) group = "31–45";
   else if (age <= 60) group = "46–60";
@@ -59,9 +77,8 @@ export function calculateAge(birthDateString: string): { age: number; group: str
   return { age, group };
 }
 
-// Participantes iniciais vinculados aos eventos
-const SEED_PARTICIPANTS: Participant[] = [
-  // Evento 1
+// Participantes iniciais com histórico realista de atendimentos
+export const SEED_PARTICIPANTS: Participant[] = [
   {
     id: "PART-001",
     name: "Marta Ferreira",
@@ -72,6 +89,28 @@ const SEED_PARTICIPANTS: Participant[] = [
     phone: "(65) 98455-8822",
     eventId: "evt-01",
     createdAt: "15/10/2026",
+    attendances: [
+      {
+        id: "ATT-001",
+        date: "15/10/2026",
+        eventName: "Ação de Saúde: Farmácia Popular Santa Luzia",
+        type: "Triagem de Sinais Vitais",
+        responsible: "Enf. Camila Rocha",
+        status: "Alterado",
+        summary: "Glicemia alterada detectada na triagem (214 mg/dL). Encaminhada para avaliação endocrinológica e suporte com nutricionista.",
+        medicalRecordId: "PR-2026-001",
+      },
+      {
+        id: "ATT-002",
+        date: "14/10/2026",
+        eventName: "Ação Comunitária São Cristóvão",
+        type: "Aferição e Acolhimento",
+        responsible: "Dra. Adriane Câmara",
+        status: "Atenção",
+        summary: "Primeiro acolhimento comunitário. Sinais vitais aferidos, glicemia capilar de jejum elevada e orientações gerais de saúde.",
+        medicalRecordId: "PR-2026-001",
+      },
+    ],
   },
   {
     id: "PART-002",
@@ -83,6 +122,38 @@ const SEED_PARTICIPANTS: Participant[] = [
     phone: "(65) 99123-4567",
     eventId: "evt-01",
     createdAt: "15/10/2026",
+    attendances: [
+      {
+        id: "ATT-003",
+        date: "15/10/2026",
+        eventName: "Ação de Saúde: Farmácia Popular Santa Luzia",
+        type: "Triagem de Sinais Vitais",
+        responsible: "Dra. Adriane Câmara",
+        status: "Alterado",
+        summary: "Pressão arterial sistólica elevada (152/94 mmHg). Reavaliação pós-repouso realizada com oximetria 96%.",
+        medicalRecordId: "PR-2026-002",
+      },
+      {
+        id: "ATT-004",
+        date: "12/10/2026",
+        eventName: "Studio Adriane Câmara",
+        type: "Sessão Cortesia (Sessão 2)",
+        responsible: "Dra. Adriane Câmara",
+        status: "Concluído",
+        summary: "Treino de estabilidade articular e exercícios posturais funcionais realizados com ótima resposta.",
+        medicalRecordId: "PR-2026-002",
+      },
+      {
+        id: "ATT-005",
+        date: "10/10/2026",
+        eventName: "Studio Adriane Câmara",
+        type: "Sessão Cortesia (Sessão 1)",
+        responsible: "Dra. Adriane Câmara",
+        status: "Concluído",
+        summary: "Trabalho de mobilidade e alongamento de cadeia muscular posterior.",
+        medicalRecordId: "PR-2026-002",
+      },
+    ],
   },
   {
     id: "PART-003",
@@ -94,6 +165,28 @@ const SEED_PARTICIPANTS: Participant[] = [
     phone: "(65) 99872-3311",
     eventId: "evt-01",
     createdAt: "15/10/2026",
+    attendances: [
+      {
+        id: "ATT-006",
+        date: "15/10/2026",
+        eventName: "Ação de Saúde: Farmácia Popular Santa Luzia",
+        type: "Triagem e Avaliação Funcional",
+        responsible: "Fisiot. Lucas Lima",
+        status: "Atenção",
+        summary: "IMC 31,2 com queixas de dor lombar mecânica ao permanecer em pé. Concedidas 4 sessões cortesia.",
+        medicalRecordId: "PR-2026-003",
+      },
+      {
+        id: "ATT-007",
+        date: "14/10/2026",
+        eventName: "Studio Adriane Câmara",
+        type: "Sessão Cortesia: Avaliação Funcional",
+        responsible: "Dra. Adriane Câmara",
+        status: "Concluído",
+        summary: "Avaliação cinético-funcional detalhada com início do protocolo de pilates terapêutico.",
+        medicalRecordId: "PR-2026-003",
+      },
+    ],
   },
   {
     id: "PART-004",
@@ -105,6 +198,28 @@ const SEED_PARTICIPANTS: Participant[] = [
     phone: "(65) 99654-1122",
     eventId: "evt-01",
     createdAt: "15/10/2026",
+    attendances: [
+      {
+        id: "ATT-008",
+        date: "15/10/2026",
+        eventName: "Ação de Saúde: Farmácia Popular Santa Luzia",
+        type: "Triagem de Sinais Vitais",
+        responsible: "Enf. Camila Rocha",
+        status: "Normal",
+        summary: "PA 118/78 mmHg · Glicemia 92 mg/dL. Todos os parâmetros vitais dentro da normalidade.",
+        medicalRecordId: "PR-2026-004",
+      },
+      {
+        id: "ATT-009",
+        date: "12/10/2026",
+        eventName: "Ação Comunitária Praça Central",
+        type: "Orientações Posturais",
+        responsible: "Fisiot. Lucas Lima",
+        status: "Normal",
+        summary: "Orientação preventiva para postura no trabalho e pausa ergonômica.",
+        medicalRecordId: "PR-2026-004",
+      },
+    ],
   },
   {
     id: "PART-005",
@@ -116,6 +231,18 @@ const SEED_PARTICIPANTS: Participant[] = [
     phone: "(65) 99233-7744",
     eventId: "evt-01",
     createdAt: "15/10/2026",
+    attendances: [
+      {
+        id: "ATT-010",
+        date: "15/10/2026",
+        eventName: "Ação de Saúde: Farmácia Popular Santa Luzia",
+        type: "Triagem de Sinais Vitais",
+        responsible: "Enf. Camila Rocha",
+        status: "Normal",
+        summary: "PA 120/80 mmHg · SpO₂ 98%. Sinais vitais preservados, jovem sem queixas álgicas.",
+        medicalRecordId: "PR-2026-005",
+      },
+    ],
   },
 ];
 
@@ -127,7 +254,29 @@ export function getStoredParticipants(): Participant[] {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_PARTICIPANTS));
       return SEED_PARTICIPANTS;
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    // Garantir retrocompatibilidade e presença de attendances em itens antigos do cache
+    return parsed.map((p: any) => {
+      const seed = SEED_PARTICIPANTS.find((sp) => sp.id === p.id);
+      return {
+        ...p,
+        attendances:
+          Array.isArray(p.attendances) && p.attendances.length > 0
+            ? p.attendances
+            : seed?.attendances || [
+                {
+                  id: `ATT-INIT-${p.id}`,
+                  date: p.createdAt || "15/10/2026",
+                  eventName: "Ação de Saúde: Farmácia Popular Santa Luzia",
+                  type: "Cadastro e Acolhimento Comunitário",
+                  responsible: "Equipe PRO-MOVER",
+                  status: "Concluído",
+                  summary: "Participante acolhido e cadastrado para acompanhamento na ação comunitária.",
+                  medicalRecordId: `PR-${p.id}`,
+                },
+              ],
+      };
+    });
   } catch {
     return SEED_PARTICIPANTS;
   }
@@ -160,10 +309,14 @@ export function useParticipants() {
     cpf: string;
     phone: string;
     eventId: string;
+    eventName?: string;
   }): Participant => {
     const ageInfo = calculateAge(newP.birthDate) || { age: 0, group: "18–30" };
+    const newId = `PART-${Date.now().toString().slice(-4)}`;
+    const eventLabel = newP.eventName || "Ação de Saúde: Farmácia Popular Santa Luzia";
+
     const participant: Participant = {
-      id: `PART-${Date.now().toString().slice(-4)}`,
+      id: newId,
       name: newP.name.trim(),
       birthDate: newP.birthDate,
       age: ageInfo.age,
@@ -172,6 +325,18 @@ export function useParticipants() {
       phone: newP.phone,
       eventId: newP.eventId,
       createdAt: new Date().toLocaleDateString("pt-BR"),
+      attendances: [
+        {
+          id: `ATT-${Date.now().toString().slice(-4)}`,
+          date: new Date().toLocaleDateString("pt-BR"),
+          eventName: eventLabel,
+          type: "Cadastro e Acolhimento Comunitário",
+          responsible: "Equipe PRO-MOVER",
+          status: "Concluído",
+          summary: "Cadastro inicial registrado. Participante elegível para triagem de sinais vitais e prontuário clínico.",
+          medicalRecordId: `PR-${newId}`,
+        },
+      ],
     };
 
     const current = getStoredParticipants();
@@ -181,11 +346,40 @@ export function useParticipants() {
     return participant;
   };
 
+  const addAttendance = (
+    participantId: string,
+    attData: {
+      eventName: string;
+      type: string;
+      responsible: string;
+      status: "Normal" | "Atenção" | "Alterado" | "Concluído";
+      summary: string;
+      medicalRecordId?: string;
+    }
+  ) => {
+    const current = getStoredParticipants();
+    const updated = current.map((p) => {
+      if (p.id === participantId) {
+        const newRecord: AttendanceRecord = {
+          id: `ATT-${Date.now().toString().slice(-4)}`,
+          date: new Date().toLocaleDateString("pt-BR"),
+          ...attData,
+        };
+        return {
+          ...p,
+          attendances: [newRecord, ...(p.attendances || [])],
+        };
+      }
+      return p;
+    });
+    saveStoredParticipants(updated);
+    setParticipants(updated);
+  };
+
   // Calcula a distribuição etária dinamicamente para o evento selecionado
   const getAgeDistribution = (eventId: string, baseGroupCounts: { age: string; count: number }[]) => {
     const eventParticipants = participants.filter((p) => p.eventId === eventId);
 
-    // Se houver participantes cadastrados pelo usuário além dos do seed inicial
     const counts: Record<string, number> = {
       "18–30": 0,
       "31–45": 0,
@@ -193,14 +387,12 @@ export function useParticipants() {
       "60+": 0,
     };
 
-    // Preenche com a base do evento
     baseGroupCounts.forEach((bg) => {
       if (counts[bg.age] !== undefined) {
         counts[bg.age] = bg.count;
       }
     });
 
-    // Adiciona participantes extras cadastrados via tela (que não estavam no seed base)
     const extraParticipants = eventParticipants.filter(
       (p) => !SEED_PARTICIPANTS.some((sp) => sp.id === p.id)
     );
@@ -231,6 +423,7 @@ export function useParticipants() {
   return {
     participants,
     addParticipant,
+    addAttendance,
     getAgeDistribution,
     getExtraCount,
   };

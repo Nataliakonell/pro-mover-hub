@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ConfiguracaoRouteImport } from './routes/configuracao'
+import { Route as ParticipantesRouteImport } from './routes/participantes'
 import { Route as ProntuariosRouteImport } from './routes/prontuarios'
 import { Route as SessoesCortesiaRouteImport } from './routes/sessoes-cortesia'
 
@@ -22,6 +23,11 @@ const IndexRoute = IndexRouteImport.update({
 const ConfiguracaoRoute = ConfiguracaoRouteImport.update({
   id: '/configuracao',
   path: '/configuracao',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ParticipantesRoute = ParticipantesRouteImport.update({
+  id: '/participantes',
+  path: '/participantes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProntuariosRoute = ProntuariosRouteImport.update({
@@ -38,12 +44,14 @@ const SessoesCortesiaRoute = SessoesCortesiaRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/configuracao': typeof ConfiguracaoRoute
+  '/participantes': typeof ParticipantesRoute
   '/prontuarios': typeof ProntuariosRoute
   '/sessoes-cortesia': typeof SessoesCortesiaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/configuracao': typeof ConfiguracaoRoute
+  '/participantes': typeof ParticipantesRoute
   '/prontuarios': typeof ProntuariosRoute
   '/sessoes-cortesia': typeof SessoesCortesiaRoute
 }
@@ -51,20 +59,38 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/configuracao': typeof ConfiguracaoRoute
+  '/participantes': typeof ParticipantesRoute
   '/prontuarios': typeof ProntuariosRoute
   '/sessoes-cortesia': typeof SessoesCortesiaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/configuracao' | '/prontuarios' | '/sessoes-cortesia'
+  fullPaths:
+    | '/'
+    | '/configuracao'
+    | '/participantes'
+    | '/prontuarios'
+    | '/sessoes-cortesia'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/configuracao' | '/prontuarios' | '/sessoes-cortesia'
-  id: '__root__' | '/' | '/configuracao' | '/prontuarios' | '/sessoes-cortesia'
+  to:
+    | '/'
+    | '/configuracao'
+    | '/participantes'
+    | '/prontuarios'
+    | '/sessoes-cortesia'
+  id:
+    | '__root__'
+    | '/'
+    | '/configuracao'
+    | '/participantes'
+    | '/prontuarios'
+    | '/sessoes-cortesia'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ConfiguracaoRoute: typeof ConfiguracaoRoute
+  ParticipantesRoute: typeof ParticipantesRoute
   ProntuariosRoute: typeof ProntuariosRoute
   SessoesCortesiaRoute: typeof SessoesCortesiaRoute
 }
@@ -83,6 +109,13 @@ declare module '@tanstack/react-router' {
       path: '/configuracao'
       fullPath: '/configuracao'
       preLoaderRoute: typeof ConfiguracaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/participantes': {
+      id: '/participantes'
+      path: '/participantes'
+      fullPath: '/participantes'
+      preLoaderRoute: typeof ParticipantesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/prontuarios': {
@@ -105,6 +138,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ConfiguracaoRoute: ConfiguracaoRoute,
+  ParticipantesRoute: ParticipantesRoute,
   ProntuariosRoute: ProntuariosRoute,
   SessoesCortesiaRoute: SessoesCortesiaRoute,
 }

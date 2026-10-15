@@ -338,6 +338,17 @@ function DashboardPage() {
               Novo Participante
             </Button>
 
+            <Link to="/participantes">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs h-9 font-normal"
+              >
+                <Users className="size-3.5 text-primary" />
+                Ver Participantes
+              </Button>
+            </Link>
+
             <Button
               variant="outline"
               size="sm"
