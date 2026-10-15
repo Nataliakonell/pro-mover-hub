@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getCourtesyRecordsApi, scheduleCourtesyApi } from "./api";
+import { getCourtesyRecordsApi, scheduleCourtesyApi, concedeCourtesyApi } from "./api";
 
 export interface CourtesyConcession {
   id: string;
@@ -26,81 +26,13 @@ export interface ParticipantCourtesy {
 
 const STORAGE_KEY = "pro_mover_courtesy_records";
 
-const INITIAL_DATA: ParticipantCourtesy[] = [
-  {
-    id: "P-001",
-    name: "Rosa Pereira",
-    concessions: [
-      {
-        id: "C-001",
-        triageId: "TR-101",
-        date: "13/10/2026",
-        sessions: 4,
-        reason: "Encaminhamento pós-triagem (IMC 31,2 e queixa álgica em coluna lombar)",
-      },
-    ],
-    utilizations: [
-      {
-        id: "U-001",
-        date: "14/10/2026",
-        type: "Avaliação Funcional Inicial",
-        professional: "Dra. Adriane Câmara (Fisioterapeuta)",
-        status: "Realizado",
-      },
-    ],
-  },
-  {
-    id: "P-002",
-    name: "Antônio Souza",
-    concessions: [
-      {
-        id: "C-002",
-        triageId: "TR-102",
-        date: "08/10/2026",
-        sessions: 2,
-        reason: "Avaliação postural e funcional complementar",
-      },
-    ],
-    utilizations: [
-      {
-        id: "U-002",
-        date: "10/10/2026",
-        type: "Sessão 1: Mobilidade e Alongamento",
-        professional: "Dra. Adriane Câmara (Fisioterapeuta)",
-        status: "Realizado",
-      },
-      {
-        id: "U-003",
-        date: "12/10/2026",
-        type: "Sessão 2: Estabilidade e Exercícios Posturais",
-        professional: "Dra. Adriane Câmara (Fisioterapeuta)",
-        status: "Realizado",
-      },
-    ],
-  },
-  {
-    id: "P-003",
-    name: "Marta Ferreira",
-    concessions: [
-      {
-        id: "C-003",
-        triageId: "TR-103",
-        date: "14/10/2026",
-        sessions: 2,
-        reason: "Orientações ergonômicas e exercícios de baixo impacto",
-      },
-    ],
-    utilizations: [],
-  },
-];
-
 // Cálculo compartilhado do saldo do participante
 export function calculateBalance(participant: ParticipantCourtesy) {
   // Concedidas: soma de sessions de todas as triagens concluídas
-  const granted = participant.concessions.reduce((acc, c) => acc + c.sessions, 0);
+  const granted = participant.concessions?.reduce((acc, c) => acc + c.sessions, 0) || 0;
 
   // Utilizadas: registros marcados como "Realizado"
-  const used = participant.utilizations.filter((u) => u.status === "Realizado").length;
+  const used = participant.utilizations?.filter((u) => u.status === "Realizado").length || 0;
 
   // Restantes: concedidas menos utilizadas
   const remaining = Math.max(0, granted - used);
@@ -114,16 +46,13 @@ export function calculateBalance(participant: ParticipantCourtesy) {
 }
 
 export function getStoredCourtesy(): ParticipantCourtesy[] {
-  if (typeof window === "undefined") return INITIAL_DATA;
+  if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_DATA));
-      return INITIAL_DATA;
-    }
+    if (!raw) return [];
     return JSON.parse(raw);
   } catch {
-    return INITIAL_DATA;
+    return [];
   }
 }
 
@@ -136,21 +65,21 @@ export function saveStoredCourtesy(data: ParticipantCourtesy[]) {
 export function useCourtesy() {
   const [participants, setParticipants] = useState<ParticipantCourtesy[]>(getStoredCourtesy);
 
-  // Sincroniza com PostgreSQL ao carregar
-  useEffect(() => {
-    getCourtesyRecordsApi()
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          saveStoredCourtesy(data);
-          setParticipants(data);
-        }
-      })
-      .catch((err) => {
-        console.warn("Backend offline ou iniciando, usando dados locais de cortesia:", err.message);
-      });
-  }, []);
+  const refreshCourtesy = async () => {
+    try {
+      const data = await getCourtesyRecordsApi();
+      if (Array.isArray(data)) {
+        saveStoredCourtesy(data);
+        setParticipants(data);
+      }
+    } catch (err: any) {
+      console.warn("Backend offline ou iniciando, usando dados locais de cortesia:", err.message);
+    }
+  };
 
   useEffect(() => {
+    refreshCourtesy();
+
     const handler = () => {
       setParticipants(getStoredCourtesy());
     };
@@ -176,7 +105,7 @@ export function useCourtesy() {
       return {
         ...p,
         utilizations: [
-          ...p.utilizations,
+          ...(p.utilizations || []),
           {
             ...sessionData,
             id: `U-${Date.now()}`,
@@ -187,16 +116,18 @@ export function useCourtesy() {
     saveStoredCourtesy(updated);
     setParticipants(updated);
 
-    // Salva no PostgreSQL de forma assíncrona
+    // Salva no PostgreSQL
     scheduleCourtesyApi({
       courtesyRecordId,
       date: sessionData.date,
       type: sessionData.type,
       professional: sessionData.professional,
       status: sessionData.status,
-    }).catch((err) => {
-      console.warn("Falha ao salvar utilização de cortesia no backend:", err.message);
-    });
+    })
+      .then(() => refreshCourtesy())
+      .catch((err) => {
+        console.warn("Falha ao salvar utilização de cortesia no backend:", err.message);
+      });
   };
 
   // Conceder novas sessões (máximo 4 por triagem)
@@ -212,7 +143,7 @@ export function useCourtesy() {
       return {
         ...p,
         concessions: [
-          ...p.concessions,
+          ...(p.concessions || []),
           {
             id: `C-${Date.now()}`,
             triageId: `TR-${Date.now().toString().slice(-4)}`,
@@ -225,19 +156,23 @@ export function useCourtesy() {
     });
     saveStoredCourtesy(updated);
     setParticipants(updated);
+
+    concedeCourtesyApi({
+      participantId,
+      sessions: validSessions,
+      reason,
+    })
+      .then(() => refreshCourtesy())
+      .catch((err) => {
+        console.warn("Falha ao conceder sessões no PostgreSQL:", err.message);
+      });
   };
 
-  // Filtra apenas participantes com concedidas > 0
-  const eligibleParticipants = participants.filter((p) => {
-    const { granted } = calculateBalance(p);
-    return granted > 0;
-  });
-
   return {
-    participants: eligibleParticipants,
-    allParticipants: participants,
+    participants,
     calculateBalance,
     scheduleSession,
     grantSessions,
+    refreshCourtesy,
   };
 }

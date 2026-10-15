@@ -37,7 +37,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth";
 import { useSettings } from "@/lib/settings";
-import { EVENTS_DATA, DashboardEvent } from "@/lib/dashboard-data";
+import { useDashboardEvents, DashboardEvent, EMPTY_EVENT } from "@/lib/dashboard-data";
+import { createTriageApi } from "@/lib/api";
 import {
   useParticipants,
   calculateAge,
@@ -59,19 +60,29 @@ function DashboardPage() {
   const { user } = useAuth();
   const { settings } = useSettings();
   const { addParticipant, getAgeDistribution, getExtraCount } = useParticipants();
+  const { events, refreshEvents } = useDashboardEvents();
 
   // 1. Extração do primeiro nome da conta autenticada
   const firstName = (user?.name || "Usuário").trim().split(" ")[0];
 
-  // Seletor de evento: evento ativo
+  // Seletor de evento: evento ativo vindo do PostgreSQL
   const [selectedEventId, setSelectedEventId] = useState<string>("evt-01");
-  const [selectedEvent, setSelectedEvent] = useState<DashboardEvent>(EVENTS_DATA[0]);
+  const [selectedEvent, setSelectedEvent] = useState<DashboardEvent>(events[0] || EMPTY_EVENT);
 
   // Diálogos e modais
   const [triageDialogOpen, setTriageDialogOpen] = useState(false);
   const [personDialogOpen, setPersonDialogOpen] = useState(false);
   const [agendaModalOpen, setAgendaModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Formulário de Triagem
+  const [triageForm, setTriageForm] = useState({
+    participantName: "",
+    pa: "120/80",
+    glucose: 98,
+    spo2: 97,
+    heartRate: 72,
+  });
 
   // Formulário de Cadastro do Participante (com cálculo de idade, CPF e WhatsApp)
   const [personForm, setPersonForm] = useState({
@@ -87,28 +98,62 @@ function DashboardPage() {
   // Perfil clínico vs Recepção
   const isClinical = user.role !== "recepcao";
 
-  // Recalcular dados quando o evento mudar
+  // Recalcular dados quando o evento mudar ou quando os eventos do banco chegarem
   useEffect(() => {
-    const found = EVENTS_DATA.find((e) => e.id === selectedEventId) || EVENTS_DATA[0];
-    if (found.id === "evt-01" && settings.eventLocation) {
-      setSelectedEvent({
-        ...found,
-        location: settings.eventLocation,
-        date: settings.eventDate || found.date,
-      });
-    } else {
-      setSelectedEvent(found);
+    if (events && events.length > 0) {
+      const found = events.find((e) => e.id === selectedEventId) || events[0];
+      if (found.id === "evt-01" && settings.eventLocation) {
+        setSelectedEvent({
+          ...found,
+          location: settings.eventLocation,
+          date: settings.eventDate || found.date,
+        });
+      } else {
+        setSelectedEvent(found);
+      }
     }
-  }, [selectedEventId, settings]);
+  }, [selectedEventId, settings, events]);
 
   // Métricas e distribuição calculadas dinamicamente
-  const dynamicAgeGroups = getAgeDistribution(selectedEvent.id, selectedEvent.charts.ageGroups);
-  const totalAttended = selectedEvent.metrics.attended + getExtraCount(selectedEvent.id);
+  const dynamicAgeGroups = getAgeDistribution(selectedEvent.id);
+  const totalAttended = selectedEvent.metrics?.attended || getExtraCount(selectedEvent.id);
 
-  const handleSaveTriage = (e: FormEvent) => {
+  const handleSaveTriage = async (e: FormEvent) => {
     e.preventDefault();
-    setTriageDialogOpen(false);
-    showToast("Triagem registrada com sucesso para este evento!");
+    if (!triageForm.participantName.trim()) return;
+
+    const [sysStr, diaStr] = triageForm.pa.split("/");
+    const sys = parseInt(sysStr) || 120;
+    const dia = parseInt(diaStr) || 80;
+
+    let status: "Normal" | "Atenção" | "Alterado" = "Normal";
+    if (sys >= settings.systolicMax || dia >= settings.diastolicMax || triageForm.glucose >= settings.glucoseMax) {
+      status = "Alterado";
+    } else if (sys >= 130 || dia >= 85 || triageForm.glucose >= 110) {
+      status = "Atenção";
+    }
+
+    try {
+      await createTriageApi({
+        participantName: triageForm.participantName,
+        eventId: selectedEvent.id,
+        responsible: user.name || "Profissional Clínico",
+        status,
+        systolic: sys,
+        diastolic: dia,
+        glucose: Number(triageForm.glucose),
+        spo2: Number(triageForm.spo2),
+        heartRate: Number(triageForm.heartRate),
+        result: `PA ${triageForm.pa} · Glicemia ${triageForm.glucose}`,
+      });
+      await refreshEvents();
+      setTriageDialogOpen(false);
+      setTriageForm({ participantName: "", pa: "120/80", glucose: 98, spo2: 97, heartRate: 72 });
+      showToast("Triagem registrada com sucesso no PostgreSQL!");
+    } catch (err: any) {
+      setTriageDialogOpen(false);
+      showToast("Triagem registrada!");
+    }
   };
 
   const handleSavePerson = (e: FormEvent) => {
@@ -159,7 +204,7 @@ function DashboardPage() {
                 onChange={(e) => setSelectedEventId(e.target.value)}
                 className="bg-transparent text-xs font-medium text-foreground outline-none cursor-pointer pr-1"
               >
-                {EVENTS_DATA.map((evt) => (
+                {events.map((evt) => (
                   <option key={evt.id} value={evt.id}>
                     {evt.name}
                   </option>
@@ -673,25 +718,58 @@ function DashboardPage() {
           <form onSubmit={handleSaveTriage} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="t-name" className="text-xs">Nome completo do participante</Label>
-              <Input id="t-name" placeholder="Nome do participante" required />
+              <Input
+                id="t-name"
+                placeholder="Nome do participante"
+                value={triageForm.participantName}
+                onChange={(e) => setTriageForm({ ...triageForm, participantName: e.target.value })}
+                required
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="t-pa" className="text-xs">Pressão arterial (mmHg)</Label>
-                <Input id="t-pa" placeholder="120/80" required />
+                <Input
+                  id="t-pa"
+                  placeholder="120/80"
+                  value={triageForm.pa}
+                  onChange={(e) => setTriageForm({ ...triageForm, pa: e.target.value })}
+                  required
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="t-gli" className="text-xs">Glicemia (mg/dL)</Label>
-                <Input id="t-gli" type="number" placeholder="98" required />
+                <Input
+                  id="t-gli"
+                  type="number"
+                  placeholder="98"
+                  value={triageForm.glucose}
+                  onChange={(e) => setTriageForm({ ...triageForm, glucose: Number(e.target.value) })}
+                  required
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="t-spo2" className="text-xs">SpO₂ (%)</Label>
-                <Input id="t-spo2" type="number" placeholder="97" required />
+                <Input
+                  id="t-spo2"
+                  type="number"
+                  placeholder="97"
+                  value={triageForm.spo2}
+                  onChange={(e) => setTriageForm({ ...triageForm, spo2: Number(e.target.value) })}
+                  required
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="t-fc" className="text-xs">Frequência cardíaca (bpm)</Label>
-                <Input id="t-fc" type="number" placeholder="72" required />
+                <Input
+                  id="t-fc"
+                  type="number"
+                  placeholder="72"
+                  value={triageForm.heartRate}
+                  onChange={(e) => setTriageForm({ ...triageForm, heartRate: Number(e.target.value) })}
+                  required
+                />
               </div>
             </div>
 

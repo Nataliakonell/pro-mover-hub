@@ -17,6 +17,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useParticipants, Participant } from "@/lib/participants";
+import { getMedicalRecordsApi } from "@/lib/api";
 
 export const Route = createFileRoute("/prontuarios")({
   head: () => ({
@@ -42,77 +43,10 @@ interface ClinicalRecord {
   tone: "danger" | "warning" | "info" | "success";
 }
 
-const BASE_RECORDS: ClinicalRecord[] = [
-  {
-    id: "PR-2026-001",
-    name: "Marta Ferreira",
-    age: 58,
-    date: "15/10/2026",
-    status: "Alterado",
-    pressure: "142/90 mmHg",
-    glucose: "214 mg/dL",
-    spo2: "97%",
-    heartRate: "78 bpm",
-    note: "Glicemia de jejum elevada detectada na triagem comunitária (214 mg/dL). Participante orientada sobre controle glicêmico, hábitos alimentares e encaminhada para acompanhamento médico com endocrinologista.",
-    tone: "danger",
-  },
-  {
-    id: "PR-2026-002",
-    name: "Antônio Souza",
-    age: 64,
-    date: "15/10/2026",
-    status: "Atenção",
-    pressure: "152/94 mmHg",
-    glucose: "110 mg/dL",
-    spo2: "96%",
-    heartRate: "82 bpm",
-    note: "Pressão arterial sistólica elevada em primeira medição. Após 15 minutos de repouso, manteve-se em 148/90 mmHg. Concedidas 2 sessões cortesia para trabalho de mobilidade e exercícios leves no Studio.",
-    tone: "warning",
-  },
-  {
-    id: "PR-2026-003",
-    name: "Rosa Pereira",
-    age: 46,
-    date: "15/10/2026",
-    status: "Acompanhamento",
-    pressure: "128/82 mmHg",
-    glucose: "95 mg/dL",
-    spo2: "98%",
-    heartRate: "72 bpm",
-    note: "IMC 31,2. Queixa álgica recorrente em coluna lombar agravada por permanecer longos períodos em pé. Encaminhada para avaliação funcional da fisioterapia com 4 sessões cortesia concedidas.",
-    tone: "info",
-  },
-  {
-    id: "PR-2026-004",
-    name: "Carlos Eduardo Mendes",
-    age: 39,
-    date: "15/10/2026",
-    status: "Normal",
-    pressure: "118/78 mmHg",
-    glucose: "92 mg/dL",
-    spo2: "99%",
-    heartRate: "68 bpm",
-    note: "Sinais vitais normais e estáveis. Queixa esporádica de tensão em trapézios por trabalho contínuo em computador. Recebeu cartilha de exercícios ergonômicos e pausas ativas.",
-    tone: "success",
-  },
-  {
-    id: "PR-2026-005",
-    name: "Lucas Gabriel Silva",
-    age: 25,
-    date: "15/10/2026",
-    status: "Normal",
-    pressure: "120/80 mmHg",
-    glucose: "88 mg/dL",
-    spo2: "98%",
-    heartRate: "70 bpm",
-    note: "Sinais vitais fisiológicos. Jovem assintomático, orientado sobre importância da atividade física regular e hidratação.",
-    tone: "success",
-  },
-];
-
 function ProntuariosPage() {
   const routerState = useRouterState();
   const { participants } = useParticipants();
+  const [records, setRecords] = useState<ClinicalRecord[]>([]);
 
   // Ler query param ?search= da URL caso o usuário tenha clicado em "Ir até o prontuário" em /participantes
   const [search, setSearch] = useState(() => {
@@ -123,11 +57,23 @@ function ProntuariosPage() {
     return "";
   });
 
-  // Unifica os registros clínicos base com quaisquer participantes criados no app
-  const allRecords = useMemo(() => {
-    const list: ClinicalRecord[] = [...BASE_RECORDS];
+  // Carrega os prontuários diretamente do PostgreSQL
+  useEffect(() => {
+    getMedicalRecordsApi()
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setRecords(data);
+        }
+      })
+      .catch((err) => {
+        console.warn("Falha ao carregar prontuários do PostgreSQL:", err.message);
+      });
+  }, []);
 
-    // Para cada participante cadastrado que não está nos registros base
+  // Unifica os registros clínicos do banco com participantes cadastrados
+  const allRecords = useMemo(() => {
+    const list: ClinicalRecord[] = [...records];
+
     participants.forEach((p) => {
       const exists = list.some(
         (r) => r.name.toLowerCase() === p.name.toLowerCase()
@@ -137,20 +83,20 @@ function ProntuariosPage() {
           id: `PR-${p.id}`,
           name: p.name,
           age: p.age,
-          date: p.createdAt || "15/10/2026",
+          date: p.createdAt || new Date().toLocaleDateString("pt-BR"),
           status: "Normal",
           pressure: "120/80 mmHg",
           glucose: "90 mg/dL",
           spo2: "98%",
           heartRate: "72 bpm",
-          note: `Prontuário aberto durante a ação comunitária. Cadastro realizado com ${p.age} anos (Faixa ${p.ageGroup}). Aguardando triagens clínicas complementares.`,
+          note: `Prontuário aberto para participante cadastrado na ação comunitária (${p.age} anos · Faixa [${p.ageGroup}]). Aguardando novas aferições clínicas.`,
           tone: "info",
         });
       }
     });
 
     return list;
-  }, [participants]);
+  }, [records, participants]);
 
   const filtered = useMemo(() => {
     return allRecords.filter(
@@ -160,20 +106,21 @@ function ProntuariosPage() {
     );
   }, [allRecords, search]);
 
-  const [selectedRecord, setSelectedRecord] = useState<ClinicalRecord | null>(() => {
-    return filtered[0] || null;
-  });
+  const [selectedRecord, setSelectedRecord] = useState<ClinicalRecord | null>(null);
 
-  // Atualizar o prontuário selecionado se a busca mudar ou se houver um search inicial
+  // Selecionar o primeiro registro automaticamente ou o correspondente à busca
   useEffect(() => {
-    if (search && filtered.length > 0) {
-      const match = filtered.find((r) =>
-        r.name.toLowerCase().includes(search.toLowerCase())
-      );
-      if (match) setSelectedRecord(match);
-      else setSelectedRecord(filtered[0]);
+    if (filtered.length > 0) {
+      if (search) {
+        const match = filtered.find((r) =>
+          r.name.toLowerCase().includes(search.toLowerCase())
+        );
+        setSelectedRecord(match || filtered[0]);
+      } else if (!selectedRecord) {
+        setSelectedRecord(filtered[0]);
+      }
     }
-  }, [search, filtered]);
+  }, [filtered, search]);
 
   return (
     <AppLayout
@@ -194,7 +141,7 @@ function ProntuariosPage() {
           <div className="flex items-center gap-2.5">
             <ClipboardList className="size-4 text-primary shrink-0" />
             <p className="text-muted-foreground">
-              Esta é a visão clínica detalhada. Para gerenciar contatos de WhatsApp e dados cadastrais, acesse a página de{" "}
+              Esta é a visão clínica detalhada alimentada pelo banco de dados. Para gerenciar contatos de WhatsApp e dados cadastrais, acesse a página de{" "}
               <Link to="/participantes" className="text-primary font-medium hover:underline">
                 Participantes
               </Link>.
@@ -234,7 +181,7 @@ function ProntuariosPage() {
                   Prontuários Registrados ({filtered.length})
                 </h3>
                 <span className="text-[11px] text-muted-foreground">
-                  Clique para visualizar o registro clínico completo
+                  Alimentado via PostgreSQL
                 </span>
               </div>
               <div className="divide-y divide-border">
