@@ -10,33 +10,63 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ConfiguracaoRouteImport } from './routes/configuracao'
+import { Route as ProntuariosRouteImport } from './routes/prontuarios'
+import { Route as SessoesCortesiaRouteImport } from './routes/sessoes-cortesia'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConfiguracaoRoute = ConfiguracaoRouteImport.update({
+  id: '/configuracao',
+  path: '/configuracao',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProntuariosRoute = ProntuariosRouteImport.update({
+  id: '/prontuarios',
+  path: '/prontuarios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SessoesCortesiaRoute = SessoesCortesiaRouteImport.update({
+  id: '/sessoes-cortesia',
+  path: '/sessoes-cortesia',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/configuracao': typeof ConfiguracaoRoute
+  '/prontuarios': typeof ProntuariosRoute
+  '/sessoes-cortesia': typeof SessoesCortesiaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/configuracao': typeof ConfiguracaoRoute
+  '/prontuarios': typeof ProntuariosRoute
+  '/sessoes-cortesia': typeof SessoesCortesiaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/configuracao': typeof ConfiguracaoRoute
+  '/prontuarios': typeof ProntuariosRoute
+  '/sessoes-cortesia': typeof SessoesCortesiaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/configuracao' | '/prontuarios' | '/sessoes-cortesia'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/configuracao' | '/prontuarios' | '/sessoes-cortesia'
+  id: '__root__' | '/' | '/configuracao' | '/prontuarios' | '/sessoes-cortesia'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ConfiguracaoRoute: typeof ConfiguracaoRoute
+  ProntuariosRoute: typeof ProntuariosRoute
+  SessoesCortesiaRoute: typeof SessoesCortesiaRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +78,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/configuracao': {
+      id: '/configuracao'
+      path: '/configuracao'
+      fullPath: '/configuracao'
+      preLoaderRoute: typeof ConfiguracaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/prontuarios': {
+      id: '/prontuarios'
+      path: '/prontuarios'
+      fullPath: '/prontuarios'
+      preLoaderRoute: typeof ProntuariosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sessoes-cortesia': {
+      id: '/sessoes-cortesia'
+      path: '/sessoes-cortesia'
+      fullPath: '/sessoes-cortesia'
+      preLoaderRoute: typeof SessoesCortesiaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ConfiguracaoRoute: ConfiguracaoRoute,
+  ProntuariosRoute: ProntuariosRoute,
+  SessoesCortesiaRoute: SessoesCortesiaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

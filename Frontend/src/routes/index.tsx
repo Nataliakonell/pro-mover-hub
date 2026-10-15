@@ -1,23 +1,29 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState, useEffect, type FormEvent } from "react";
 import {
   AlertTriangle,
   CalendarDays,
   ClipboardList,
   HeartPulse,
-  LayoutDashboard,
   UserPlus,
   ArrowUpRight,
   Plus,
-  Activity,
   Users,
-  Gift,
-  ChartNoAxesCombined,
-  Settings,
-  ShieldCheck,
+  Calendar,
   MapPin,
-  ChevronDown,
+  Clock,
+  Sparkles,
+  BarChart3,
+  TrendingUp,
+  Activity,
+  ChevronRight,
+  Info,
+  CalendarCheck,
+  CheckCircle2,
+  Fingerprint,
+  Phone,
 } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -29,128 +35,816 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAuth } from "@/lib/auth";
+import { useSettings } from "@/lib/settings";
+import { EVENTS_DATA, DashboardEvent } from "@/lib/dashboard-data";
+import {
+  useParticipants,
+  calculateAge,
+  formatCPF,
+  formatPhone,
+} from "@/lib/participants";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Painel Comunitário | PRO-MOVER" },
-      { name: "description", content: "Painel de triagem comunitária, prontuários e atendimentos do PRO-MOVER." },
-      { property: "og:title", content: "Painel Comunitário | PRO-MOVER" },
-      { property: "og:description", content: "Triagem comunitária e gestão de atendimentos em um só lugar." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { title: "Dashboard | PRO-MOVER" },
+      { name: "description", content: "Painel inicial com métricas, gráficos e últimos atendimentos do PRO-MOVER." },
     ],
   }),
-  component: Dashboard,
+  component: DashboardPage,
 });
 
-const alerts = [
-  { time: "14:18", name: "Marta Ferreira", result: "Glicemia 214 mg/dL", note: "encaminhar para avaliação profissional", tone: "danger" },
-  { time: "14:05", name: "Antônio Souza", result: "Pressão 152/94 mmHg", note: "reavaliar em 15 min · oximetria 96%", tone: "warning" },
-  { time: "13:52", name: "Rosa Pereira", result: "IMC 31,2", note: "avaliação funcional agendada", tone: "info" },
-] as const;
+function DashboardPage() {
+  const { user } = useAuth();
+  const { settings } = useSettings();
+  const { addParticipant, getAgeDistribution, getExtraCount } = useParticipants();
 
-const appointments = [
-  ["14:30", "Avaliação funcional", "Rosa Pereira"],
-  ["15:00", "Primeira sessão", "Antônio Souza"],
-  ["15:40", "Triagem em grupo", "4 pessoas"],
-] as const;
+  // 1. Extração do primeiro nome da conta autenticada
+  const firstName = (user?.name || "Usuário").trim().split(" ")[0];
 
-function Dashboard() {
-  const [dialog, setDialog] = useState<"triage" | "person" | null>(null);
-  const [active, setActive] = useState("Dashboard");
-  const [toast, setToast] = useState("");
+  // Seletor de evento: evento ativo
+  const [selectedEventId, setSelectedEventId] = useState<string>("evt-01");
+  const [selectedEvent, setSelectedEvent] = useState<DashboardEvent>(EVENTS_DATA[0]);
 
-  const save = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setToast(dialog === "triage" ? "Triagem registrada com sucesso." : "Participante cadastrado com sucesso.");
-    setDialog(null);
-    window.setTimeout(() => setToast(""), 3200);
+  // Diálogos e modais
+  const [triageDialogOpen, setTriageDialogOpen] = useState(false);
+  const [personDialogOpen, setPersonDialogOpen] = useState(false);
+  const [agendaModalOpen, setAgendaModalOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Formulário de Cadastro do Participante (com cálculo de idade, CPF e WhatsApp)
+  const [personForm, setPersonForm] = useState({
+    name: "",
+    birthDate: "",
+    cpf: "",
+    phone: "",
+  });
+
+  // Cálculo reativo da idade e faixa etária em tempo real enquanto digita
+  const agePreview = calculateAge(personForm.birthDate);
+
+  // Perfil clínico vs Recepção
+  const isClinical = user.role !== "recepcao";
+
+  // Recalcular dados quando o evento mudar
+  useEffect(() => {
+    const found = EVENTS_DATA.find((e) => e.id === selectedEventId) || EVENTS_DATA[0];
+    if (found.id === "evt-01" && settings.eventLocation) {
+      setSelectedEvent({
+        ...found,
+        location: settings.eventLocation,
+        date: settings.eventDate || found.date,
+      });
+    } else {
+      setSelectedEvent(found);
+    }
+  }, [selectedEventId, settings]);
+
+  // Métricas e distribuição calculadas dinamicamente
+  const dynamicAgeGroups = getAgeDistribution(selectedEvent.id, selectedEvent.charts.ageGroups);
+  const totalAttended = selectedEvent.metrics.attended + getExtraCount(selectedEvent.id);
+
+  const handleSaveTriage = (e: FormEvent) => {
+    e.preventDefault();
+    setTriageDialogOpen(false);
+    showToast("Triagem registrada com sucesso para este evento!");
   };
 
-  const navigation = [
-    { name: "Dashboard", icon: LayoutDashboard },
-    { name: "Ação de Saúde", icon: HeartPulse },
-    { name: "Participantes", icon: Users },
-    { name: "Prontuários", icon: ClipboardList },
-    { name: "Agenda", icon: CalendarDays },
-    { name: "Sessões Cortesia", icon: Gift },
-    { name: "Indicadores", icon: ChartNoAxesCombined },
-  ];
-  const metrics = [
-    { label: "Participantes registrados", value: "22", detail: "Pessoas acolhidas no evento", icon: Users, tone: "bg-secondary text-secondary-foreground" },
-    { label: "Atendimentos concluídos", value: "11", detail: "Avaliações finalizadas", icon: ClipboardList, tone: "bg-accent text-accent-foreground" },
-    { label: "Exames com alterações", value: "3", detail: "Precisam de acompanhamento", icon: AlertTriangle, tone: "bg-warning text-warning-foreground" },
-    { label: "Encaminhamentos", value: "2", detail: "Para avaliação especializada", icon: ArrowUpRight, tone: "bg-lilac text-lilac-foreground" },
-    { label: "Aguardando triagem", value: "4", detail: "Próximos na fila de cuidado", icon: HeartPulse, tone: "bg-secondary text-secondary-foreground" },
-    { label: "Agendamentos do dia", value: "3", detail: "Atendimentos na agenda", icon: CalendarDays, tone: "bg-info text-info-foreground" },
-  ];
-  const overview = active === "Dashboard" || active === "Ação de Saúde";
+  const handleSavePerson = (e: FormEvent) => {
+    e.preventDefault();
+    if (!personForm.name || !personForm.birthDate) return;
+
+    const newP = addParticipant({
+      name: personForm.name,
+      birthDate: personForm.birthDate,
+      cpf: personForm.cpf,
+      phone: personForm.phone,
+      eventId: selectedEvent.id,
+    });
+
+    setPersonForm({ name: "", birthDate: "", cpf: "", phone: "" });
+    setPersonDialogOpen(false);
+    showToast(`Participante ${newP.name} (${newP.age} anos) cadastrado! Faixa etária [${newP.ageGroup} anos] atualizada no gráfico.`);
+  };
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    window.setTimeout(() => setToastMessage(null), 4000);
+  };
 
   return (
-    <div className="min-h-screen bg-background text-foreground antialiased md:grid md:grid-cols-[224px_minmax(0,1fr)]">
-      <aside className="bg-card px-4 py-6 md:sticky md:top-0 md:flex md:h-screen md:flex-col md:border-r md:border-border md:py-8">
-        <div className="flex min-w-0 items-center gap-3 px-2">
-          <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground"><Activity className="size-6" strokeWidth={1.8} /></span>
-          <div className="min-w-0"><h1 className="truncate font-display text-lg font-semibold">PRO-MOVER.</h1><p className="mt-1 text-[9px] uppercase text-muted-foreground">Saúde em movimento</p></div>
+    <AppLayout>
+      <div className="space-y-8 max-w-6xl pb-12">
+        {/* 1. Cabeçalho com saudação e Seletor de Evento */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-border pb-6">
+          <div>
+            <h2 className="font-display text-2xl font-semibold sm:text-3xl text-foreground">
+              Bom dia, {firstName}
+              <span className="text-primary">.</span>
+            </h2>
+            <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+              Acompanhe as atividades do PRO-MOVER
+            </p>
+          </div>
+
+          {/* Seletor de Evento */}
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-1.5 shadow-2xs">
+            <Calendar className="size-4 text-primary ml-2 shrink-0" />
+            <div className="flex flex-col pr-2">
+              <span className="text-[10px] uppercase font-semibold text-muted-foreground">Ação de Saúde Ativa</span>
+              <select
+                aria-label="Selecionar Ação de Saúde Ativa"
+                value={selectedEventId}
+                onChange={(e) => setSelectedEventId(e.target.value)}
+                className="bg-transparent text-xs font-medium text-foreground outline-none cursor-pointer pr-1"
+              >
+                {EVENTS_DATA.map((evt) => (
+                  <option key={evt.id} value={evt.id}>
+                    {evt.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
-        <p className="mb-3 mt-9 hidden px-2 text-[10px] uppercase text-muted-foreground md:block">Área de trabalho</p>
-        <nav aria-label="Navegação do painel" className="mt-5 flex gap-1 overflow-x-auto md:mt-0 md:flex-col md:overflow-visible">
-          {navigation.map(({name, icon: Icon}) => <Button key={name} variant="ghost" onClick={() => setActive(name)} aria-pressed={active === name} className={`h-11 shrink-0 justify-start gap-3 px-3 text-xs font-normal ${active === name ? "bg-secondary text-secondary-foreground" : "text-muted-foreground"}`}><Icon strokeWidth={1.6} />{name}{name === "Ação de Saúde" && <span className="ml-auto hidden size-1.5 rounded-full bg-primary md:block" />}</Button>)}
-          <Button variant="ghost" className="h-11 shrink-0 justify-start gap-3 px-3 text-xs font-normal text-muted-foreground" onClick={() => setToast("Ambiente demonstrativo · configurações não disponíveis.")}><Settings strokeWidth={1.6} />Configurações</Button>
-        </nav>
-        <div className="mt-auto hidden pt-6 md:block"><div className="border-t border-border px-2 pt-5"><HeartPulse className="mb-3 size-5 text-primary" strokeWidth={1.5} /><p className="text-xs font-medium">Cuidar conecta pessoas.</p><p className="mt-2 text-[11px] leading-6 text-muted-foreground">Studio Adriane Câmara<br />Farmácia Popular Santa Luzia</p></div></div>
-      </aside>
-      <div className="min-w-0">
-        <header className="grid h-[74px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border bg-card px-5 lg:px-8">
-          <p className="truncate text-xs"><span className="text-muted-foreground">Plataforma comunitária <span className="mx-3">/</span></span>{active}</p>
-          <span className="flex shrink-0 items-center gap-2 rounded-full border border-primary/10 bg-secondary/60 px-3 py-2 text-[10px] text-secondary-foreground"><ShieldCheck className="size-3.5" /><span className="hidden sm:inline">Ambiente demonstrativo</span></span>
-        </header>
-        <main className="mx-auto max-w-[1440px] px-5 py-8 lg:px-8">
-          <section className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
-            <div className="min-w-0"><p className="text-xs text-muted-foreground">Seu cuidado faz a diferença</p><h2 className="mt-2 font-display text-2xl font-medium sm:text-[28px]">{active === "Dashboard" ? <>Bom dia, Natália<span className="text-primary">.</span></> : active}</h2><p className="mt-2 text-sm text-muted-foreground">Acompanhe as atividades do PRO-MOVER</p></div>
-            <Button variant="outline" className="h-10 gap-3 font-normal" onClick={() => setActive("Ação de Saúde")}><CalendarDays className="text-primary" /><span className="hidden xl:inline">Ação comunitária · em andamento</span><ChevronDown className="hidden sm:block" /></Button>
-          </section>
 
-          {(overview || active === "Indicadores") && <>
-            <section className="relative mt-7 overflow-hidden rounded-lg bg-secondary px-6 py-7 sm:px-7">
-              <HeartPulse aria-hidden="true" className="pointer-events-none absolute -right-3 top-0 hidden size-40 text-primary/10 lg:block" strokeWidth={0.7} />
-              <div className="relative grid gap-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-                <div className="min-w-0"><span className="inline-flex items-center gap-2 rounded-full bg-card/80 px-3 py-1.5 text-[10px] text-secondary-foreground"><span className="size-1.5 rounded-full bg-primary" />EVENTO SELECIONADO</span><h3 className="mt-4 font-display text-lg font-medium">Ação de Saúde Comunitária</h3><div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground"><span className="flex items-center gap-2"><CalendarDays className="size-3.5" />Em andamento</span><span className="flex items-center gap-2"><MapPin className="size-3.5" />Farmácia Popular Santa Luzia</span></div></div>
-                <Button onClick={() => setDialog("triage")} aria-label="Nova triagem" className="h-11 w-fit gap-3 px-5"><Plus />Nova Triagem<ArrowUpRight /></Button>
+        {/* 2. Banner do evento selecionado (Cartão verde destacado com decoração abstrata) */}
+        <section className="relative overflow-hidden rounded-xl border border-primary/30 bg-gradient-to-br from-primary/15 via-primary/5 to-secondary/30 p-6 shadow-xs">
+          {/* Decoração Abstrata SVG em segundo plano */}
+          <div className="pointer-events-none absolute -right-6 -top-10 opacity-15">
+            <svg width="280" height="280" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="100" cy="100" r="80" stroke="currentColor" strokeWidth="12" className="text-primary" />
+              <path d="M40 100h30l15-30 20 60 15-30h40" stroke="currentColor" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" className="text-primary" />
+            </svg>
+          </div>
+
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1.5 max-w-2xl">
+              <div className="inline-flex items-center gap-2 rounded-full bg-primary/20 px-3 py-1 text-[10px] font-semibold text-primary">
+                <Sparkles className="size-3" />
+                EVENTO SELECIONADO
               </div>
-            </section>
-            <section aria-label="Resumo do evento" className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-3 2xl:grid-cols-6">
-              {metrics.map(({label,value,detail,icon: Icon,tone}) => <div key={label} className="min-w-0 rounded-lg border border-border bg-card p-5"><div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2"><span className={`grid size-10 place-items-center rounded-lg ${tone}`}><Icon className="size-5" strokeWidth={1.6} /></span><span className="pt-1 text-[9px] text-muted-foreground">Neste evento</span></div><p className="mt-4 font-display text-3xl font-normal">{value}</p><p className="mt-2 text-xs leading-5">{label}</p><p className="mt-1 text-[10px] leading-4 text-muted-foreground">{detail}</p></div>)}
-            </section>
-          </>}
+              <h3 className="font-display text-xl font-medium text-foreground sm:text-2xl">
+                {selectedEvent.name}
+              </h3>
+              <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground pt-1">
+                <span className="flex items-center gap-1.5 font-medium text-foreground">
+                  <MapPin className="size-3.5 text-primary" />
+                  {selectedEvent.location}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="size-3.5" />
+                  Data: {selectedEvent.date}
+                </span>
+              </div>
+            </div>
 
-          <div className="my-6 flex flex-wrap items-center gap-2"><span className="mr-2 text-xs text-muted-foreground">Acesso rápido</span><Button variant="outline" onClick={() => setDialog("person")} className="font-normal"><UserPlus />Novo participante</Button><Button variant="outline" onClick={() => setDialog("triage")} className="font-normal"><ClipboardList />Registrar triagem</Button><Button variant="outline" onClick={() => setActive("Agenda")} className="font-normal"><CalendarDays />Ver agenda</Button></div>
+            {/* Botão Nova Triagem: aparece apenas para perfis clínicos (não recepção) */}
+            {isClinical && (
+              <Button
+                onClick={() => setTriageDialogOpen(true)}
+                className="gap-2 shrink-0 h-11 px-5 shadow-sm font-medium"
+              >
+                <Plus className="size-4" />
+                Nova Triagem
+                <ArrowUpRight className="size-4 ml-0.5 opacity-70" />
+              </Button>
+            )}
+          </div>
+        </section>
 
-          {(overview || active === "Prontuários" || active === "Agenda") && <div className={`mt-8 grid gap-10 ${overview ? "lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]" : ""}`}>
-            {active !== "Agenda" && <section className="min-w-0"><div className="mb-3 flex items-center justify-between gap-3"><h3 className="font-display text-base font-medium">Acompanhamentos prioritários</h3><span className="rounded-md bg-warning px-2 py-1 text-[10px] text-warning-foreground">3 alterações</span></div><div className="divide-y divide-border">{alerts.map((alert) => <AlertRow key={alert.time} {...alert} onAction={() => setToast(`Prontuário de ${alert.name} aberto em demonstração.`)} />)}</div></section>}
-            {active !== "Prontuários" && <section className="min-w-0"><div className="mb-3 flex items-center justify-between gap-3"><h3 className="font-display text-base font-medium">Agenda do dia</h3><CalendarDays className="size-4 text-primary" strokeWidth={1.5} /></div><div className="divide-y divide-border">{appointments.map(([time,title,person]) => <Button variant="ghost" key={time} onClick={() => setToast(`${title}: ${person}.`)} className="grid h-auto w-full grid-cols-[3rem_minmax(0,1fr)_auto] gap-3 whitespace-normal rounded-none px-0 py-5 text-left font-normal"><span className="self-start pt-1 text-xs text-primary">{time}</span><span className="min-w-0"><span className="block text-sm">{title}</span><span className="mt-1.5 block text-xs text-muted-foreground">{person}</span></span><ArrowUpRight className="text-muted-foreground" strokeWidth={1.5} /></Button>)}</div></section>}
-          </div>}
-          {active === "Participantes" && <section className="mt-8"><h3 className="mb-3 font-display text-base">Participantes recentes</h3><div className="divide-y divide-border">{alerts.map(({name}) => <div key={name} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-5"><span className="text-sm">{name}</span><Button variant="ghost" size="icon" aria-label={`Ver participante ${name}`} onClick={() => setToast(`Cadastro de ${name} · demonstração.`)}><ArrowUpRight /></Button></div>)}</div></section>}
-          {active === "Sessões Cortesia" && <section className="mt-8 py-8"><Gift className="mb-4 size-7 text-primary" strokeWidth={1.5} /><h3 className="font-display text-lg">Sessões cortesia</h3><p className="mt-3 text-sm text-muted-foreground">Nenhuma sessão cortesia registrada neste evento.</p></section>}
-        </main>
+        {/* 3. Métricas (6 cartões recalculados conforme o evento e novos cadastros) */}
+        <section aria-label="Métricas do evento">
+          <div className="mb-3 flex items-center justify-between">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Indicadores do Evento Selecionado
+            </h4>
+            <span className="text-[11px] text-muted-foreground">Atualizado em tempo real</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+            {/* Card 1: Participantes atendidos (dinâmico com novos cadastros) */}
+            <div className="rounded-lg border border-border bg-card p-4">
+              <span className="grid size-9 place-items-center rounded-md bg-secondary text-secondary-foreground mb-2">
+                <Users className="size-4 text-primary" />
+              </span>
+              <p className="font-display text-2xl font-bold text-foreground">
+                {totalAttended}
+              </p>
+              <p className="mt-1 text-xs font-medium text-foreground leading-tight">
+                Participantes atendidos
+              </p>
+              <p className="mt-0.5 text-[10px] text-muted-foreground">Total cadastrado</p>
+            </div>
+
+            {/* Card 2: Triagens realizadas */}
+            <div className="rounded-lg border border-border bg-card p-4">
+              <span className="grid size-9 place-items-center rounded-md bg-primary/10 text-primary mb-2">
+                <ClipboardList className="size-4" />
+              </span>
+              <p className="font-display text-2xl font-bold text-foreground">
+                {selectedEvent.metrics.triagesDone}
+              </p>
+              <p className="mt-1 text-xs font-medium text-foreground leading-tight">
+                Triagens realizadas
+              </p>
+              <p className="mt-0.5 text-[10px] text-muted-foreground">Ficha completa</p>
+            </div>
+
+            {/* Card 3: Triagens com alterações */}
+            <div className="rounded-lg border border-border bg-card p-4">
+              <span className="grid size-9 place-items-center rounded-md bg-warning/15 text-warning-foreground mb-2">
+                <AlertTriangle className="size-4 text-warning" />
+              </span>
+              <p className="font-display text-2xl font-bold text-warning-foreground">
+                {selectedEvent.metrics.alteredTriages}
+              </p>
+              <p className="mt-1 text-xs font-medium text-foreground leading-tight">
+                Triagens com alterações
+              </p>
+              <p className="mt-0.5 text-[10px] text-muted-foreground">Pressão / Glicemia</p>
+            </div>
+
+            {/* Card 4: Encaminhamentos */}
+            <div className="rounded-lg border border-border bg-card p-4">
+              <span className="grid size-9 place-items-center rounded-md bg-accent text-accent-foreground mb-2">
+                <ArrowUpRight className="size-4 text-primary" />
+              </span>
+              <p className="font-display text-2xl font-bold text-foreground">
+                {selectedEvent.metrics.referrals}
+              </p>
+              <p className="mt-1 text-xs font-medium text-foreground leading-tight">
+                Encaminhamentos
+              </p>
+              <p className="mt-0.5 text-[10px] text-muted-foreground">Médico / Especialista</p>
+            </div>
+
+            {/* Card 5: Sessões cortesia concedidas */}
+            <div className="rounded-lg border border-border bg-card p-4">
+              <span className="grid size-9 place-items-center rounded-md bg-primary/10 text-primary mb-2">
+                <HeartPulse className="size-4" />
+              </span>
+              <p className="font-display text-2xl font-bold text-primary">
+                {selectedEvent.metrics.courtesyGranted}
+              </p>
+              <p className="mt-1 text-xs font-medium text-foreground leading-tight">
+                Sessões cortesia
+              </p>
+              <p className="mt-0.5 text-[10px] text-muted-foreground">Studio Adriane</p>
+            </div>
+
+            {/* Card 6: Agendamentos do dia */}
+            <div className="rounded-lg border border-border bg-card p-4">
+              <span className="grid size-9 place-items-center rounded-md bg-info/15 text-info mb-2">
+                <CalendarDays className="size-4" />
+              </span>
+              <p className="font-display text-2xl font-bold text-foreground">
+                {selectedEvent.metrics.scheduledToday}
+              </p>
+              <p className="mt-1 text-xs font-medium text-foreground leading-tight">
+                Agendamentos do dia
+              </p>
+              <p className="mt-0.5 text-[10px] text-muted-foreground">Na fila do evento</p>
+            </div>
+          </div>
+        </section>
+
+        {/* 4. Acesso Rápido */}
+        <section aria-label="Acesso rápido">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className="mr-1 text-xs font-medium text-muted-foreground">Acesso rápido:</span>
+
+            {/* Nova Triagem: só para perfis clínicos */}
+            {isClinical && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setTriageDialogOpen(true)}
+                className="gap-1.5 text-xs h-9 font-normal"
+              >
+                <ClipboardList className="size-3.5 text-primary" />
+                Nova Triagem
+              </Button>
+            )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPersonDialogOpen(true)}
+              className="gap-1.5 text-xs h-9 font-normal"
+            >
+              <UserPlus className="size-3.5 text-primary" />
+              Novo Participante
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAgendaModalOpen(true)}
+              className="gap-1.5 text-xs h-9 font-normal"
+            >
+              <CalendarCheck className="size-3.5 text-primary" />
+              Abrir Agenda
+            </Button>
+          </div>
+        </section>
+
+        {/* 5. Painel de Gráficos (6 visualizações) */}
+        <section aria-label="Painel de gráficos" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <BarChart3 className="size-4 text-primary" />
+              Análise e Visualizações do Evento
+            </h4>
+            <span className="text-xs text-muted-foreground font-mono">
+              Base: {selectedEvent.name}
+            </span>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {/* Gráfico 1: Participantes por faixa etária (barras dinâmicas calculadas a partir dos cadastros) */}
+            <div className="rounded-lg border border-border bg-card p-5">
+              <div className="flex items-center justify-between mb-1">
+                <h5 className="text-xs font-semibold text-foreground">1. Faixa Etária dos Participantes</h5>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPersonDialogOpen(true)}
+                  className="h-6 px-1.5 text-[10px] text-primary gap-1"
+                >
+                  <Plus className="size-3" />
+                  Cadastrar
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground mb-4">
+                Recalculado em tempo real com base nas datas de nascimento cadastradas
+              </p>
+              <div className="space-y-2.5">
+                {dynamicAgeGroups.map((item) => {
+                  const max = Math.max(...dynamicAgeGroups.map((a) => a.count), 1);
+                  const pct = Math.round((item.count / max) * 100);
+                  return (
+                    <div key={item.age} className="space-y-1">
+                      <div className="flex justify-between text-xs">
+                        <span className="font-medium text-foreground">{item.age} anos</span>
+                        <span className="text-muted-foreground font-mono font-medium">{item.count} participante(s)</span>
+                      </div>
+                      <div className="h-2.5 w-full overflow-hidden rounded-full bg-secondary">
+                        <div
+                          className="h-full rounded-full bg-primary transition-all duration-500"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Gráfico 2: Resultados dos exames (Rosca com % dentro dos parâmetros) */}
+            <div className="rounded-lg border border-border bg-card p-5 flex flex-col justify-between">
+              <div>
+                <h5 className="text-xs font-semibold text-foreground mb-1">2. Resultados dos Exames</h5>
+                <p className="text-[11px] text-muted-foreground mb-3">Conformidade com os parâmetros normais</p>
+              </div>
+
+              <div className="flex items-center justify-around py-2">
+                <div className="relative size-28 shrink-0">
+                  <svg className="size-full -rotate-90" viewBox="0 0 36 36">
+                    <path
+                      className="text-warning stroke-current"
+                      strokeWidth="4"
+                      fill="none"
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    />
+                    <path
+                      className="text-primary stroke-current transition-all duration-700"
+                      strokeDasharray={`${selectedEvent.charts.examResults[0].percentage}, 100`}
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                      fill="none"
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                    <span className="text-xl font-bold font-display text-primary">
+                      {selectedEvent.charts.examResults[0].percentage}%
+                    </span>
+                    <span className="text-[9px] text-muted-foreground uppercase leading-none">Normal</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="size-2.5 rounded-full bg-primary shrink-0" />
+                    <div>
+                      <p className="font-medium">Normal ({selectedEvent.charts.examResults[0].percentage}%)</p>
+                      <p className="text-[10px] text-muted-foreground">Dentro dos limites</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="size-2.5 rounded-full bg-warning shrink-0" />
+                    <div>
+                      <p className="font-medium">Alterado ({selectedEvent.charts.examResults[1].percentage}%)</p>
+                      <p className="text-[10px] text-muted-foreground">Requer atenção</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-muted-foreground text-center border-t border-border pt-2">
+                Baseado nos limites definidos em Configurações
+              </p>
+            </div>
+
+            {/* Gráfico 3: Distribuição dos atendimentos (barras verticais) */}
+            <div className="rounded-lg border border-border bg-card p-5">
+              <h5 className="text-xs font-semibold text-foreground mb-1">3. Distribuição dos Atendimentos</h5>
+              <p className="text-[11px] text-muted-foreground mb-4">Volume por tipo de intervenção</p>
+              <div className="space-y-3">
+                {selectedEvent.charts.servicesDist.map((svc) => (
+                  <div key={svc.name} className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-foreground">{svc.name}</span>
+                      <span className="font-mono font-medium">{svc.count}</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                      <div
+                        className="h-full bg-primary/80 rounded-full"
+                        style={{ width: `${(svc.count / selectedEvent.metrics.triagesDone) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Gráfico 4: Alterações por exame (barras horizontais) */}
+            <div className="rounded-lg border border-border bg-card p-5">
+              <h5 className="text-xs font-semibold text-foreground mb-1">4. Alterações por Tipo de Exame</h5>
+              <p className="text-[11px] text-muted-foreground mb-4">Ocorrência de valores fora do padrão</p>
+              <div className="space-y-2.5">
+                {selectedEvent.charts.examAlterations.map((alt) => (
+                  <div key={alt.exam} className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-foreground">{alt.exam}</span>
+                      <span className="font-mono text-warning font-semibold">{alt.count} casos</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                      <div
+                        className="h-full bg-warning rounded-full"
+                        style={{ width: `${(alt.count / selectedEvent.metrics.alteredTriages) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Gráfico 5: Evolução dos eventos (linha de tendência) */}
+            <div className="rounded-lg border border-border bg-card p-5">
+              <div className="flex items-center justify-between mb-1">
+                <h5 className="text-xs font-semibold text-foreground">5. Evolução dos Eventos</h5>
+                <TrendingUp className="size-3.5 text-primary" />
+              </div>
+              <p className="text-[11px] text-muted-foreground mb-4">Crescimento de atendimentos por ação</p>
+
+              <div className="pt-2">
+                <div className="relative h-24 w-full flex items-end justify-between gap-2 border-b border-border pb-1">
+                  {selectedEvent.charts.eventEvolution.map((pt) => {
+                    const maxVal = Math.max(...selectedEvent.charts.eventEvolution.map((p) => p.atendimentos));
+                    const heightPct = Math.round((pt.atendimentos / maxVal) * 100);
+                    return (
+                      <div key={pt.event} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
+                        <span className="font-mono text-[10px] text-primary font-bold">{pt.atendimentos}</span>
+                        <div
+                          className="w-full max-w-[28px] bg-primary/70 rounded-t-sm hover:bg-primary transition-colors"
+                          style={{ height: `${heightPct}%` }}
+                        />
+                        <span className="text-[9px] text-muted-foreground truncate w-full text-center">
+                          {pt.event}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <p className="mt-3 text-[10px] text-muted-foreground text-center">
+                Tendência contínua de ampliação do alcance comunitário
+              </p>
+            </div>
+
+            {/* Gráfico 6: Encaminhamentos (distribuição por destino) */}
+            <div className="rounded-lg border border-border bg-card p-5">
+              <h5 className="text-xs font-semibold text-foreground mb-1">6. Destino dos Encaminhamentos</h5>
+              <p className="text-[11px] text-muted-foreground mb-4">Encaminhados para suporte contínuo</p>
+              <div className="space-y-3">
+                {selectedEvent.charts.referrals.map((ref) => (
+                  <div key={ref.destination} className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-foreground">{ref.destination}</span>
+                      <span className="font-mono font-medium">{ref.count}</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          backgroundColor: ref.color,
+                          width: `${(ref.count / selectedEvent.metrics.referrals) * 100}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 6. Últimos Atendimentos (Diferenciação por Perfil) */}
+        <section aria-label="Últimos atendimentos do evento" className="rounded-lg border border-border bg-card shadow-xs overflow-hidden">
+          <div className="border-b border-border bg-muted/20 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h4 className="font-display text-sm font-semibold text-foreground">
+                Últimos Atendimentos Registrados
+              </h4>
+              <p className="text-[11px] text-muted-foreground">
+                As 5 triagens mais recentes desta ação comunitária
+              </p>
+            </div>
+
+            {/* Link "Ver todos" apenas para perfis clínicos */}
+            {isClinical && (
+              <Button variant="ghost" size="sm" asChild className="text-xs text-primary gap-1">
+                <Link to="/prontuarios">
+                  Ver todos nos Prontuários
+                  <ChevronRight className="size-3.5" />
+                </Link>
+              </Button>
+            )}
+          </div>
+
+          {/* Se for perfil de Recepção: mensagem orientando para a agenda */}
+          {!isClinical ? (
+            <div className="p-8 text-center space-y-3 bg-muted/10">
+              <Info className="size-8 text-muted-foreground mx-auto" />
+              <h5 className="text-sm font-medium text-foreground">
+                Visualização Clínica Restrita (Perfil Recepção)
+              </h5>
+              <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
+                Você está conectado com o perfil <strong>Recepção</strong>. A listagem detalhada de resultados de exames e triagens clínicas é restrita a avaliadores e fisioterapeutas. Para gerenciar acolhimentos e a fila de espera do evento, consulte a Agenda.
+              </p>
+              <Button variant="outline" size="sm" onClick={() => setAgendaModalOpen(true)} className="gap-2 text-xs">
+                <CalendarCheck className="size-3.5 text-primary" />
+                Abrir Agenda de Atendimentos
+              </Button>
+            </div>
+          ) : (
+            /* Tabela com as 5 triagens mais recentes para perfis clínicos */
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-border bg-muted/10 text-muted-foreground">
+                    <th className="py-3 px-6 font-medium">Participante</th>
+                    <th className="py-3 px-4 font-medium">Horário</th>
+                    <th className="py-3 px-4 font-medium">Responsável</th>
+                    <th className="py-3 px-4 font-medium">Status</th>
+                    <th className="py-3 px-6 font-medium">Resultado</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {selectedEvent.recentTriages.map((triage) => (
+                    <tr key={triage.id} className="hover:bg-accent/30 transition-colors">
+                      <td className="py-3.5 px-6 font-medium text-foreground">
+                        {triage.participant}
+                      </td>
+                      <td className="py-3.5 px-4 font-mono text-muted-foreground">
+                        {triage.time}
+                      </td>
+                      <td className="py-3.5 px-4 text-muted-foreground">
+                        {triage.responsible}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                            triage.status === "Alterado"
+                              ? "bg-destructive/15 text-destructive border border-destructive/20"
+                              : triage.status === "Atenção"
+                              ? "bg-warning/20 text-warning-foreground border border-warning/30"
+                              : "bg-primary/10 text-primary border border-primary/20"
+                          }`}
+                        >
+                          {triage.status}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-6 text-foreground font-mono text-[11px]">
+                        {triage.result}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
       </div>
-      <EntryDialog mode={dialog} open={dialog !== null} onOpenChange={(open) => !open && setDialog(null)} onSave={save} />
-      {toast && <div role="status" className="fixed bottom-5 left-5 right-5 z-50 rounded-lg bg-secondary px-4 py-3 text-sm text-secondary-foreground sm:left-auto">{toast}</div>}
-    </div>
+
+      {/* Diálogo de Nova Triagem */}
+      <Dialog open={triageDialogOpen} onOpenChange={setTriageDialogOpen}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl font-normal">Nova Triagem de Sinais Vitais</DialogTitle>
+            <DialogDescription>
+              Ação ativa: <strong>{selectedEvent.name}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSaveTriage} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="t-name" className="text-xs">Nome completo do participante</Label>
+              <Input id="t-name" placeholder="Nome do participante" required />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="t-pa" className="text-xs">Pressão arterial (mmHg)</Label>
+                <Input id="t-pa" placeholder="120/80" required />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="t-gli" className="text-xs">Glicemia (mg/dL)</Label>
+                <Input id="t-gli" type="number" placeholder="98" required />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="t-spo2" className="text-xs">SpO₂ (%)</Label>
+                <Input id="t-spo2" type="number" placeholder="97" required />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="t-fc" className="text-xs">Frequência cardíaca (bpm)</Label>
+                <Input id="t-fc" type="number" placeholder="72" required />
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2 pt-3">
+              <Button type="button" variant="outline" onClick={() => setTriageDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit">
+                Concluir Triagem
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de Novo Participante (com Nome, Nascimento, Cálculo de Idade, CPF e WhatsApp) */}
+      <Dialog open={personDialogOpen} onOpenChange={setPersonDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl font-normal">Cadastrar Novo Participante</DialogTitle>
+            <DialogDescription>
+              Os dados cadastrais atualizam automaticamente o gráfico de <strong>Faixa Etária</strong> do evento.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSavePerson} className="space-y-4">
+            {/* Nome Completo */}
+            <div className="space-y-1.5">
+              <Label htmlFor="p-name" className="text-xs font-medium">Nome completo</Label>
+              <Input
+                id="p-name"
+                placeholder="Ex: Maria José da Silva"
+                value={personForm.name}
+                onChange={(e) => setPersonForm({ ...personForm, name: e.target.value })}
+                required
+              />
+            </div>
+
+            {/* Data de Nascimento com Cálculo da Idade e Faixa Etária */}
+            <div className="space-y-1.5">
+              <Label htmlFor="p-birth" className="text-xs font-medium">Data de nascimento</Label>
+              <Input
+                id="p-birth"
+                type="date"
+                value={personForm.birthDate}
+                onChange={(e) => setPersonForm({ ...personForm, birthDate: e.target.value })}
+                required
+              />
+
+              {/* Card dinâmico de feedback da idade calculada */}
+              {agePreview ? (
+                <div className="flex items-center justify-between rounded-md bg-primary/10 border border-primary/25 px-3 py-2 text-xs">
+                  <span className="flex items-center gap-1.5 text-primary font-medium">
+                    <CheckCircle2 className="size-4 shrink-0" />
+                    Idade calculada: <strong>{agePreview.age} anos</strong>
+                  </span>
+                  <span className="rounded bg-primary/20 text-primary font-semibold px-2 py-0.5 text-[10px]">
+                    Faixa: {agePreview.group} anos
+                  </span>
+                </div>
+              ) : (
+                <p className="text-[11px] text-muted-foreground">
+                  Selecione a data para calcular automaticamente a idade atual e a faixa etária.
+                </p>
+              )}
+            </div>
+
+            {/* CPF */}
+            <div className="space-y-1.5">
+              <Label htmlFor="p-cpf" className="text-xs font-medium flex items-center gap-1.5">
+                <Fingerprint className="size-3.5 text-muted-foreground" />
+                CPF
+              </Label>
+              <Input
+                id="p-cpf"
+                placeholder="000.000.000-00"
+                maxLength={14}
+                value={personForm.cpf}
+                onChange={(e) => setPersonForm({ ...personForm, cpf: formatCPF(e.target.value) })}
+                required
+              />
+            </div>
+
+            {/* Número do WhatsApp / Telefone */}
+            <div className="space-y-1.5">
+              <Label htmlFor="p-tel" className="text-xs font-medium flex items-center gap-1.5">
+                <Phone className="size-3.5 text-muted-foreground" />
+                Número do WhatsApp / Telefone
+              </Label>
+              <Input
+                id="p-tel"
+                placeholder="(65) 99999-9999"
+                maxLength={15}
+                value={personForm.phone}
+                onChange={(e) => setPersonForm({ ...personForm, phone: formatPhone(e.target.value) })}
+                required
+              />
+            </div>
+
+            <DialogFooter className="gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setPersonDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit">
+                Concluir Cadastro
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Agenda do Dia */}
+      <Dialog open={agendaModalOpen} onOpenChange={setAgendaModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl font-normal flex items-center gap-2">
+              <CalendarCheck className="size-5 text-primary" />
+              Agenda do Evento: {selectedEvent.name}
+            </DialogTitle>
+            <DialogDescription>
+              Atendimentos e acolhimentos agendados para a data ativa ({selectedEvent.date}).
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="divide-y divide-border border rounded-md my-2">
+            {[
+              { time: "14:30", type: "Avaliação Funcional", patient: "Rosa Pereira", status: "Confirmado" },
+              { time: "15:00", type: "Primeira Sessão Cortesia", patient: "Antônio Souza", status: "Confirmado" },
+              { time: "15:40", type: "Triagem em Grupo", patient: "4 pessoas (Fila comunitária)", status: "Aguardando" },
+              { time: "16:20", type: "Reavaliação Pós-Glicemia", patient: "Marta Ferreira", status: "Agendado" },
+            ].map((slot) => (
+              <div key={slot.time} className="flex items-center justify-between p-3 text-xs">
+                <div className="flex items-center gap-3">
+                  <span className="font-mono font-semibold text-primary">{slot.time}</span>
+                  <div>
+                    <p className="font-medium text-foreground">{slot.type}</p>
+                    <p className="text-[11px] text-muted-foreground">{slot.patient}</p>
+                  </div>
+                </div>
+                <span className="rounded bg-secondary px-2 py-0.5 text-[10px] font-medium text-secondary-foreground">
+                  {slot.status}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <DialogFooter>
+            <Button onClick={() => setAgendaModalOpen(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div
+          role="status"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-lg bg-foreground px-4 py-3 text-sm font-medium text-background shadow-lg"
+        >
+          <CheckCircle2 className="size-4 text-primary" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+    </AppLayout>
   );
-}
-
-function AlertRow({ time, name, result, note, tone, onAction }: typeof alerts[number] & { onAction: () => void }) {
-  const styles = tone === "danger" ? "bg-destructive text-destructive-foreground" : tone === "warning" ? "bg-warning text-warning-foreground" : "bg-info text-info-foreground";
-  return <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-5"><div className="flex min-w-0 items-start gap-3"><span className={`mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg ${styles}`}><AlertTriangle className="size-3.5" strokeWidth={1.5} /></span><div className="min-w-0"><p className="text-sm font-medium">{name}</p><p className="mt-1.5 text-xs text-muted-foreground">{result} <span className="mx-1">·</span> {time}</p><p className="mt-1 text-xs leading-relaxed text-muted-foreground">{note}</p></div></div><Button title={`Abrir prontuário de ${name}`} aria-label={`Abrir prontuário de ${name}`} size="icon" variant="ghost" className="shrink-0 text-muted-foreground" onClick={onAction}><ArrowUpRight strokeWidth={1.5} /></Button></div>;
-}
-
-function EntryDialog({ mode, open, onOpenChange, onSave }: { mode: "triage" | "person" | null; open: boolean; onOpenChange: (open: boolean) => void; onSave: (event: FormEvent<HTMLFormElement>) => void }) {
-  const isTriage = mode === "triage";
-  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-h-[90vh] overflow-y-auto rounded-lg shadow-none"><DialogHeader><DialogTitle className="font-display text-2xl font-normal">{isTriage ? "Nova triagem" : "Novo participante"}</DialogTitle><DialogDescription>{isTriage ? "Registre os sinais vitais coletados durante a ação." : "Cadastre os dados essenciais para criar o prontuário."}</DialogDescription></DialogHeader><form onSubmit={onSave} className="grid gap-4"><Field label="Nome completo" id="name" placeholder="Nome do participante" />{isTriage ? <div className="grid grid-cols-2 gap-3"><Field label="Pressão arterial" id="pressure" placeholder="120/80" /><Field label="Glicemia (mg/dL)" id="glucose" type="number" placeholder="98" /><Field label="Oximetria (%)" id="oxygen" type="number" placeholder="97" /><Field label="Frequência cardíaca" id="heart" type="number" placeholder="72" /><Field label="Peso (kg)" id="weight" type="number" placeholder="70" /><Field label="Altura (cm)" id="height" type="number" placeholder="168" /></div> : <><Field label="Data de nascimento" id="birth" type="date" /><Field label="Telefone" id="phone" type="tel" placeholder="(65) 99999-9999" /><Field label="Contato de emergência" id="emergency" placeholder="Nome e telefone" /></>}<DialogFooter className="gap-2"><Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button><Button type="submit">Salvar {isTriage ? "triagem" : "cadastro"}</Button></DialogFooter></form></DialogContent></Dialog>;
-}
-
-function Field({ label, id, ...props }: { label: string; id: string } & React.ComponentProps<typeof Input>) {
-  return <div className="space-y-2"><Label htmlFor={id}>{label}</Label><Input id={id} required {...props} /></div>;
 }
