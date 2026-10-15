@@ -50,7 +50,9 @@ export function getStoredCourtesy(): ParticipantCourtesy[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
-    return JSON.parse(raw);
+    const list = JSON.parse(raw);
+    if (!Array.isArray(list)) return [];
+    return list.filter((p) => !["PART-001", "PART-002", "PART-003", "PART-004", "PART-005"].includes(p.id));
   } catch {
     return [];
   }

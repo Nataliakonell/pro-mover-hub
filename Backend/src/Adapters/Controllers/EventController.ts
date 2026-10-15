@@ -9,7 +9,7 @@ export class EventController {
     try {
       const events = await this.getAllEvents.execute();
 
-      // Para cada evento, podemos agregar métricas dinâmicas reais a partir do banco de dados!
+      // Para cada evento, agregamos métricas 100% dinâmicas a partir do banco de dados PostgreSQL
       const enrichedEvents = await Promise.all(
         events.map(async (ev) => {
           const participantCount = await prisma.participant.count({
@@ -50,6 +50,20 @@ export class EventController {
             { age: "60+", count: ageGroupsMap["60+"] },
           ];
 
+          // Alterações reais detectadas nos sinais vitais
+          const paAlterada = triages.filter((t) => (t.systolic && t.systolic >= 140) || (t.diastolic && t.diastolic >= 90)).length;
+          const glicemiaAlterada = triages.filter((t) => t.glucose && t.glucose >= 140).length;
+          const spo2Alterada = triages.filter((t) => t.spo2 && t.spo2 < 95).length;
+          const fcAlterada = triages.filter((t) => t.heartRate && (t.heartRate < 50 || t.heartRate > 100)).length;
+
+          // Cortesias e utilizações registradas
+          const courtesyRecords = await prisma.courtesyRecord.findMany({
+            where: { participant: { eventId: ev.id } },
+            include: { utilizations: true },
+          });
+          const totalCourtesySessions = courtesyRecords.reduce((acc, c) => acc + c.sessions, 0);
+          const totalUtilizations = courtesyRecords.reduce((acc, c) => acc + c.utilizations.length, 0);
+
           return {
             id: ev.id,
             name: ev.name,
@@ -59,45 +73,41 @@ export class EventController {
               attended: participantCount,
               triagesDone: triages.length,
               alteredTriages: alteredCount,
-              referrals: Math.round(alteredCount * 0.7),
-              courtesyGranted: 6,
-              scheduledToday: 4,
+              referrals: alteredCount,
+              courtesyGranted: totalCourtesySessions,
+              scheduledToday: totalUtilizations,
             },
             charts: {
               ageGroups,
               examResults: [
                 {
                   name: "Dentro dos parâmetros",
-                  percentage: triages.length > 0 ? Math.round(((triages.length - alteredCount) / triages.length) * 100) : 75,
+                  percentage: triages.length > 0 ? Math.round(((triages.length - alteredCount) / triages.length) * 100) : 100,
                   color: "var(--color-primary)",
                 },
                 {
                   name: "Com alterações",
-                  percentage: triages.length > 0 ? Math.round((alteredCount / triages.length) * 100) : 25,
+                  percentage: triages.length > 0 ? Math.round((alteredCount / triages.length) * 100) : 0,
                   color: "var(--color-warning)",
                 },
               ],
               servicesDist: [
-                { name: "Triagem Sinais", count: Math.max(triages.length, 14) },
-                { name: "Avaliação Funcional", count: 6 },
-                { name: "Orientações Posturais", count: 8 },
+                { name: "Triagem Sinais", count: triages.length },
+                { name: "Avaliação Funcional", count: totalCourtesySessions },
+                { name: "Orientações Posturais", count: participantCount },
               ],
               examAlterations: [
-                { exam: "Pressão Arterial", count: 4 },
-                { exam: "Glicemia", count: 2 },
-                { exam: "IMC Elevado", count: 3 },
-                { exam: "SpO₂ Baixa", count: 1 },
+                { exam: "Pressão Arterial", count: paAlterada },
+                { exam: "Glicemia", count: glicemiaAlterada },
+                { exam: "SpO₂ Baixa", count: spo2Alterada },
+                { exam: "Frequência Cardíaca", count: fcAlterada },
               ],
               eventEvolution: [
-                { event: "Ação 1", atendimentos: 18 },
-                { event: "Ação 2", atendimentos: 22 },
-                { event: "Ação 3", atendimentos: 25 },
-                { event: "Atual", atendimentos: participantCount },
+                { event: ev.name.split(":")[0] || "Ação", atendimentos: participantCount },
               ],
               referrals: [
-                { destination: "Studio Adriane Câmara", count: 3, color: "#1b806a" },
-                { destination: "Clínico Geral / UBS", count: 2, color: "#0ea5e9" },
-                { destination: "Nutrição", count: 1, color: "#eab308" },
+                { destination: "Studio Adriane Câmara", count: totalCourtesySessions > 0 ? courtesyRecords.length : 0, color: "#1b806a" },
+                { destination: "Clínico Geral / UBS", count: alteredCount, color: "#0ea5e9" },
               ],
             },
             recentTriages: triages.slice(0, 5).map((t) => ({

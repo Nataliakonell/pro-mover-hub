@@ -123,6 +123,16 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  useEffect(() => {
+    // Limpeza garantida de dados mockados/residuais no navegador para sincronizar 100% com o PostgreSQL
+    if (typeof window !== "undefined" && !localStorage.getItem("pro_mover_mock_purged_v2")) {
+      localStorage.removeItem("pro_mover_participants_list");
+      localStorage.removeItem("pro_mover_courtesy_records");
+      localStorage.removeItem("pro_mover_events_cache");
+      localStorage.setItem("pro_mover_mock_purged_v2", "true");
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
