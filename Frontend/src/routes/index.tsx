@@ -198,25 +198,25 @@ function DashboardPage() {
         {/* 1. Cabeçalho com saudação e Seletor de Evento */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-border pb-6">
           <div>
-            <h2 className="font-display text-2xl font-semibold sm:text-3xl text-foreground">
+            <h2 className="font-display text-2xl font-bold sm:text-3xl lg:text-4xl text-foreground tracking-tight">
               Bom dia, {firstName}
               <span className="text-primary">.</span>
             </h2>
-            <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
-              Acompanhe as atividades do PRO-MOVER
+            <p className="mt-1.5 text-sm sm:text-base text-muted-foreground">
+              Acompanhe as atividades e atendimentos do PRO-MOVER
             </p>
           </div>
 
           {/* Seletor de Evento */}
-          <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-1.5 shadow-2xs">
-            <Calendar className="size-4 text-primary ml-2 shrink-0" />
+          <div className="flex items-center gap-2.5 rounded-xl border border-border bg-card p-2 shadow-2xs">
+            <Calendar className="size-5 text-primary ml-2 shrink-0" />
             <div className="flex flex-col pr-2">
-              <span className="text-[10px] uppercase font-semibold text-muted-foreground">Ação de Saúde Ativa</span>
+              <span className="text-xs uppercase font-bold tracking-wider text-muted-foreground">Ação de Saúde Ativa</span>
               <select
                 aria-label="Selecionar Ação de Saúde Ativa"
                 value={selectedEventId}
                 onChange={(e) => setSelectedEventId(e.target.value)}
-                className="bg-transparent text-xs font-medium text-foreground outline-none cursor-pointer pr-1"
+                className="bg-transparent text-sm font-semibold text-foreground outline-none cursor-pointer pr-1"
               >
                 {events.map((evt) => (
                   <option key={evt.id} value={evt.id}>
@@ -229,7 +229,7 @@ function DashboardPage() {
         </div>
 
         {/* 2. Banner do evento selecionado (Cartão verde destacado com decoração abstrata) */}
-        <section className="relative overflow-hidden rounded-xl border border-primary/30 bg-gradient-to-br from-primary/15 via-primary/5 to-secondary/30 p-6 shadow-xs">
+        <section className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/15 via-primary/5 to-secondary/30 p-6 sm:p-7 shadow-xs">
           {/* Decoração Abstrata SVG em segundo plano */}
           <div className="pointer-events-none absolute -right-6 -top-10 opacity-15">
             <svg width="280" height="280" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -239,21 +239,21 @@ function DashboardPage() {
           </div>
 
           <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1.5 max-w-2xl">
-              <div className="inline-flex items-center gap-2 rounded-full bg-primary/20 px-3 py-1 text-[10px] font-semibold text-primary">
-                <Sparkles className="size-3" />
+            <div className="space-y-2 max-w-2xl">
+              <div className="inline-flex items-center gap-2 rounded-full bg-primary/20 px-3.5 py-1 text-xs font-semibold text-primary tracking-wide">
+                <Sparkles className="size-3.5" />
                 EVENTO SELECIONADO
               </div>
-              <h3 className="font-display text-xl font-medium text-foreground sm:text-2xl">
+              <h3 className="font-display text-xl sm:text-2xl lg:text-3xl font-bold text-foreground tracking-tight">
                 {selectedEvent.name}
               </h3>
-              <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground pt-1">
-                <span className="flex items-center gap-1.5 font-medium text-foreground">
-                  <MapPin className="size-3.5 text-primary" />
+              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground pt-1">
+                <span className="flex items-center gap-1.5 font-semibold text-foreground">
+                  <MapPin className="size-4 text-primary" />
                   {selectedEvent.location}
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <Calendar className="size-3.5" />
+                <span className="flex items-center gap-1.5 font-medium">
+                  <Calendar className="size-4" />
                   Data: {selectedEvent.date}
                 </span>
               </div>
@@ -263,11 +263,11 @@ function DashboardPage() {
             {isClinical && (
               <Button
                 onClick={() => setTriageDialogOpen(true)}
-                className="gap-2 shrink-0 h-11 px-5 shadow-sm font-medium"
+                className="gap-2 shrink-0 h-11 px-5 text-sm shadow-sm font-semibold"
               >
-                <Plus className="size-4" />
+                <Plus className="size-4.5" />
                 Nova Triagem
-                <ArrowUpRight className="size-4 ml-0.5 opacity-70" />
+                <ArrowUpRight className="size-4 ml-0.5 opacity-80" />
               </Button>
             )}
           </div>
@@ -275,104 +275,104 @@ function DashboardPage() {
 
         {/* 3. Métricas (6 cartões recalculados conforme o evento e novos cadastros) */}
         <section aria-label="Métricas do evento">
-          <div className="mb-3 flex items-center justify-between">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="mb-3.5 flex items-center justify-between">
+            <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
               Indicadores do Evento Selecionado
             </h4>
-            <span className="text-[11px] text-muted-foreground">Atualizado em tempo real</span>
+            <span className="text-xs font-medium text-muted-foreground">Atualizado em tempo real</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+          <div className="grid grid-cols-2 gap-3.5 md:grid-cols-3 lg:grid-cols-6">
             {/* Card 1: Participantes atendidos (dinâmico com novos cadastros) */}
-            <div className="rounded-lg border border-border bg-card p-4">
-              <span className="grid size-9 place-items-center rounded-md bg-secondary text-secondary-foreground mb-2">
-                <Users className="size-4 text-primary" />
+            <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-2xs">
+              <span className="grid size-10 place-items-center rounded-lg bg-secondary text-secondary-foreground mb-3">
+                <Users className="size-5 text-primary" />
               </span>
-              <p className="font-display text-2xl font-bold text-foreground">
+              <p className="font-display text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
                 {totalAttended}
               </p>
-              <p className="mt-1 text-xs font-medium text-foreground leading-tight">
+              <p className="mt-1.5 text-sm font-semibold text-foreground leading-snug">
                 Participantes atendidos
               </p>
-              <p className="mt-0.5 text-[10px] text-muted-foreground">Total cadastrado</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Total cadastrado</p>
             </div>
 
             {/* Card 2: Triagens realizadas */}
-            <div className="rounded-lg border border-border bg-card p-4">
-              <span className="grid size-9 place-items-center rounded-md bg-primary/10 text-primary mb-2">
-                <ClipboardList className="size-4" />
+            <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-2xs">
+              <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary mb-3">
+                <ClipboardList className="size-5" />
               </span>
-              <p className="font-display text-2xl font-bold text-foreground">
+              <p className="font-display text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
                 {selectedEvent.metrics.triagesDone}
               </p>
-              <p className="mt-1 text-xs font-medium text-foreground leading-tight">
+              <p className="mt-1.5 text-sm font-semibold text-foreground leading-snug">
                 Triagens realizadas
               </p>
-              <p className="mt-0.5 text-[10px] text-muted-foreground">Ficha completa</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Ficha completa</p>
             </div>
 
             {/* Card 3: Triagens com alterações */}
-            <div className="rounded-lg border border-border bg-card p-4">
-              <span className="grid size-9 place-items-center rounded-md bg-warning/15 text-warning-foreground mb-2">
-                <AlertTriangle className="size-4 text-warning" />
+            <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-2xs">
+              <span className="grid size-10 place-items-center rounded-lg bg-warning/15 text-warning-foreground mb-3">
+                <AlertTriangle className="size-5 text-warning" />
               </span>
-              <p className="font-display text-2xl font-bold text-warning-foreground">
+              <p className="font-display text-3xl sm:text-4xl font-bold text-warning-foreground tracking-tight">
                 {selectedEvent.metrics.alteredTriages}
               </p>
-              <p className="mt-1 text-xs font-medium text-foreground leading-tight">
+              <p className="mt-1.5 text-sm font-semibold text-foreground leading-snug">
                 Triagens com alterações
               </p>
-              <p className="mt-0.5 text-[10px] text-muted-foreground">Pressão / Glicemia</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Pressão / Glicemia</p>
             </div>
 
             {/* Card 4: Encaminhamentos */}
-            <div className="rounded-lg border border-border bg-card p-4">
-              <span className="grid size-9 place-items-center rounded-md bg-accent text-accent-foreground mb-2">
-                <ArrowUpRight className="size-4 text-primary" />
+            <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-2xs">
+              <span className="grid size-10 place-items-center rounded-lg bg-accent text-accent-foreground mb-3">
+                <ArrowUpRight className="size-5 text-primary" />
               </span>
-              <p className="font-display text-2xl font-bold text-foreground">
+              <p className="font-display text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
                 {selectedEvent.metrics.referrals}
               </p>
-              <p className="mt-1 text-xs font-medium text-foreground leading-tight">
+              <p className="mt-1.5 text-sm font-semibold text-foreground leading-snug">
                 Encaminhamentos
               </p>
-              <p className="mt-0.5 text-[10px] text-muted-foreground">Médico / Especialista</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Médico / Especialista</p>
             </div>
 
             {/* Card 5: Sessões cortesia concedidas */}
-            <div className="rounded-lg border border-border bg-card p-4">
-              <span className="grid size-9 place-items-center rounded-md bg-primary/10 text-primary mb-2">
-                <HeartPulse className="size-4" />
+            <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-2xs">
+              <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary mb-3">
+                <HeartPulse className="size-5" />
               </span>
-              <p className="font-display text-2xl font-bold text-primary">
+              <p className="font-display text-3xl sm:text-4xl font-bold text-primary tracking-tight">
                 {selectedEvent.metrics.courtesyGranted}
               </p>
-              <p className="mt-1 text-xs font-medium text-foreground leading-tight">
+              <p className="mt-1.5 text-sm font-semibold text-foreground leading-snug">
                 Sessões cortesia
               </p>
-              <p className="mt-0.5 text-[10px] text-muted-foreground">Studio Adriane</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Studio Adriane</p>
             </div>
 
             {/* Card 6: Agendamentos do dia */}
-            <div className="rounded-lg border border-border bg-card p-4">
-              <span className="grid size-9 place-items-center rounded-md bg-info/15 text-info mb-2">
-                <CalendarDays className="size-4" />
+            <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-2xs">
+              <span className="grid size-10 place-items-center rounded-lg bg-info/15 text-info mb-3">
+                <CalendarDays className="size-5" />
               </span>
-              <p className="font-display text-2xl font-bold text-foreground">
+              <p className="font-display text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
                 {selectedEvent.metrics.scheduledToday}
               </p>
-              <p className="mt-1 text-xs font-medium text-foreground leading-tight">
+              <p className="mt-1.5 text-sm font-semibold text-foreground leading-snug">
                 Agendamentos do dia
               </p>
-              <p className="mt-0.5 text-[10px] text-muted-foreground">Na fila do evento</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Na fila do evento</p>
             </div>
           </div>
         </section>
 
         {/* 4. Acesso Rápido */}
         <section aria-label="Acesso rápido">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <span className="mr-1 text-xs font-medium text-muted-foreground">Acesso rápido:</span>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="mr-1 text-sm font-semibold text-muted-foreground">Acesso rápido:</span>
 
             {/* Nova Triagem: só para perfis clínicos */}
             {isClinical && (
@@ -380,9 +380,9 @@ function DashboardPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setTriageDialogOpen(true)}
-                className="gap-1.5 text-xs h-9 font-normal"
+                className="gap-2 text-sm h-10 px-4 font-medium"
               >
-                <ClipboardList className="size-3.5 text-primary" />
+                <ClipboardList className="size-4 text-primary" />
                 Nova Triagem
               </Button>
             )}
@@ -391,9 +391,9 @@ function DashboardPage() {
               variant="outline"
               size="sm"
               onClick={() => setPersonDialogOpen(true)}
-              className="gap-1.5 text-xs h-9 font-normal"
+              className="gap-2 text-sm h-10 px-4 font-medium"
             >
-              <UserPlus className="size-3.5 text-primary" />
+              <UserPlus className="size-4 text-primary" />
               Novo Participante
             </Button>
 
@@ -401,9 +401,9 @@ function DashboardPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-1.5 text-xs h-9 font-normal"
+                className="gap-2 text-sm h-10 px-4 font-medium"
               >
-                <Users className="size-3.5 text-primary" />
+                <Users className="size-4 text-primary" />
                 Ver Participantes
               </Button>
             </Link>
@@ -412,55 +412,55 @@ function DashboardPage() {
               variant="outline"
               size="sm"
               onClick={() => setAgendaModalOpen(true)}
-              className="gap-1.5 text-xs h-9 font-normal"
+              className="gap-2 text-sm h-10 px-4 font-medium"
             >
-              <CalendarCheck className="size-3.5 text-primary" />
+              <CalendarCheck className="size-4 text-primary" />
               Abrir Agenda
             </Button>
           </div>
         </section>
 
-        {/* 5. Painel de Gráficos (6 visualizações) */}
+        {/* 5. Painel de Gráficos (Visualizações) */}
         <section aria-label="Painel de gráficos" className="space-y-4">
           <div className="flex items-center justify-between">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <BarChart3 className="size-4 text-primary" />
+            <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <BarChart3 className="size-4.5 text-primary" />
               Análise e Visualizações do Evento
             </h4>
-            <span className="text-xs text-muted-foreground font-mono">
+            <span className="text-xs sm:text-sm text-muted-foreground font-mono">
               Base: {selectedEvent.name}
             </span>
           </div>
 
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {/* Gráfico 1: Participantes por faixa etária (barras dinâmicas calculadas a partir dos cadastros) */}
-            <div className="rounded-lg border border-border bg-card p-5">
-              <div className="flex items-center justify-between mb-1">
-                <h5 className="text-xs font-semibold text-foreground">1. Faixa Etária dos Participantes</h5>
+            <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-2xs">
+              <div className="flex items-center justify-between mb-1.5">
+                <h5 className="text-base font-bold text-foreground">1. Faixa Etária dos Participantes</h5>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setPersonDialogOpen(true)}
-                  className="h-6 px-1.5 text-[10px] text-primary gap-1"
+                  className="h-7 px-2 text-xs font-semibold text-primary gap-1"
                 >
-                  <Plus className="size-3" />
+                  <Plus className="size-3.5" />
                   Cadastrar
                 </Button>
               </div>
-              <p className="text-[11px] text-muted-foreground mb-4">
+              <p className="text-xs text-muted-foreground mb-4">
                 Recalculado em tempo real com base nas datas de nascimento cadastradas
               </p>
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {dynamicAgeGroups.map((item) => {
                   const max = Math.max(...dynamicAgeGroups.map((a) => a.count), 1);
                   const pct = Math.round((item.count / max) * 100);
                   return (
                     <div key={item.age} className="space-y-1">
-                      <div className="flex justify-between text-xs">
+                      <div className="flex justify-between text-sm">
                         <span className="font-medium text-foreground">{item.age} anos</span>
-                        <span className="text-muted-foreground font-mono font-medium">{item.count} participante(s)</span>
+                        <span className="text-muted-foreground font-mono font-semibold">{item.count} participante(s)</span>
                       </div>
-                      <div className="h-2.5 w-full overflow-hidden rounded-full bg-secondary">
+                      <div className="h-3 w-full overflow-hidden rounded-full bg-secondary">
                         <div
                           className="h-full rounded-full bg-primary transition-all duration-500"
                           style={{ width: `${pct}%` }}
@@ -473,14 +473,14 @@ function DashboardPage() {
             </div>
 
             {/* Gráfico 2: Resultados dos exames (Rosca com % dentro dos parâmetros) */}
-            <div className="rounded-lg border border-border bg-card p-5 flex flex-col justify-between">
+            <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-2xs flex flex-col justify-between">
               <div>
-                <h5 className="text-xs font-semibold text-foreground mb-1">2. Resultados dos Exames</h5>
-                <p className="text-[11px] text-muted-foreground mb-3">Conformidade com os parâmetros normais</p>
+                <h5 className="text-base font-bold text-foreground mb-1.5">2. Resultados dos Exames</h5>
+                <p className="text-xs text-muted-foreground mb-4">Conformidade com os parâmetros normais</p>
               </div>
 
-              <div className="flex items-center justify-around py-2">
-                <div className="relative size-28 shrink-0">
+              <div className="flex items-center justify-around py-3">
+                <div className="relative size-32 shrink-0">
                   <svg className="size-full -rotate-90" viewBox="0 0 36 36">
                     <path
                       className="text-warning stroke-current"
@@ -498,50 +498,50 @@ function DashboardPage() {
                     />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                    <span className="text-xl font-bold font-display text-primary">
+                    <span className="text-2xl sm:text-3xl font-bold font-display text-primary">
                       {selectedEvent.charts.examResults[0].percentage}%
                     </span>
-                    <span className="text-[9px] text-muted-foreground uppercase leading-none">Normal</span>
+                    <span className="text-xs font-semibold text-muted-foreground uppercase leading-none">Normal</span>
                   </div>
                 </div>
 
-                <div className="space-y-2 text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="size-2.5 rounded-full bg-primary shrink-0" />
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-center gap-2.5">
+                    <span className="size-3 rounded-full bg-primary shrink-0" />
                     <div>
-                      <p className="font-medium">Normal ({selectedEvent.charts.examResults[0].percentage}%)</p>
-                      <p className="text-[10px] text-muted-foreground">Dentro dos limites</p>
+                      <p className="font-semibold text-foreground">Normal ({selectedEvent.charts.examResults[0].percentage}%)</p>
+                      <p className="text-xs text-muted-foreground">Dentro dos limites</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="size-2.5 rounded-full bg-warning shrink-0" />
+                  <div className="flex items-center gap-2.5">
+                    <span className="size-3 rounded-full bg-warning shrink-0" />
                     <div>
-                      <p className="font-medium">Alterado ({selectedEvent.charts.examResults[1].percentage}%)</p>
-                      <p className="text-[10px] text-muted-foreground">Requer atenção</p>
+                      <p className="font-semibold text-foreground">Alterado ({selectedEvent.charts.examResults[1].percentage}%)</p>
+                      <p className="text-xs text-muted-foreground">Requer atenção</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <p className="text-[11px] text-muted-foreground text-center border-t border-border pt-2">
-                Baseado nos limites definidos em Configurações
+              <p className="text-xs text-muted-foreground text-center border-t border-border pt-3">
+                Baseado nos limites clínicos definidos em Configurações
               </p>
             </div>
 
             {/* Gráfico 3: Distribuição dos atendimentos (barras verticais) */}
-            <div className="rounded-lg border border-border bg-card p-5">
-              <h5 className="text-xs font-semibold text-foreground mb-1">3. Distribuição dos Atendimentos</h5>
-              <p className="text-[11px] text-muted-foreground mb-4">Volume por tipo de intervenção</p>
-              <div className="space-y-3">
+            <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-2xs">
+              <h5 className="text-base font-bold text-foreground mb-1.5">3. Distribuição dos Atendimentos</h5>
+              <p className="text-xs text-muted-foreground mb-4">Volume por tipo de intervenção</p>
+              <div className="space-y-3.5">
                 {selectedEvent.charts.servicesDist.map((svc) => (
                   <div key={svc.name} className="space-y-1">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-foreground">{svc.name}</span>
-                      <span className="font-mono font-medium">{svc.count}</span>
+                    <div className="flex justify-between text-sm">
+                      <span className="font-medium text-foreground">{svc.name}</span>
+                      <span className="font-mono font-bold text-foreground">{svc.count}</span>
                     </div>
-                    <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                    <div className="h-2.5 rounded-full bg-secondary overflow-hidden">
                       <div
-                        className="h-full bg-primary/80 rounded-full"
+                        className="h-full bg-primary/85 rounded-full"
                         style={{ width: `${(svc.count / selectedEvent.metrics.triagesDone) * 100}%` }}
                       />
                     </div>
@@ -551,17 +551,17 @@ function DashboardPage() {
             </div>
 
             {/* Gráfico 4: Alterações por exame (barras horizontais) */}
-            <div className="rounded-lg border border-border bg-card p-5">
-              <h5 className="text-xs font-semibold text-foreground mb-1">4. Alterações por Tipo de Exame</h5>
-              <p className="text-[11px] text-muted-foreground mb-4">Ocorrência de valores fora do padrão</p>
-              <div className="space-y-2.5">
+            <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-2xs">
+              <h5 className="text-base font-bold text-foreground mb-1.5">4. Alterações por Tipo de Exame</h5>
+              <p className="text-xs text-muted-foreground mb-4">Ocorrência de valores fora do padrão</p>
+              <div className="space-y-3">
                 {selectedEvent.charts.examAlterations.map((alt) => (
                   <div key={alt.exam} className="space-y-1">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-foreground">{alt.exam}</span>
-                      <span className="font-mono text-warning font-semibold">{alt.count} casos</span>
+                    <div className="flex justify-between text-sm">
+                      <span className="font-medium text-foreground">{alt.exam}</span>
+                      <span className="font-mono text-warning font-bold">{alt.count} casos</span>
                     </div>
-                    <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                    <div className="h-2.5 rounded-full bg-secondary overflow-hidden">
                       <div
                         className="h-full bg-warning rounded-full"
                         style={{ width: `${(alt.count / selectedEvent.metrics.alteredTriages) * 100}%` }}
@@ -573,26 +573,26 @@ function DashboardPage() {
             </div>
 
             {/* Gráfico 5: Evolução dos eventos (linha de tendência) */}
-            <div className="rounded-lg border border-border bg-card p-5">
-              <div className="flex items-center justify-between mb-1">
-                <h5 className="text-xs font-semibold text-foreground">5. Evolução dos Eventos</h5>
-                <TrendingUp className="size-3.5 text-primary" />
+            <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-2xs">
+              <div className="flex items-center justify-between mb-1.5">
+                <h5 className="text-base font-bold text-foreground">5. Evolução dos Eventos</h5>
+                <TrendingUp className="size-4 text-primary" />
               </div>
-              <p className="text-[11px] text-muted-foreground mb-4">Crescimento de atendimentos por ação</p>
+              <p className="text-xs text-muted-foreground mb-4">Crescimento de atendimentos por ação</p>
 
               <div className="pt-2">
-                <div className="relative h-24 w-full flex items-end justify-between gap-2 border-b border-border pb-1">
+                <div className="relative h-28 w-full flex items-end justify-between gap-2 border-b border-border pb-1">
                   {selectedEvent.charts.eventEvolution.map((pt) => {
                     const maxVal = Math.max(...selectedEvent.charts.eventEvolution.map((p) => p.atendimentos));
                     const heightPct = Math.round((pt.atendimentos / maxVal) * 100);
                     return (
                       <div key={pt.event} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
-                        <span className="font-mono text-[10px] text-primary font-bold">{pt.atendimentos}</span>
+                        <span className="font-mono text-xs text-primary font-bold">{pt.atendimentos}</span>
                         <div
-                          className="w-full max-w-[28px] bg-primary/70 rounded-t-sm hover:bg-primary transition-colors"
+                          className="w-full max-w-[32px] bg-primary/75 rounded-t-md hover:bg-primary transition-colors"
                           style={{ height: `${heightPct}%` }}
                         />
-                        <span className="text-[9px] text-muted-foreground truncate w-full text-center">
+                        <span className="text-xs text-muted-foreground truncate w-full text-center font-medium">
                           {pt.event}
                         </span>
                       </div>
@@ -600,7 +600,7 @@ function DashboardPage() {
                   })}
                 </div>
               </div>
-              <p className="mt-3 text-[10px] text-muted-foreground text-center">
+              <p className="mt-3.5 text-xs text-muted-foreground text-center">
                 Tendência contínua de ampliação do alcance comunitário
               </p>
             </div>
@@ -608,23 +608,23 @@ function DashboardPage() {
         </section>
 
         {/* 6. Últimos Atendimentos (Diferenciação por Perfil) */}
-        <section aria-label="Últimos atendimentos do evento" className="rounded-lg border border-border bg-card shadow-xs overflow-hidden">
-          <div className="border-b border-border bg-muted/20 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <section aria-label="Últimos atendimentos do evento" className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
+          <div className="border-b border-border bg-muted/20 px-6 py-4.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <h4 className="font-display text-sm font-semibold text-foreground">
+              <h4 className="font-display text-base sm:text-lg font-bold text-foreground">
                 Últimos Atendimentos Registrados
               </h4>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
                 As 5 triagens mais recentes desta ação comunitária
               </p>
             </div>
 
             {/* Link "Ver todos" apenas para perfis clínicos */}
             {isClinical && (
-              <Button variant="ghost" size="sm" asChild className="text-xs text-primary gap-1">
+              <Button variant="ghost" size="sm" asChild className="text-sm font-semibold text-primary gap-1.5">
                 <Link to="/prontuarios">
                   Ver todos nos Prontuários
-                  <ChevronRight className="size-3.5" />
+                  <ChevronRight className="size-4" />
                 </Link>
               </Button>
             )}
@@ -632,47 +632,47 @@ function DashboardPage() {
 
           {/* Se for perfil de Recepção: mensagem orientando para a agenda */}
           {!isClinical ? (
-            <div className="p-8 text-center space-y-3 bg-muted/10">
-              <Info className="size-8 text-muted-foreground mx-auto" />
-              <h5 className="text-sm font-medium text-foreground">
+            <div className="p-8 text-center space-y-3.5 bg-muted/10">
+              <Info className="size-9 text-muted-foreground mx-auto" />
+              <h5 className="text-base font-semibold text-foreground">
                 Visualização Clínica Restrita (Perfil Recepção)
               </h5>
-              <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
+              <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
                 Você está conectado com o perfil <strong>Recepção</strong>. A listagem detalhada de resultados de exames e triagens clínicas é restrita a avaliadores e fisioterapeutas. Para gerenciar acolhimentos e a fila de espera do evento, consulte a Agenda.
               </p>
-              <Button variant="outline" size="sm" onClick={() => setAgendaModalOpen(true)} className="gap-2 text-xs">
-                <CalendarCheck className="size-3.5 text-primary" />
+              <Button variant="outline" size="sm" onClick={() => setAgendaModalOpen(true)} className="gap-2 text-sm h-10 px-4 font-medium">
+                <CalendarCheck className="size-4 text-primary" />
                 Abrir Agenda de Atendimentos
               </Button>
             </div>
           ) : (
             /* Tabela com as 5 triagens mais recentes para perfis clínicos */
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="w-full text-left text-sm border-collapse">
                 <thead>
-                  <tr className="border-b border-border bg-muted/10 text-muted-foreground">
-                    <th className="py-3 px-6 font-medium">Participante</th>
-                    <th className="py-3 px-4 font-medium">Horário</th>
-                    <th className="py-3 px-4 font-medium">Responsável</th>
-                    <th className="py-3 px-4 font-medium">Status</th>
-                    <th className="py-3 px-6 font-medium">Resultado</th>
+                  <tr className="border-b border-border bg-muted/10 text-muted-foreground font-semibold">
+                    <th className="py-3.5 px-6">Participante</th>
+                    <th className="py-3.5 px-4">Horário</th>
+                    <th className="py-3.5 px-4">Responsável</th>
+                    <th className="py-3.5 px-4">Status</th>
+                    <th className="py-3.5 px-6">Resultado</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {selectedEvent.recentTriages.map((triage) => (
                     <tr key={triage.id} className="hover:bg-accent/30 transition-colors">
-                      <td className="py-3.5 px-6 font-medium text-foreground">
+                      <td className="py-4 px-6 font-semibold text-foreground">
                         {triage.participant}
                       </td>
-                      <td className="py-3.5 px-4 font-mono text-muted-foreground">
+                      <td className="py-4 px-4 font-mono text-muted-foreground">
                         {triage.time}
                       </td>
-                      <td className="py-3.5 px-4 text-muted-foreground">
+                      <td className="py-4 px-4 text-muted-foreground font-medium">
                         {triage.responsible}
                       </td>
-                      <td className="py-3.5 px-4">
+                      <td className="py-4 px-4">
                         <span
-                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                          className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
                             triage.status === "Alterado"
                               ? "bg-destructive/15 text-destructive border border-destructive/20"
                               : triage.status === "Atenção"
@@ -683,7 +683,7 @@ function DashboardPage() {
                           {triage.status}
                         </span>
                       </td>
-                      <td className="py-3.5 px-6 text-foreground font-mono text-[11px]">
+                      <td className="py-4 px-6 text-foreground font-mono text-xs sm:text-sm font-medium">
                         {triage.result}
                       </td>
                     </tr>
@@ -697,18 +697,18 @@ function DashboardPage() {
 
       {/* Diálogo de Nova Triagem */}
       <Dialog open={triageDialogOpen} onOpenChange={setTriageDialogOpen}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-display text-xl font-normal">Nova Triagem de Sinais Vitais</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="font-display text-xl sm:text-2xl font-bold text-foreground">Nova Triagem de Sinais Vitais</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
               Ação ativa: <strong>{selectedEvent.name}</strong>
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSaveTriage} className="space-y-4">
+          <form onSubmit={handleSaveTriage} className="space-y-4 pt-1">
             {/* Seletor do Participante (Carrega participantes do banco/API) */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="t-participant-select" className="text-xs font-medium">
+                <Label htmlFor="t-participant-select" className="text-sm font-semibold text-foreground">
                   Nome completo do participante
                 </Label>
                 <Button
@@ -719,9 +719,9 @@ function DashboardPage() {
                     setTriageDialogOpen(false);
                     setPersonDialogOpen(true);
                   }}
-                  className="h-6 px-1.5 text-[10px] text-primary gap-1"
+                  className="h-7 px-2 text-xs font-semibold text-primary gap-1"
                 >
-                  <Plus className="size-3" />
+                  <Plus className="size-3.5" />
                   Novo Cadastro
                 </Button>
               </div>
@@ -740,7 +740,7 @@ function DashboardPage() {
                     });
                   }}
                   required
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground outline-none focus:ring-2 focus:ring-ring cursor-pointer"
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring cursor-pointer font-medium"
                 >
                   <option value="">Selecione o participante cadastrado...</option>
                   {participants.map((p) => (
@@ -750,8 +750,8 @@ function DashboardPage() {
                   ))}
                 </select>
               ) : (
-                <div className="rounded-md border border-dashed border-border p-3 text-center space-y-2 bg-muted/20">
-                  <p className="text-xs text-muted-foreground">
+                <div className="rounded-xl border border-dashed border-border p-4 text-center space-y-2.5 bg-muted/20">
+                  <p className="text-sm text-muted-foreground">
                     Nenhum participante cadastrado ainda no sistema.
                   </p>
                   <Button
@@ -762,9 +762,9 @@ function DashboardPage() {
                       setTriageDialogOpen(false);
                       setPersonDialogOpen(true);
                     }}
-                    className="text-xs gap-1.5"
+                    className="text-sm gap-1.5 h-10 px-4"
                   >
-                    <UserPlus className="size-3.5 text-primary" />
+                    <UserPlus className="size-4 text-primary" />
                     Cadastrar participante agora
                   </Button>
                 </div>
@@ -777,23 +777,23 @@ function DashboardPage() {
                 );
                 if (!activeP) return null;
                 return (
-                  <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs space-y-2 animate-in fade-in duration-200">
-                    <div className="flex items-center justify-between border-b border-primary/15 pb-1.5">
-                      <span className="font-semibold text-foreground flex items-center gap-1.5">
-                        <Users className="size-3.5 text-primary" />
+                  <div className="rounded-xl border border-primary/30 bg-primary/5 p-3.5 text-sm space-y-2.5 animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between border-b border-primary/15 pb-2">
+                      <span className="font-bold text-foreground flex items-center gap-1.5">
+                        <Users className="size-4 text-primary" />
                         {activeP.name}
                       </span>
-                      <span className="rounded-full bg-primary/20 text-primary font-semibold px-2 py-0.5 text-[10px]">
+                      <span className="rounded-full bg-primary/20 text-primary font-semibold px-2.5 py-0.5 text-xs">
                         Faixa: {activeP.ageGroup} anos
                       </span>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-muted-foreground pt-0.5">
+                    <div className="grid grid-cols-2 gap-2 text-muted-foreground pt-0.5 text-xs sm:text-sm">
                       <div className="flex items-center gap-1.5">
-                        <Calendar className="size-3.5 text-primary shrink-0" />
+                        <Calendar className="size-4 text-primary shrink-0" />
                         <span>Idade: <strong className="text-foreground">{activeP.age} anos</strong></span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <Phone className="size-3.5 text-primary shrink-0" />
+                        <Phone className="size-4 text-primary shrink-0" />
                         <span>WhatsApp: <strong className="text-foreground font-mono">{activeP.phone || "Não informado"}</strong></span>
                       </div>
                     </div>
@@ -802,10 +802,10 @@ function DashboardPage() {
               })()}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3.5">
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="t-pa" className="text-xs">Pressão arterial (mmHg)</Label>
+                  <Label htmlFor="t-pa" className="text-sm font-semibold">Pressão arterial (mmHg)</Label>
                 </div>
                 <Input
                   id="t-pa"
@@ -813,13 +813,14 @@ function DashboardPage() {
                   value={triageForm.pa}
                   onChange={(e) => setTriageForm({ ...triageForm, pa: e.target.value })}
                   required
+                  className="text-sm h-10"
                 />
-                <p className="text-[10px] text-muted-foreground font-mono">
+                <p className="text-xs text-muted-foreground font-mono">
                   Ref: {settings.systolicMin}–{settings.systolicMax} x {settings.diastolicMin}–{settings.diastolicMax}
                 </p>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="t-gli" className="text-xs">Glicemia (mg/dL)</Label>
+                <Label htmlFor="t-gli" className="text-sm font-semibold">Glicemia (mg/dL)</Label>
                 <Input
                   id="t-gli"
                   type="number"
@@ -827,10 +828,11 @@ function DashboardPage() {
                   value={triageForm.glucose}
                   onChange={(e) => setTriageForm({ ...triageForm, glucose: Number(e.target.value) })}
                   required
+                  className="text-sm h-10"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="t-spo2" className="text-xs">SpO₂ (%)</Label>
+                <Label htmlFor="t-spo2" className="text-sm font-semibold">SpO₂ (%)</Label>
                 <Input
                   id="t-spo2"
                   type="number"
@@ -838,10 +840,11 @@ function DashboardPage() {
                   value={triageForm.spo2}
                   onChange={(e) => setTriageForm({ ...triageForm, spo2: Number(e.target.value) })}
                   required
+                  className="text-sm h-10"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="t-fc" className="text-xs">Frequência cardíaca (bpm)</Label>
+                <Label htmlFor="t-fc" className="text-sm font-semibold">Frequência cardíaca (bpm)</Label>
                 <Input
                   id="t-fc"
                   type="number"
@@ -849,15 +852,16 @@ function DashboardPage() {
                   value={triageForm.heartRate}
                   onChange={(e) => setTriageForm({ ...triageForm, heartRate: Number(e.target.value) })}
                   required
+                  className="text-sm h-10"
                 />
               </div>
             </div>
 
-            <DialogFooter className="gap-2 pt-3">
-              <Button type="button" variant="outline" onClick={() => setTriageDialogOpen(false)}>
+            <DialogFooter className="gap-2.5 pt-3">
+              <Button type="button" variant="outline" onClick={() => setTriageDialogOpen(false)} className="text-sm h-10 px-4">
                 Cancelar
               </Button>
-              <Button type="submit">
+              <Button type="submit" className="text-sm h-10 px-5 font-semibold">
                 Concluir Triagem
               </Button>
             </DialogFooter>
@@ -867,51 +871,53 @@ function DashboardPage() {
 
       {/* Diálogo de Novo Participante (com Nome, Nascimento, Cálculo de Idade, CPF e WhatsApp) */}
       <Dialog open={personDialogOpen} onOpenChange={setPersonDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="font-display text-xl font-normal">Cadastrar Novo Participante</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="font-display text-xl sm:text-2xl font-bold text-foreground">Cadastrar Novo Participante</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
               Os dados cadastrais atualizam automaticamente o gráfico de <strong>Faixa Etária</strong> do evento.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSavePerson} className="space-y-4">
+          <form onSubmit={handleSavePerson} className="space-y-4 pt-1">
             {/* Nome Completo */}
             <div className="space-y-1.5">
-              <Label htmlFor="p-name" className="text-xs font-medium">Nome completo</Label>
+              <Label htmlFor="p-name" className="text-sm font-semibold">Nome completo</Label>
               <Input
                 id="p-name"
                 placeholder="Ex: Maria José da Silva"
                 value={personForm.name}
                 onChange={(e) => setPersonForm({ ...personForm, name: e.target.value })}
                 required
+                className="text-sm h-10"
               />
             </div>
 
             {/* Data de Nascimento com Cálculo da Idade e Faixa Etária */}
             <div className="space-y-1.5">
-              <Label htmlFor="p-birth" className="text-xs font-medium">Data de nascimento</Label>
+              <Label htmlFor="p-birth" className="text-sm font-semibold">Data de nascimento</Label>
               <Input
                 id="p-birth"
                 type="date"
                 value={personForm.birthDate}
                 onChange={(e) => setPersonForm({ ...personForm, birthDate: e.target.value })}
                 required
+                className="text-sm h-10"
               />
 
               {/* Card dinâmico de feedback da idade calculada */}
               {agePreview ? (
-                <div className="flex items-center justify-between rounded-md bg-primary/10 border border-primary/25 px-3 py-2 text-xs">
-                  <span className="flex items-center gap-1.5 text-primary font-medium">
-                    <CheckCircle2 className="size-4 shrink-0" />
-                    Idade calculada: <strong>{agePreview.age} anos</strong>
+                <div className="flex items-center justify-between rounded-lg bg-primary/10 border border-primary/25 px-3.5 py-2.5 text-sm">
+                  <span className="flex items-center gap-2 text-primary font-medium">
+                    <CheckCircle2 className="size-4.5 shrink-0" />
+                    Idade calculada: <strong className="font-bold">{agePreview.age} anos</strong>
                   </span>
-                  <span className="rounded bg-primary/20 text-primary font-semibold px-2 py-0.5 text-[10px]">
+                  <span className="rounded-full bg-primary/20 text-primary font-bold px-2.5 py-0.5 text-xs">
                     Faixa: {agePreview.group} anos
                   </span>
                 </div>
               ) : (
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Selecione a data para calcular automaticamente a idade atual e a faixa etária.
                 </p>
               )}
@@ -919,8 +925,8 @@ function DashboardPage() {
 
             {/* CPF */}
             <div className="space-y-1.5">
-              <Label htmlFor="p-cpf" className="text-xs font-medium flex items-center gap-1.5">
-                <Fingerprint className="size-3.5 text-muted-foreground" />
+              <Label htmlFor="p-cpf" className="text-sm font-semibold flex items-center gap-1.5">
+                <Fingerprint className="size-4 text-muted-foreground" />
                 CPF
               </Label>
               <Input
@@ -930,13 +936,14 @@ function DashboardPage() {
                 value={personForm.cpf}
                 onChange={(e) => setPersonForm({ ...personForm, cpf: formatCPF(e.target.value) })}
                 required
+                className="text-sm h-10"
               />
             </div>
 
             {/* Número do WhatsApp / Telefone */}
             <div className="space-y-1.5">
-              <Label htmlFor="p-tel" className="text-xs font-medium flex items-center gap-1.5">
-                <Phone className="size-3.5 text-muted-foreground" />
+              <Label htmlFor="p-tel" className="text-sm font-semibold flex items-center gap-1.5">
+                <Phone className="size-4 text-muted-foreground" />
                 Número do WhatsApp / Telefone
               </Label>
               <Input
@@ -946,14 +953,15 @@ function DashboardPage() {
                 value={personForm.phone}
                 onChange={(e) => setPersonForm({ ...personForm, phone: formatPhone(e.target.value) })}
                 required
+                className="text-sm h-10"
               />
             </div>
 
-            <DialogFooter className="gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => setPersonDialogOpen(false)}>
+            <DialogFooter className="gap-2.5 pt-3">
+              <Button type="button" variant="outline" onClick={() => setPersonDialogOpen(false)} className="text-sm h-10 px-4">
                 Cancelar
               </Button>
-              <Button type="submit">
+              <Button type="submit" className="text-sm h-10 px-5 font-semibold">
                 Concluir Cadastro
               </Button>
             </DialogFooter>
@@ -963,33 +971,33 @@ function DashboardPage() {
 
       {/* Modal de Agenda do Dia */}
       <Dialog open={agendaModalOpen} onOpenChange={setAgendaModalOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle className="font-display text-xl font-normal flex items-center gap-2">
-              <CalendarCheck className="size-5 text-primary" />
+            <DialogTitle className="font-display text-xl sm:text-2xl font-bold flex items-center gap-2 text-foreground">
+              <CalendarCheck className="size-5.5 text-primary" />
               Agenda do Evento: {selectedEvent.name}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm text-muted-foreground">
               Atendimentos e acolhimentos agendados para a data ativa ({selectedEvent.date}).
             </DialogDescription>
           </DialogHeader>
 
-          <div className="divide-y divide-border border rounded-md my-2">
+          <div className="divide-y divide-border border rounded-xl my-2.5 overflow-hidden">
             {[
               { time: "14:30", type: "Avaliação Funcional", patient: "Rosa Pereira", status: "Confirmado" },
               { time: "15:00", type: "Primeira Sessão Cortesia", patient: "Antônio Souza", status: "Confirmado" },
               { time: "15:40", type: "Triagem em Grupo", patient: "4 pessoas (Fila comunitária)", status: "Aguardando" },
               { time: "16:20", type: "Reavaliação Pós-Glicemia", patient: "Marta Ferreira", status: "Agendado" },
             ].map((slot) => (
-              <div key={slot.time} className="flex items-center justify-between p-3 text-xs">
-                <div className="flex items-center gap-3">
-                  <span className="font-mono font-semibold text-primary">{slot.time}</span>
+              <div key={slot.time} className="flex items-center justify-between p-3.5 text-sm hover:bg-accent/30 transition-colors">
+                <div className="flex items-center gap-3.5">
+                  <span className="font-mono font-bold text-base text-primary">{slot.time}</span>
                   <div>
-                    <p className="font-medium text-foreground">{slot.type}</p>
-                    <p className="text-[11px] text-muted-foreground">{slot.patient}</p>
+                    <p className="font-semibold text-foreground">{slot.type}</p>
+                    <p className="text-xs text-muted-foreground">{slot.patient}</p>
                   </div>
                 </div>
-                <span className="rounded bg-secondary px-2 py-0.5 text-[10px] font-medium text-secondary-foreground">
+                <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground">
                   {slot.status}
                 </span>
               </div>
@@ -997,7 +1005,7 @@ function DashboardPage() {
           </div>
 
           <DialogFooter>
-            <Button onClick={() => setAgendaModalOpen(false)}>
+            <Button onClick={() => setAgendaModalOpen(false)} className="text-sm h-10 px-5 font-semibold">
               Fechar
             </Button>
           </DialogFooter>

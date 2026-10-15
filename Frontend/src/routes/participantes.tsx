@@ -195,9 +195,9 @@ function ParticipantesPage() {
       actions={
         <Button
           onClick={() => setNewParticipantOpen(true)}
-          className="gap-1.5 text-xs font-medium"
+          className="gap-2 h-10 px-4 text-sm font-semibold"
         >
-          <UserPlus className="size-4" />
+          <UserPlus className="size-4.5" />
           Novo Participante
         </Button>
       }
@@ -205,70 +205,70 @@ function ParticipantesPage() {
       <div className="space-y-6 max-w-6xl">
         {/* Toast de notificação */}
         {toastMessage && (
-          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-lg bg-foreground text-background px-4 py-3 text-xs font-medium shadow-xl transition-all">
-            <CheckCircle2 className="size-4 text-primary" />
+          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-xl bg-foreground text-background px-4.5 py-3.5 text-sm font-medium shadow-xl transition-all">
+            <CheckCircle2 className="size-5 text-primary" />
             <span>{toastMessage}</span>
           </div>
         )}
 
         {/* 4 Cards de Métricas do Diretório de Participantes */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <div className="rounded-xl border border-border bg-card p-4 shadow-2xs">
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-2xs">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-medium uppercase tracking-wider">Total Cadastrado</span>
-              <Users className="size-4 text-primary" />
+              <span className="text-xs font-bold uppercase tracking-wider">Total Cadastrado</span>
+              <Users className="size-5 text-primary" />
             </div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-bold font-display text-foreground">{totalParticipants}</span>
-              <span className="text-xs text-muted-foreground">pessoas</span>
+            <div className="mt-2.5 flex items-baseline gap-2">
+              <span className="text-3xl font-bold font-display text-foreground">{totalParticipants}</span>
+              <span className="text-sm text-muted-foreground">pessoas</span>
             </div>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-4 shadow-2xs">
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-2xs">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-medium uppercase tracking-wider">Atendimentos Feitos</span>
-              <Activity className="size-4 text-primary" />
+              <span className="text-xs font-bold uppercase tracking-wider">Atendimentos Feitos</span>
+              <Activity className="size-5 text-primary" />
             </div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-bold font-display text-foreground">{totalAttendances}</span>
-              <span className="text-xs text-muted-foreground">registros</span>
+            <div className="mt-2.5 flex items-baseline gap-2">
+              <span className="text-3xl font-bold font-display text-foreground">{totalAttendances}</span>
+              <span className="text-sm text-muted-foreground">registros</span>
             </div>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-4 shadow-2xs">
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-2xs">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-medium uppercase tracking-wider">Média de Idade</span>
-              <Calendar className="size-4 text-primary" />
+              <span className="text-xs font-bold uppercase tracking-wider">Média de Idade</span>
+              <Calendar className="size-5 text-primary" />
             </div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-bold font-display text-foreground">{averageAge}</span>
-              <span className="text-xs text-muted-foreground">anos</span>
+            <div className="mt-2.5 flex items-baseline gap-2">
+              <span className="text-3xl font-bold font-display text-foreground">{averageAge}</span>
+              <span className="text-sm text-muted-foreground">anos</span>
             </div>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-4 shadow-2xs">
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-2xs">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-medium uppercase tracking-wider">Com WhatsApp</span>
-              <MessageCircle className="size-4 text-emerald-500" />
+              <span className="text-xs font-bold uppercase tracking-wider">Com WhatsApp</span>
+              <MessageCircle className="size-5 text-emerald-500" />
             </div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-bold font-display text-foreground">
+            <div className="mt-2.5 flex items-baseline gap-2">
+              <span className="text-3xl font-bold font-display text-foreground">
                 {participants.filter((p) => p.phone.length > 5).length}
               </span>
-              <span className="text-xs text-muted-foreground">contatos</span>
+              <span className="text-sm text-muted-foreground">contatos</span>
             </div>
           </div>
         </div>
 
         {/* Card Didático: Diferença entre Participantes e Prontuários */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4 text-xs">
-          <div className="flex items-start gap-3">
-            <Info className="size-4 text-primary shrink-0 mt-0.5" />
-            <div className="space-y-0.5">
-              <p className="font-semibold text-foreground">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 rounded-xl border border-primary/25 bg-primary/5 p-4 sm:p-5 text-sm">
+          <div className="flex items-start gap-3.5">
+            <Info className="size-5 text-primary shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-bold text-foreground text-sm sm:text-base">
                 Diferença entre Participantes e Prontuários:
               </p>
-              <p className="text-muted-foreground leading-relaxed">
+              <p className="text-muted-foreground leading-relaxed text-sm">
                 Nesta tela você gerencia os <strong>dados cadastrais, contatos via WhatsApp e o histórico de presenças</strong> do participante.
                 Para consultar aferições de sinais vitais detalhadas, hipóteses diagnósticas e evoluções clínicas, clique em <strong>"Ir até o prontuário"</strong> na ficha de cada um.
               </p>
@@ -276,35 +276,35 @@ function ParticipantesPage() {
           </div>
           <Link
             to="/prontuarios"
-            className="shrink-0 inline-flex items-center gap-1.5 font-medium text-primary hover:underline"
+            className="shrink-0 inline-flex items-center gap-1.5 font-semibold text-primary hover:underline text-sm"
           >
             Ver tela de Prontuários
-            <ArrowUpRight className="size-3.5" />
+            <ArrowUpRight className="size-4" />
           </Link>
         </div>
 
         {/* Barra de Busca e Filtros */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3.5 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute left-3.5 top-1/2 size-4.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Buscar por nome, CPF ou WhatsApp..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 text-xs"
+              className="pl-10 text-sm h-10"
             />
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-            <Filter className="size-3.5 text-muted-foreground shrink-0" />
-            <span className="text-xs text-muted-foreground whitespace-nowrap">Faixa Etária:</span>
+            <Filter className="size-4 text-muted-foreground shrink-0" />
+            <span className="text-sm font-semibold text-muted-foreground whitespace-nowrap">Faixa Etária:</span>
             {["ALL", "18–30", "31–45", "46–60", "60+"].map((group) => (
               <button
                 key={group}
                 onClick={() => setSelectedAgeGroup(group)}
-                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors whitespace-nowrap ${
+                className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors whitespace-nowrap cursor-pointer ${
                   selectedAgeGroup === group
-                    ? "bg-primary text-primary-foreground"
+                    ? "bg-primary text-primary-foreground shadow-xs"
                     : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
                 }`}
               >
@@ -316,31 +316,31 @@ function ParticipantesPage() {
 
         {/* Tabela de Participantes */}
         <div className="rounded-xl border border-border bg-card shadow-2xs overflow-hidden">
-          <div className="border-b border-border bg-muted/30 px-6 py-3 flex items-center justify-between">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="border-b border-border bg-muted/30 px-6 py-4 flex items-center justify-between">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
               Participantes Encontrados ({filteredParticipants.length})
             </h3>
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               Clique no nome ou em "Ver Histórico" para ver as participações
             </span>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full text-left text-sm border-collapse">
               <thead>
-                <tr className="border-b border-border bg-muted/10 text-muted-foreground font-medium">
-                  <th className="py-3 px-6">Participante</th>
-                  <th className="py-3 px-4">Idade & Nascimento</th>
-                  <th className="py-3 px-4">CPF</th>
-                  <th className="py-3 px-4">WhatsApp / Telefone</th>
-                  <th className="py-3 px-4 text-center">Atendimentos</th>
-                  <th className="py-3 px-6 text-right">Ações</th>
+                <tr className="border-b border-border bg-muted/10 text-muted-foreground font-semibold">
+                  <th className="py-3.5 px-6">Participante</th>
+                  <th className="py-3.5 px-4">Idade & Nascimento</th>
+                  <th className="py-3.5 px-4">CPF</th>
+                  <th className="py-3.5 px-4">WhatsApp / Telefone</th>
+                  <th className="py-3.5 px-4 text-center">Atendimentos</th>
+                  <th className="py-3.5 px-6 text-right">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {filteredParticipants.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                    <td colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
                       Nenhum participante encontrado com os filtros selecionados.
                     </td>
                   </tr>
@@ -356,16 +356,16 @@ function ParticipantesPage() {
                         onClick={() => handleOpenDetails(p)}
                       >
                         {/* Participante (Nome + Avatar + Badge) */}
-                        <td className="py-3.5 px-6">
+                        <td className="py-4 px-6">
                           <div className="flex items-center gap-3">
-                            <div className="grid size-8 place-items-center rounded-full bg-primary/15 text-primary font-semibold text-xs shrink-0">
+                            <div className="grid size-9 place-items-center rounded-full bg-primary/15 text-primary font-bold text-xs shrink-0">
                               {p.name.slice(0, 2).toUpperCase()}
                             </div>
                             <div>
-                              <span className="font-medium text-foreground text-sm group-hover:text-primary transition-colors flex items-center gap-1.5">
+                              <span className="font-semibold text-foreground text-sm sm:text-base group-hover:text-primary transition-colors flex items-center gap-1.5">
                                 {p.name}
                               </span>
-                              <span className="text-[10px] text-muted-foreground">
+                              <span className="text-xs text-muted-foreground">
                                 Cadastrado em {p.createdAt}
                               </span>
                             </div>
@@ -373,33 +373,33 @@ function ParticipantesPage() {
                         </td>
 
                         {/* Idade & Data de Nascimento */}
-                        <td className="py-3.5 px-4">
+                        <td className="py-4 px-4">
                           <div className="flex flex-col">
-                            <span className="font-semibold text-foreground">
+                            <span className="font-bold text-foreground text-sm">
                               {p.age} anos
                             </span>
-                            <span className="text-[10px] text-muted-foreground">
+                            <span className="text-xs text-muted-foreground">
                               {p.birthDate ? p.birthDate.split("-").reverse().join("/") : "—"} · [{p.ageGroup}]
                             </span>
                           </div>
                         </td>
 
                         {/* CPF */}
-                        <td className="py-3.5 px-4 font-mono text-muted-foreground">
+                        <td className="py-4 px-4 font-mono font-medium text-muted-foreground text-sm">
                           {p.cpf || "Não informado"}
                         </td>
 
                         {/* WhatsApp / Telefone */}
-                        <td className="py-3.5 px-4" onClick={(e) => e.stopPropagation()}>
+                        <td className="py-4 px-4" onClick={(e) => e.stopPropagation()}>
                           {p.phone ? (
                             <a
                               href={`https://wa.me/${cleanPhoneForWhatsApp(p.phone)}`}
                               target="_blank"
                               rel="noreferrer"
                               title="Abrir conversa no WhatsApp"
-                              className="inline-flex items-center gap-1.5 text-xs text-foreground hover:text-emerald-600 transition-colors"
+                              className="inline-flex items-center gap-1.5 text-sm text-foreground hover:text-emerald-600 font-medium transition-colors"
                             >
-                              <MessageCircle className="size-3.5 text-emerald-500 shrink-0" />
+                              <MessageCircle className="size-4 text-emerald-500 shrink-0" />
                               <span className="font-mono">{p.phone}</span>
                             </a>
                           ) : (
@@ -408,9 +408,9 @@ function ParticipantesPage() {
                         </td>
 
                         {/* Total de Atendimentos */}
-                        <td className="py-3.5 px-4 text-center">
+                        <td className="py-4 px-4 text-center">
                           <span
-                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
+                            className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
                               count > 1
                                 ? "bg-primary/15 text-primary border border-primary/20"
                                 : count === 1
@@ -423,27 +423,27 @@ function ParticipantesPage() {
                         </td>
 
                         {/* Ações */}
-                        <td className="py-3.5 px-6 text-right" onClick={(e) => e.stopPropagation()}>
+                        <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-2">
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleOpenDetails(p)}
-                              className="h-7 text-xs px-2.5 gap-1"
+                              className="h-8.5 text-xs sm:text-sm px-3 gap-1.5 font-medium"
                             >
-                              <History className="size-3 text-muted-foreground" />
+                              <History className="size-3.5 text-muted-foreground" />
                               Ver Histórico
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleGoToMedicalRecord(p.name)}
-                              className="h-7 text-xs px-2 text-primary hover:text-primary gap-1"
+                              className="h-8.5 text-xs sm:text-sm px-2.5 text-primary hover:text-primary gap-1 font-semibold"
                               title="Ir para o Prontuário Clínico"
                             >
-                              <ClipboardList className="size-3.5" />
+                              <ClipboardList className="size-4" />
                               Prontuário
-                              <ArrowUpRight className="size-3" />
+                              <ArrowUpRight className="size-3.5" />
                             </Button>
                           </div>
                         </td>
@@ -464,52 +464,52 @@ function ParticipantesPage() {
             <div className="space-y-6">
               <DialogHeader>
                 <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="grid size-12 place-items-center rounded-full bg-primary/20 text-primary font-bold text-base shrink-0">
+                  <div className="flex items-center gap-3.5">
+                    <div className="grid size-13 place-items-center rounded-full bg-primary/20 text-primary font-bold text-lg shrink-0">
                       {selectedParticipant.name.slice(0, 2).toUpperCase()}
                     </div>
                     <div>
-                      <DialogTitle className="font-display text-xl font-normal">
+                      <DialogTitle className="font-display text-xl sm:text-2xl font-bold text-foreground">
                         {selectedParticipant.name}
                       </DialogTitle>
-                      <DialogDescription className="text-xs mt-0.5">
+                      <DialogDescription className="text-sm text-muted-foreground mt-1">
                         {selectedParticipant.age} anos · Faixa etária [{selectedParticipant.ageGroup} anos] · ID: {selectedParticipant.id}
                       </DialogDescription>
                     </div>
                   </div>
-                  <span className="rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-[11px] font-semibold text-primary">
+                  <span className="rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-xs font-bold text-primary">
                     {selectedParticipant.attendances?.length || 0} Atendimentos
                   </span>
                 </div>
               </DialogHeader>
 
               {/* Informações Cadastrais e de Contato */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="rounded-lg border border-border bg-card p-3 space-y-1">
-                  <span className="text-[10px] uppercase font-semibold text-muted-foreground flex items-center gap-1">
-                    <Fingerprint className="size-3 text-primary" />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                <div className="rounded-xl border border-border bg-card p-3.5 space-y-1 shadow-2xs">
+                  <span className="text-xs uppercase font-bold text-muted-foreground flex items-center gap-1.5">
+                    <Fingerprint className="size-3.5 text-primary" />
                     CPF
                   </span>
-                  <p className="font-mono text-xs font-medium text-foreground">
+                  <p className="font-mono text-sm font-semibold text-foreground">
                     {selectedParticipant.cpf || "Não informado"}
                   </p>
                 </div>
 
-                <div className="rounded-lg border border-border bg-card p-3 space-y-1">
-                  <span className="text-[10px] uppercase font-semibold text-muted-foreground flex items-center gap-1">
-                    <Calendar className="size-3 text-primary" />
+                <div className="rounded-xl border border-border bg-card p-3.5 space-y-1 shadow-2xs">
+                  <span className="text-xs uppercase font-bold text-muted-foreground flex items-center gap-1.5">
+                    <Calendar className="size-3.5 text-primary" />
                     Nascimento
                   </span>
-                  <p className="text-xs font-medium text-foreground">
+                  <p className="text-sm font-semibold text-foreground">
                     {selectedParticipant.birthDate
                       ? selectedParticipant.birthDate.split("-").reverse().join("/")
                       : "—"}
                   </p>
                 </div>
 
-                <div className="rounded-lg border border-border bg-card p-3 space-y-1">
-                  <span className="text-[10px] uppercase font-semibold text-muted-foreground flex items-center gap-1">
-                    <MessageCircle className="size-3 text-emerald-500" />
+                <div className="rounded-xl border border-border bg-card p-3.5 space-y-1 shadow-2xs">
+                  <span className="text-xs uppercase font-bold text-muted-foreground flex items-center gap-1.5">
+                    <MessageCircle className="size-3.5 text-emerald-500" />
                     WhatsApp
                   </span>
                   {selectedParticipant.phone ? (
@@ -517,68 +517,68 @@ function ParticipantesPage() {
                       href={`https://wa.me/${cleanPhoneForWhatsApp(selectedParticipant.phone)}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-xs font-mono font-medium text-emerald-600 hover:underline block truncate"
+                      className="text-sm font-mono font-semibold text-emerald-600 hover:underline block truncate"
                     >
                       {selectedParticipant.phone}
                     </a>
                   ) : (
-                    <p className="text-xs text-muted-foreground">Não informado</p>
+                    <p className="text-sm text-muted-foreground">Não informado</p>
                   )}
                 </div>
               </div>
 
               {/* Box Informativo: Conexão com o Prontuário */}
-              <div className="rounded-lg border border-border bg-secondary/40 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-0.5 text-xs">
-                  <p className="font-semibold text-foreground flex items-center gap-1.5">
-                    <ClipboardList className="size-4 text-primary" />
+              <div className="rounded-xl border border-border bg-secondary/40 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+                <div className="space-y-1 text-sm">
+                  <p className="font-bold text-foreground text-sm sm:text-base flex items-center gap-2">
+                    <ClipboardList className="size-4.5 text-primary" />
                     Prontuário Clínico deste Participante
                   </p>
-                  <p className="text-muted-foreground text-[11px]">
-                    Para conferir os valores aferidos de PA, Glicemia, SpO₂ e as anotações do profissional:
+                  <p className="text-muted-foreground text-xs sm:text-sm">
+                    Para conferir os valores aferidos de PA, Glicemia, SpO₂ e as evoluções clínicas completas:
                   </p>
                 </div>
                 <Button
                   onClick={() => handleGoToMedicalRecord(selectedParticipant.name)}
-                  className="gap-1.5 text-xs font-medium shrink-0 shadow-2xs"
+                  className="gap-2 text-sm h-10 px-4 font-semibold shrink-0 shadow-2xs"
                 >
                   Ir até o Prontuário
-                  <ArrowUpRight className="size-3.5" />
+                  <ArrowUpRight className="size-4" />
                 </Button>
               </div>
 
               {/* Linha do Tempo: Histórico de Atendimentos */}
-              <div className="space-y-3">
+              <div className="space-y-3.5">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                    <History className="size-3.5 text-primary" />
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <History className="size-4 text-primary" />
                     Histórico de Atendimentos & Presenças ({selectedParticipant.attendances?.length || 0})
                   </h4>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setNewAttendanceOpen(true)}
-                    className="h-7 text-[11px] gap-1 text-primary"
+                    className="h-8 text-xs font-semibold gap-1.5 text-primary"
                   >
-                    <Plus className="size-3" />
+                    <Plus className="size-3.5" />
                     Novo Atendimento
                   </Button>
                 </div>
 
                 {(!selectedParticipant.attendances || selectedParticipant.attendances.length === 0) ? (
-                  <div className="py-6 text-center text-xs text-muted-foreground border border-dashed border-border rounded-lg">
+                  <div className="py-8 text-center text-sm text-muted-foreground border border-dashed border-border rounded-xl">
                     Nenhum atendimento anterior registrado para este participante.
                   </div>
                 ) : (
-                  <div className="space-y-2.5">
+                  <div className="space-y-3">
                     {selectedParticipant.attendances.map((att, idx) => (
                       <div
                         key={att.id || idx}
-                        className="rounded-lg border border-border bg-card p-3.5 space-y-2 transition-all hover:border-primary/40"
+                        className="rounded-xl border border-border bg-card p-4 space-y-2.5 transition-all hover:border-primary/40 shadow-2xs"
                       >
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-sm">
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-foreground">
+                            <span className="font-bold text-foreground">
                               {att.type}
                             </span>
                             <span className="text-muted-foreground">·</span>
@@ -587,11 +587,11 @@ function ParticipantesPage() {
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="font-mono text-[11px] text-muted-foreground">
+                            <span className="font-mono text-xs sm:text-sm text-muted-foreground font-medium">
                               {att.date}
                             </span>
                             <span
-                              className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                                 att.status === "Alterado"
                                   ? "bg-destructive/15 text-destructive"
                                   : att.status === "Atenção"
@@ -606,19 +606,19 @@ function ParticipantesPage() {
                           </div>
                         </div>
 
-                        <p className="text-xs text-muted-foreground leading-relaxed">
+                        <p className="text-sm text-muted-foreground leading-relaxed">
                           {att.summary}
                         </p>
 
-                        <div className="flex items-center justify-between pt-1 border-t border-border/50 text-[11px] text-muted-foreground">
-                          <span>Responsável: <strong>{att.responsible}</strong></span>
+                        <div className="flex items-center justify-between pt-2 border-t border-border/50 text-xs sm:text-sm text-muted-foreground">
+                          <span>Responsável: <strong className="text-foreground">{att.responsible}</strong></span>
                           {att.medicalRecordId && (
                             <button
                               onClick={() => handleGoToMedicalRecord(selectedParticipant.name)}
-                              className="text-primary hover:underline font-mono text-[10px] inline-flex items-center gap-1"
+                              className="text-primary hover:underline font-mono text-xs font-semibold inline-flex items-center gap-1"
                             >
                               {att.medicalRecordId}
-                              <ArrowUpRight className="size-2.5" />
+                              <ArrowUpRight className="size-3" />
                             </button>
                           )}
                         </div>
@@ -628,37 +628,37 @@ function ParticipantesPage() {
                 )}
               </div>
 
-              <DialogFooter className="gap-2 sm:justify-between pt-2 border-t border-border">
+              <DialogFooter className="gap-2.5 sm:justify-between pt-3 border-t border-border">
                 {selectedParticipant.phone ? (
                   <Button
                     variant="outline"
                     asChild
-                    className="text-xs gap-1.5 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10"
+                    className="text-sm h-10 px-4 gap-2 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10 font-semibold"
                   >
                     <a
                       href={`https://wa.me/${cleanPhoneForWhatsApp(selectedParticipant.phone)}`}
                       target="_blank"
                       rel="noreferrer"
                     >
-                      <MessageCircle className="size-3.5" />
+                      <MessageCircle className="size-4" />
                       Falar no WhatsApp
                     </a>
                   </Button>
                 ) : <div />}
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                   <Button
                     variant="outline"
                     onClick={() => setDetailsOpen(false)}
-                    className="text-xs"
+                    className="text-sm h-10 px-4"
                   >
                     Fechar
                   </Button>
                   <Button
                     onClick={() => handleGoToMedicalRecord(selectedParticipant.name)}
-                    className="text-xs gap-1"
+                    className="text-sm h-10 px-4 gap-1.5 font-semibold"
                   >
-                    <ClipboardList className="size-3.5" />
+                    <ClipboardList className="size-4" />
                     Abrir Prontuário
                   </Button>
                 </div>
@@ -670,52 +670,54 @@ function ParticipantesPage() {
 
       {/* MODAL 2: Cadastro de Novo Participante */}
       <Dialog open={newParticipantOpen} onOpenChange={setNewParticipantOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="font-display text-xl font-normal">
+            <DialogTitle className="font-display text-xl sm:text-2xl font-bold text-foreground">
               Cadastrar Novo Participante
             </DialogTitle>
-            <DialogDescription className="text-xs">
+            <DialogDescription className="text-sm text-muted-foreground">
               Preencha os dados de identificação e contato. A idade e a faixa etária são calculadas automaticamente.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSaveParticipant} className="space-y-4">
+          <form onSubmit={handleSaveParticipant} className="space-y-4 pt-1">
             {/* Nome Completo */}
             <div className="space-y-1.5">
-              <Label htmlFor="part-name" className="text-xs font-medium">Nome completo</Label>
+              <Label htmlFor="part-name" className="text-sm font-semibold">Nome completo</Label>
               <Input
                 id="part-name"
                 placeholder="Ex: Maria José de Oliveira"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
+                className="text-sm h-10"
               />
             </div>
 
             {/* Data de Nascimento com feedback de Idade */}
             <div className="space-y-1.5">
-              <Label htmlFor="part-birth" className="text-xs font-medium">Data de nascimento</Label>
+              <Label htmlFor="part-birth" className="text-sm font-semibold">Data de nascimento</Label>
               <Input
                 id="part-birth"
                 type="date"
                 value={formData.birthDate}
                 onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
                 required
+                className="text-sm h-10"
               />
 
               {calculatedAge ? (
-                <div className="flex items-center justify-between rounded-md bg-primary/10 border border-primary/25 px-3 py-2 text-xs">
-                  <span className="flex items-center gap-1.5 text-primary font-medium">
-                    <CheckCircle2 className="size-4 shrink-0" />
-                    Idade calculada: <strong>{calculatedAge.age} anos</strong>
+                <div className="flex items-center justify-between rounded-lg bg-primary/10 border border-primary/25 px-3.5 py-2.5 text-sm">
+                  <span className="flex items-center gap-2 text-primary font-medium">
+                    <CheckCircle2 className="size-4.5 shrink-0" />
+                    Idade calculada: <strong className="font-bold">{calculatedAge.age} anos</strong>
                   </span>
-                  <span className="rounded bg-primary/20 text-primary font-semibold px-2 py-0.5 text-[10px]">
+                  <span className="rounded-full bg-primary/20 text-primary font-bold px-2.5 py-0.5 text-xs">
                     Faixa: {calculatedAge.group} anos
                   </span>
                 </div>
               ) : (
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Selecione a data para calcular automaticamente a idade e a faixa etária.
                 </p>
               )}
@@ -723,8 +725,8 @@ function ParticipantesPage() {
 
             {/* CPF */}
             <div className="space-y-1.5">
-              <Label htmlFor="part-cpf" className="text-xs font-medium flex items-center gap-1.5">
-                <Fingerprint className="size-3.5 text-muted-foreground" />
+              <Label htmlFor="part-cpf" className="text-sm font-semibold flex items-center gap-1.5">
+                <Fingerprint className="size-4 text-muted-foreground" />
                 CPF
               </Label>
               <Input
@@ -734,13 +736,14 @@ function ParticipantesPage() {
                 value={formData.cpf}
                 onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
                 required
+                className="text-sm h-10"
               />
             </div>
 
             {/* WhatsApp / Telefone */}
             <div className="space-y-1.5">
-              <Label htmlFor="part-phone" className="text-xs font-medium flex items-center gap-1.5">
-                <Phone className="size-3.5 text-muted-foreground" />
+              <Label htmlFor="part-phone" className="text-sm font-semibold flex items-center gap-1.5">
+                <Phone className="size-4 text-muted-foreground" />
                 Número do WhatsApp / Telefone
               </Label>
               <Input
@@ -750,19 +753,20 @@ function ParticipantesPage() {
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: formatPhone(e.target.value) })}
                 required
+                className="text-sm h-10"
               />
             </div>
 
-            <DialogFooter className="gap-2 pt-2">
+            <DialogFooter className="gap-2.5 pt-3">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setNewParticipantOpen(false)}
-                className="text-xs"
+                className="text-sm h-10 px-4"
               >
                 Cancelar
               </Button>
-              <Button type="submit" className="text-xs">
+              <Button type="submit" className="text-sm h-10 px-5 font-semibold">
                 Concluir Cadastro
               </Button>
             </DialogFooter>
@@ -772,35 +776,36 @@ function ParticipantesPage() {
 
       {/* MODAL 3: Adicionar Atendimento no Histórico */}
       <Dialog open={newAttendanceOpen} onOpenChange={setNewAttendanceOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="font-display text-lg font-normal">
+            <DialogTitle className="font-display text-xl font-bold text-foreground">
               Registrar Atendimento / Participação
             </DialogTitle>
-            <DialogDescription className="text-xs">
+            <DialogDescription className="text-sm text-muted-foreground">
               Adicione um novo registro à linha do tempo de <strong>{selectedParticipant?.name}</strong>.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSaveAttendance} className="space-y-3.5">
+          <form onSubmit={handleSaveAttendance} className="space-y-4 pt-1">
             <div className="space-y-1.5">
-              <Label htmlFor="att-event" className="text-xs font-medium">Ação / Local do Evento</Label>
+              <Label htmlFor="att-event" className="text-sm font-semibold">Ação / Local do Evento</Label>
               <Input
                 id="att-event"
                 value={attendanceForm.eventName}
                 onChange={(e) => setAttendanceForm({ ...attendanceForm, eventName: e.target.value })}
                 required
+                className="text-sm h-10"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3.5">
               <div className="space-y-1.5">
-                <Label htmlFor="att-type" className="text-xs font-medium">Tipo de Atendimento</Label>
+                <Label htmlFor="att-type" className="text-sm font-semibold">Tipo de Atendimento</Label>
                 <select
                   id="att-type"
                   value={attendanceForm.type}
                   onChange={(e) => setAttendanceForm({ ...attendanceForm, type: e.target.value })}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-medium"
                 >
                   <option value="Triagem de Sinais Vitais">Triagem de Sinais Vitais</option>
                   <option value="Avaliação Funcional">Avaliação Funcional</option>
@@ -810,7 +815,7 @@ function ParticipantesPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="att-status" className="text-xs font-medium">Resultado</Label>
+                <Label htmlFor="att-status" className="text-sm font-semibold">Resultado</Label>
                 <select
                   id="att-status"
                   value={attendanceForm.status}
@@ -820,7 +825,7 @@ function ParticipantesPage() {
                       status: e.target.value as any,
                     })
                   }
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-medium"
                 >
                   <option value="Normal">Normal</option>
                   <option value="Atenção">Atenção</option>
@@ -831,37 +836,39 @@ function ParticipantesPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="att-resp" className="text-xs font-medium">Profissional Responsável</Label>
+              <Label htmlFor="att-resp" className="text-sm font-semibold">Profissional Responsável</Label>
               <Input
                 id="att-resp"
                 placeholder="Ex: Dra. Adriane Câmara"
                 value={attendanceForm.responsible}
                 onChange={(e) => setAttendanceForm({ ...attendanceForm, responsible: e.target.value })}
                 required
+                className="text-sm h-10"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="att-sum" className="text-xs font-medium">Resumo do Atendimento</Label>
+              <Label htmlFor="att-sum" className="text-sm font-semibold">Resumo do Atendimento</Label>
               <Input
                 id="att-sum"
                 placeholder="Ex: Pressão aferida, orientações ergonômicas passadas..."
                 value={attendanceForm.summary}
                 onChange={(e) => setAttendanceForm({ ...attendanceForm, summary: e.target.value })}
                 required
+                className="text-sm h-10"
               />
             </div>
 
-            <DialogFooter className="gap-2 pt-2">
+            <DialogFooter className="gap-2.5 pt-3">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setNewAttendanceOpen(false)}
-                className="text-xs"
+                className="text-sm h-10 px-4"
               >
                 Cancelar
               </Button>
-              <Button type="submit" className="text-xs">
+              <Button type="submit" className="text-sm h-10 px-5 font-semibold">
                 Salvar Atendimento
               </Button>
             </DialogFooter>

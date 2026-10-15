@@ -80,16 +80,16 @@ function SessoesCortesiaPage() {
     >
       <div className="space-y-6 max-w-5xl">
         {/* 1. Cartão informativo no topo (Destaque Verde) */}
-        <div className="rounded-lg border border-primary/30 bg-primary/10 p-5 text-foreground">
-          <div className="flex items-start gap-3.5">
-            <span className="grid size-9 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground mt-0.5">
-              <Gift className="size-5" />
+        <div className="rounded-xl border border-primary/30 bg-primary/10 p-5 sm:p-6 text-foreground shadow-2xs">
+          <div className="flex items-start gap-4">
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground mt-0.5 shadow-xs">
+              <Gift className="size-6" />
             </span>
-            <div className="space-y-1">
-              <h3 className="font-display text-sm font-semibold text-primary-foreground md:text-base flex items-center gap-2">
+            <div className="space-y-1.5">
+              <h3 className="font-display text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
                 Regra do Benefício Social
               </h3>
-              <p className="text-xs leading-relaxed text-foreground">
+              <p className="text-sm leading-relaxed text-foreground/90">
                 Cada participante pode receber <strong>até 4 sessões por triagem</strong> concluída. O saldo de sessões restantes é <strong>atualizado automaticamente</strong> assim que o atendimento for registrado como <strong>"Realizado"</strong> na agenda do estúdio parceiro.
               </p>
             </div>
@@ -97,17 +97,17 @@ function SessoesCortesiaPage() {
         </div>
 
         {/* 2. Tabela Principal */}
-        <div className="rounded-lg border border-border bg-card shadow-xs overflow-hidden">
-          <div className="border-b border-border bg-muted/30 px-6 py-4 flex items-center justify-between">
+        <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
+          <div className="border-b border-border bg-muted/30 px-6 py-4.5 flex items-center justify-between">
             <div>
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
                 Participantes com Sessões Cortesia
               </h4>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
+              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
                 Exibindo apenas participantes com triagens concluídas com concessão de sessões.
               </p>
             </div>
-            <span className="text-xs font-medium text-muted-foreground">
+            <span className="text-sm font-semibold text-muted-foreground">
               {participants.length} participante(s)
             </span>
           </div>
@@ -119,15 +119,15 @@ function SessoesCortesiaPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="w-full text-left text-sm border-collapse">
                 <thead>
-                  <tr className="border-b border-border bg-muted/20 text-muted-foreground">
-                    <th className="py-3 px-5 font-medium">Paciente</th>
-                    <th className="py-3 px-4 font-medium text-center">Concedidas</th>
-                    <th className="py-3 px-4 font-medium text-center">Utilizadas</th>
-                    <th className="py-3 px-4 font-medium text-center">Restantes</th>
-                    <th className="py-3 px-4 font-medium text-center">Status</th>
-                    <th className="py-3 px-5 font-medium text-right">Histórico</th>
+                  <tr className="border-b border-border bg-muted/20 text-muted-foreground font-semibold">
+                    <th className="py-3.5 px-6">Paciente</th>
+                    <th className="py-3.5 px-4 text-center">Concedidas</th>
+                    <th className="py-3.5 px-4 text-center">Utilizadas</th>
+                    <th className="py-3.5 px-4 text-center">Restantes</th>
+                    <th className="py-3.5 px-4 text-center">Status</th>
+                    <th className="py-3.5 px-6 text-right">Histórico</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -135,35 +135,35 @@ function SessoesCortesiaPage() {
                     const balance = calculateBalance(participant);
                     return (
                       <tr key={participant.id} className="hover:bg-accent/30 transition-colors">
-                        <td className="py-4 px-5">
-                          <div className="flex items-center gap-2.5">
-                            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-secondary text-primary font-medium text-xs">
+                        <td className="py-4.5 px-6">
+                          <div className="flex items-center gap-3">
+                            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-secondary text-primary font-bold text-sm">
                               {participant.name.charAt(0)}
                             </span>
                             <div>
-                              <p className="font-medium text-foreground text-sm">{participant.name}</p>
-                              <p className="text-[11px] text-muted-foreground">{participant.id}</p>
+                              <p className="font-semibold text-foreground text-sm sm:text-base">{participant.name}</p>
+                              <p className="text-xs text-muted-foreground font-mono">{participant.id}</p>
                             </div>
                           </div>
                         </td>
 
-                        <td className="py-4 px-4 text-center font-mono font-medium text-sm">
+                        <td className="py-4.5 px-4 text-center font-mono font-bold text-base text-foreground">
                           {balance.granted}
                         </td>
 
-                        <td className="py-4 px-4 text-center font-mono text-muted-foreground text-sm">
+                        <td className="py-4.5 px-4 text-center font-mono text-muted-foreground font-bold text-base">
                           {balance.used}
                         </td>
 
-                        <td className="py-4 px-4 text-center">
-                          <span className={`font-mono text-sm font-bold ${balance.remaining > 0 ? "text-primary" : "text-muted-foreground"}`}>
+                        <td className="py-4.5 px-4 text-center">
+                          <span className={`font-mono text-base sm:text-lg font-bold ${balance.remaining > 0 ? "text-primary" : "text-muted-foreground"}`}>
                             {balance.remaining}
                           </span>
                         </td>
 
-                        <td className="py-4 px-4 text-center">
+                        <td className="py-4.5 px-4 text-center">
                           <span
-                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-medium ${
+                            className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
                               balance.status === "Ativo"
                                 ? "bg-primary/10 text-primary border border-primary/20"
                                 : "bg-muted text-muted-foreground border border-border"
@@ -173,14 +173,14 @@ function SessoesCortesiaPage() {
                           </span>
                         </td>
 
-                        <td className="py-4 px-5 text-right">
+                        <td className="py-4.5 px-6 text-right">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleOpenHistory(participant)}
-                            className="gap-1.5 text-xs h-8"
+                            className="gap-2 text-xs sm:text-sm h-9 px-3.5 font-medium"
                           >
-                            <History className="size-3.5" />
+                            <History className="size-4" />
                             Ver histórico
                           </Button>
                         </td>
@@ -200,12 +200,12 @@ function SessoesCortesiaPage() {
           <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <div className="flex items-center justify-between gap-3">
-                <DialogTitle className="font-display text-xl font-normal">
+                <DialogTitle className="font-display text-xl sm:text-2xl font-bold text-foreground">
                   Histórico de Sessões Cortesia
                 </DialogTitle>
                 {activeBalance && (
                   <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                    className={`rounded-full px-3.5 py-1 text-xs sm:text-sm font-bold ${
                       activeBalance.remaining > 0
                         ? "bg-primary/15 text-primary border border-primary/30"
                         : "bg-muted text-muted-foreground border border-border"
@@ -215,44 +215,44 @@ function SessoesCortesiaPage() {
                   </span>
                 )}
               </div>
-              <DialogDescription>
-                Participante: <strong>{activeSelected.name}</strong> ({activeSelected.id})
+              <DialogDescription className="text-sm text-muted-foreground mt-1">
+                Participante: <strong className="text-foreground">{activeSelected.name}</strong> ({activeSelected.id})
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-6 pt-2">
               {/* Resumo do Saldo */}
-              <div className="grid grid-cols-3 gap-3 rounded-lg border border-border bg-secondary/30 p-3 text-center">
+              <div className="grid grid-cols-3 gap-3.5 rounded-xl border border-border bg-secondary/30 p-4 text-center">
                 <div>
-                  <p className="text-[10px] uppercase text-muted-foreground">Concedidas</p>
-                  <p className="font-display text-lg font-bold text-foreground">{activeBalance?.granted}</p>
+                  <p className="text-xs uppercase font-bold text-muted-foreground">Concedidas</p>
+                  <p className="font-display text-2xl sm:text-3xl font-bold text-foreground mt-1">{activeBalance?.granted}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase text-muted-foreground">Utilizadas</p>
-                  <p className="font-display text-lg font-bold text-muted-foreground">{activeBalance?.used}</p>
+                  <p className="text-xs uppercase font-bold text-muted-foreground">Utilizadas</p>
+                  <p className="font-display text-2xl sm:text-3xl font-bold text-muted-foreground mt-1">{activeBalance?.used}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase text-muted-foreground">Saldo Restante</p>
-                  <p className="font-display text-lg font-bold text-primary">{activeBalance?.remaining}</p>
+                  <p className="text-xs uppercase font-bold text-muted-foreground">Saldo Restante</p>
+                  <p className="font-display text-2xl sm:text-3xl font-bold text-primary mt-1">{activeBalance?.remaining}</p>
                 </div>
               </div>
 
               {/* Lista de Concessões */}
               <div>
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2.5 flex items-center gap-1.5">
-                  <CheckCircle2 className="size-3.5 text-primary" />
+                <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+                  <CheckCircle2 className="size-4 text-primary" />
                   Concessões Registradas (Triagens Concluídas)
                 </h4>
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   {activeSelected.concessions.map((c) => (
-                    <div key={c.id} className="rounded-md border border-border bg-card p-3 text-xs">
+                    <div key={c.id} className="rounded-xl border border-border bg-card p-3.5 text-sm shadow-2xs">
                       <div className="flex items-center justify-between font-medium">
-                        <span>Data da Triagem: {c.date}</span>
-                        <span className="rounded bg-primary/10 px-2 py-0.5 text-primary font-semibold text-[11px]">
+                        <span className="font-semibold text-foreground">Data da Triagem: {c.date}</span>
+                        <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-primary font-bold text-xs">
                           +{c.sessions} sessão(ões) concedida(s)
                         </span>
                       </div>
-                      <p className="mt-1 text-muted-foreground text-[11px] leading-relaxed">
+                      <p className="mt-1 text-muted-foreground text-xs sm:text-sm leading-relaxed">
                         Motivo clínico: {c.reason}
                       </p>
                     </div>
@@ -262,25 +262,25 @@ function SessoesCortesiaPage() {
 
               {/* Lista de Utilizações */}
               <div>
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2.5 flex items-center gap-1.5">
-                  <Clock className="size-3.5 text-muted-foreground" />
+                <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+                  <Clock className="size-4 text-muted-foreground" />
                   Utilizações (Atendimentos Realizados)
                 </h4>
                 {activeSelected.utilizations.length === 0 ? (
-                  <p className="text-xs text-muted-foreground bg-muted/30 p-3 rounded-md text-center">
+                  <p className="text-sm text-muted-foreground bg-muted/30 p-4 rounded-xl text-center">
                     Nenhuma sessão utilizada ainda. O participante dispõe do saldo integral.
                   </p>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     {activeSelected.utilizations.map((u) => (
-                      <div key={u.id} className="rounded-md border border-border bg-card p-3 text-xs flex items-center justify-between gap-2">
+                      <div key={u.id} className="rounded-xl border border-border bg-card p-3.5 text-sm flex items-center justify-between gap-2 shadow-2xs">
                         <div>
-                          <p className="font-medium text-foreground">{u.type}</p>
-                          <p className="text-[11px] text-muted-foreground">
+                          <p className="font-semibold text-foreground">{u.type}</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
                             {u.date} · {u.professional}
                           </p>
                         </div>
-                        <span className="rounded bg-secondary px-2 py-0.5 text-[10px] font-medium text-secondary-foreground shrink-0">
+                        <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-secondary-foreground shrink-0">
                           {u.status}
                         </span>
                       </div>
@@ -290,16 +290,16 @@ function SessoesCortesiaPage() {
               </div>
             </div>
 
-            <DialogFooter className="mt-6 flex flex-col sm:flex-row gap-2">
-              <Button variant="outline" onClick={() => setSelectedParticipant(null)}>
+            <DialogFooter className="mt-6 flex flex-col sm:flex-row gap-2.5">
+              <Button variant="outline" onClick={() => setSelectedParticipant(null)} className="text-sm h-10 px-4">
                 Fechar
               </Button>
               <Button
                 disabled={activeBalance?.remaining === 0}
                 onClick={handleOpenScheduleFromHistory}
-                className="gap-2"
+                className="gap-2 text-sm h-10 px-5 font-semibold"
               >
-                <CalendarPlus className="size-4" />
+                <CalendarPlus className="size-4.5" />
                 Agendar sessão
               </Button>
             </DialogFooter>
@@ -310,77 +310,81 @@ function SessoesCortesiaPage() {
       {/* Diálogo de Agendamento da Sessão Cortesia */}
       {activeSelected && (
         <Dialog open={scheduleModalOpen} onOpenChange={setScheduleModalOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle className="font-display text-xl font-normal">
+              <DialogTitle className="font-display text-xl sm:text-2xl font-bold text-foreground">
                 Agendar Atendimento Cortesia
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-sm text-muted-foreground">
                 Agendamento pré-selecionado para <strong>{activeSelected.name}</strong>.
               </DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={handleConfirmSchedule} className="space-y-4">
+            <form onSubmit={handleConfirmSchedule} className="space-y-4 pt-1">
               <div className="space-y-1.5">
-                <Label htmlFor="sched-date" className="text-xs">Data do atendimento</Label>
+                <Label htmlFor="sched-date" className="text-sm font-semibold">Data do atendimento</Label>
                 <Input
                   id="sched-date"
                   type="date"
                   value={scheduleForm.date}
                   onChange={(e) => setScheduleForm({ ...scheduleForm, date: e.target.value })}
                   required
+                  className="text-sm h-10"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="sched-time" className="text-xs">Horário</Label>
+                <Label htmlFor="sched-time" className="text-sm font-semibold">Horário</Label>
                 <Input
                   id="sched-time"
                   type="time"
                   value={scheduleForm.time}
                   onChange={(e) => setScheduleForm({ ...scheduleForm, time: e.target.value })}
                   required
+                  className="text-sm h-10"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="sched-type" className="text-xs">Tipo de sessão</Label>
+                <Label htmlFor="sched-type" className="text-sm font-semibold">Tipo de sessão</Label>
                 <Input
                   id="sched-type"
                   value={scheduleForm.type}
                   onChange={(e) => setScheduleForm({ ...scheduleForm, type: e.target.value })}
                   required
+                  className="text-sm h-10"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="sched-prof" className="text-xs">Profissional responsável</Label>
+                <Label htmlFor="sched-prof" className="text-sm font-semibold">Profissional responsável</Label>
                 <Input
                   id="sched-prof"
                   value={scheduleForm.professional}
                   onChange={(e) => setScheduleForm({ ...scheduleForm, professional: e.target.value })}
                   required
+                  className="text-sm h-10"
                 />
               </div>
 
-              <div className="flex items-center gap-2 rounded-md bg-secondary/50 p-3 text-xs">
+              <div className="flex items-center gap-2.5 rounded-xl bg-secondary/50 p-3.5 text-sm">
                 <input
                   id="sched-complete"
                   type="checkbox"
                   checked={scheduleForm.markAsCompleted}
                   onChange={(e) => setScheduleForm({ ...scheduleForm, markAsCompleted: e.target.checked })}
-                  className="rounded text-primary focus:ring-primary size-4"
+                  className="rounded text-primary focus:ring-primary size-4.5 cursor-pointer"
                 />
-                <Label htmlFor="sched-complete" className="text-xs cursor-pointer font-normal">
+                <Label htmlFor="sched-complete" className="text-sm cursor-pointer font-medium leading-relaxed">
                   Marcar como <strong>"Realizado"</strong> imediatamente (abate 1 sessão do saldo agora).
                 </Label>
               </div>
 
-              <DialogFooter className="gap-2 pt-2">
-                <Button type="button" variant="outline" onClick={() => setScheduleModalOpen(false)}>
+              <DialogFooter className="gap-2.5 pt-3">
+                <Button type="button" variant="outline" onClick={() => setScheduleModalOpen(false)} className="text-sm h-10 px-4">
                   Cancelar
                 </Button>
-                <Button type="submit">
+                <Button type="submit" className="text-sm h-10 px-5 font-semibold">
                   Confirmar Agendamento
                 </Button>
               </DialogFooter>
@@ -393,9 +397,9 @@ function SessoesCortesiaPage() {
       {toastMessage && (
         <div
           role="status"
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-lg bg-foreground px-4 py-3 text-sm font-medium text-background shadow-lg"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-xl bg-foreground px-4.5 py-3.5 text-sm font-medium text-background shadow-lg"
         >
-          <Check className="size-4 text-primary" />
+          <Check className="size-5 text-primary" />
           <span>{toastMessage}</span>
         </div>
       )}
