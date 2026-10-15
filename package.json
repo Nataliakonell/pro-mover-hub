@@ -1,0 +1,15 @@
+{
+  "name": "pro-mover-hub-monorepo",
+  "version": "1.0.0",
+  "description": "Monorepo para PRO-MOVER Hub - Painel Comunitário de Saúde e Fisioterapia",
+  "scripts": {
+    "dev:frontend": "npm run dev --prefix Frontend",
+    "dev:backend": "npm run dev --prefix Backend",
+    "build:frontend": "npm run build --prefix Frontend",
+    "build:backend": "npm run build --prefix Backend",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\""
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

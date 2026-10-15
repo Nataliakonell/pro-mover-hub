@@ -1,0 +1,157 @@
+// Prisma Schema para PRO-MOVER Hub (PostgreSQL)
+// Documentação: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("admin") // "admin" | "fisioterapeuta" | "avaliador" | "recepcao"
+  createdAt    DateTime @default(now())
+
+  @@map("users")
+}
+
+model Event {
+  id           String        @id // "evt-01", etc.
+  name         String
+  date         String
+  location     String
+  createdAt    DateTime      @default(now())
+  participants Participant[]
+  triages      Triage[]
+
+  @@map("events")
+}
+
+model Participant {
+  id              String           @id // "PART-001", etc.
+  name            String
+  birthDate       String
+  age             Int
+  ageGroup        String           // "18–30" | "31–45" | "46–60" | "60+"
+  cpf             String
+  phone           String
+  eventId         String?
+  createdAt       DateTime         @default(now())
+  
+  event           Event?           @relation(fields: [eventId], references: [id])
+  attendances     Attendance[]
+  medicalRecords  MedicalRecord[]
+  courtesyRecords CourtesyRecord[]
+  triages         Triage[]
+
+  @@map("participants")
+}
+
+model Attendance {
+  id              String      @id
+  participantId   String
+  date            String
+  eventName       String
+  type            String
+  responsible     String
+  status          String      // "Normal" | "Atenção" | "Alterado" | "Concluído"
+  summary         String
+  medicalRecordId String?
+  createdAt       DateTime    @default(now())
+
+  participant     Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@map("attendances")
+}
+
+model Triage {
+  id              String       @id // "TR-01", etc.
+  participantId   String?
+  participantName String
+  eventId         String
+  time            String
+  responsible     String
+  status          String       // "Normal" | "Atenção" | "Alterado"
+  systolic        Int
+  diastolic       Int
+  glucose         Int
+  spo2            Int
+  heartRate       Int
+  result          String
+  createdAt       DateTime     @default(now())
+
+  event           Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  participant     Participant? @relation(fields: [participantId], references: [id])
+
+  @@map("triages")
+}
+
+model MedicalRecord {
+  id            String       @id // "PR-2026-001", etc.
+  participantId String?
+  name          String
+  age           Int
+  date          String
+  status        String       // "Normal" | "Atenção" | "Alterado" | "Acompanhamento"
+  pressure      String
+  glucose       String
+  spo2          String?
+  heartRate     String?
+  note          String
+  tone          String       // "danger" | "warning" | "info" | "success"
+  createdAt     DateTime     @default(now())
+
+  participant   Participant? @relation(fields: [participantId], references: [id])
+
+  @@map("medical_records")
+}
+
+model CourtesyRecord {
+  id            String               @id // "C-001", etc.
+  participantId String
+  triageId      String?
+  date          String
+  sessions      Int                  @default(4) // Regra: até 4 sessões por triagem
+  reason        String
+  createdAt     DateTime             @default(now())
+
+  participant   Participant          @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  utilizations  CourtesyUtilization[]
+
+  @@map("courtesy_records")
+}
+
+model CourtesyUtilization {
+  id               String         @id // "U-001", etc.
+  courtesyRecordId String
+  date             String
+  type             String
+  professional     String
+  status           String         @default("Realizado") // "Realizado" | "Agendado" | "Cancelado"
+  createdAt        DateTime       @default(now())
+
+  courtesyRecord   CourtesyRecord @relation(fields: [courtesyRecordId], references: [id], onDelete: Cascade)
+
+  @@map("courtesy_utilizations")
+}
+
+model Settings {
+  id               Int      @id @default(1)
+  eventDate        String
+  eventLocation    String
+  sysThreshold     Int      @default(140)
+  diaThreshold     Int      @default(90)
+  glucoseThreshold Int      @default(140)
+  spo2Threshold    Int      @default(92)
+  hrMinThreshold   Int      @default(50)
+  hrMaxThreshold   Int      @default(100)
+  updatedAt        DateTime @updatedAt
+
+  @@map("settings")
+}

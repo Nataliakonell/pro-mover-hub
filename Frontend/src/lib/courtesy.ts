@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getCourtesyRecordsApi, scheduleCourtesyApi } from "./api";
 
 export interface CourtesyConcession {
   id: string;
@@ -135,6 +136,20 @@ export function saveStoredCourtesy(data: ParticipantCourtesy[]) {
 export function useCourtesy() {
   const [participants, setParticipants] = useState<ParticipantCourtesy[]>(getStoredCourtesy);
 
+  // Sincroniza com PostgreSQL ao carregar
+  useEffect(() => {
+    getCourtesyRecordsApi()
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          saveStoredCourtesy(data);
+          setParticipants(data);
+        }
+      })
+      .catch((err) => {
+        console.warn("Backend offline ou iniciando, usando dados locais de cortesia:", err.message);
+      });
+  }, []);
+
   useEffect(() => {
     const handler = () => {
       setParticipants(getStoredCourtesy());
@@ -153,6 +168,9 @@ export function useCourtesy() {
     sessionData: Omit<CourtesyUtilization, "id">
   ) => {
     const current = getStoredCourtesy();
+    const targetParticipant = current.find((p) => p.id === participantId);
+    const courtesyRecordId = targetParticipant?.concessions[0]?.id || "C-001";
+
     const updated = current.map((p) => {
       if (p.id !== participantId) return p;
       return {
@@ -168,6 +186,17 @@ export function useCourtesy() {
     });
     saveStoredCourtesy(updated);
     setParticipants(updated);
+
+    // Salva no PostgreSQL de forma assíncrona
+    scheduleCourtesyApi({
+      courtesyRecordId,
+      date: sessionData.date,
+      type: sessionData.type,
+      professional: sessionData.professional,
+      status: sessionData.status,
+    }).catch((err) => {
+      console.warn("Falha ao salvar utilização de cortesia no backend:", err.message);
+    });
   };
 
   // Conceder novas sessões (máximo 4 por triagem)

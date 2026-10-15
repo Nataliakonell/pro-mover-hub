@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getSettingsApi, updateSettingsApi } from "./api";
 
 export interface AppSettings {
   // Bloco Evento comunitário
@@ -70,6 +71,30 @@ export function saveStoredSettings(settings: Partial<AppSettings>): AppSettings 
 export function useSettings() {
   const [settings, setSettingsState] = useState<AppSettings>(getStoredSettings);
 
+  // Sincroniza com PostgreSQL ao montar
+  useEffect(() => {
+    getSettingsApi()
+      .then((data) => {
+        if (data) {
+          const mapped: AppSettings = {
+            eventDate: data.eventDate || DEFAULT_SETTINGS.eventDate,
+            eventLocation: data.eventLocation || DEFAULT_SETTINGS.eventLocation,
+            systolicMax: data.sysThreshold ?? DEFAULT_SETTINGS.systolicMax,
+            diastolicMax: data.diaThreshold ?? DEFAULT_SETTINGS.diastolicMax,
+            glucoseMax: data.glucoseThreshold ?? DEFAULT_SETTINGS.glucoseMax,
+            oxygenMin: data.spo2Threshold ?? DEFAULT_SETTINGS.oxygenMin,
+            heartRateMin: data.hrMinThreshold ?? DEFAULT_SETTINGS.heartRateMin,
+            heartRateMax: data.hrMaxThreshold ?? DEFAULT_SETTINGS.heartRateMax,
+          };
+          saveStoredSettings(mapped);
+          setSettingsState(mapped);
+        }
+      })
+      .catch((err) => {
+        console.warn("Backend offline ou iniciando, usando configurações locais:", err.message);
+      });
+  }, []);
+
   useEffect(() => {
     const handleSettingsChange = () => {
       setSettingsState(getStoredSettings());
@@ -85,6 +110,21 @@ export function useSettings() {
   const updateSettings = (newSettings: Partial<AppSettings>) => {
     const saved = saveStoredSettings(newSettings);
     setSettingsState(saved);
+
+    // Salva no PostgreSQL
+    updateSettingsApi({
+      eventDate: saved.eventDate,
+      eventLocation: saved.eventLocation,
+      sysThreshold: saved.systolicMax,
+      diaThreshold: saved.diastolicMax,
+      glucoseThreshold: saved.glucoseMax,
+      spo2Threshold: saved.oxygenMin,
+      hrMinThreshold: saved.heartRateMin,
+      hrMaxThreshold: saved.heartRateMax,
+    }).catch((err) => {
+      console.warn("Falha ao sincronizar configurações no PostgreSQL:", err.message);
+    });
+
     return saved;
   };
 

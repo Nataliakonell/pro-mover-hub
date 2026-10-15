@@ -1,4 +1,9 @@
 import { useState, useEffect } from "react";
+import {
+  getParticipantsApi,
+  createParticipantApi,
+  addAttendanceApi,
+} from "./api";
 
 export interface AttendanceRecord {
   id: string;
@@ -291,6 +296,21 @@ export function saveStoredParticipants(data: Participant[]) {
 export function useParticipants() {
   const [participants, setParticipants] = useState<Participant[]>(getStoredParticipants);
 
+  // Sincroniza com o banco de dados PostgreSQL ao montar
+  useEffect(() => {
+    getParticipantsApi()
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          saveStoredParticipants(data);
+          setParticipants(data);
+        }
+      })
+      .catch((err) => {
+        // Fallback resiliente para o cache local
+        console.warn("Backend offline ou iniciando, usando dados locais:", err.message);
+      });
+  }, []);
+
   useEffect(() => {
     const handler = () => {
       setParticipants(getStoredParticipants());
@@ -343,6 +363,20 @@ export function useParticipants() {
     const updated = [participant, ...current];
     saveStoredParticipants(updated);
     setParticipants(updated);
+
+    // Salva no PostgreSQL de forma assíncrona
+    createParticipantApi({
+      name: participant.name,
+      birthDate: participant.birthDate,
+      age: participant.age,
+      ageGroup: participant.ageGroup,
+      cpf: participant.cpf,
+      phone: participant.phone,
+      eventId: participant.eventId,
+    }).catch((err) => {
+      console.warn("Falha ao sincronizar participante com PostgreSQL:", err.message);
+    });
+
     return participant;
   };
 
@@ -374,6 +408,19 @@ export function useParticipants() {
     });
     saveStoredParticipants(updated);
     setParticipants(updated);
+
+    // Salva atendimento no PostgreSQL de forma assíncrona
+    addAttendanceApi(participantId, {
+      date: new Date().toLocaleDateString("pt-BR"),
+      eventName: attData.eventName,
+      type: attData.type,
+      responsible: attData.responsible,
+      status: attData.status,
+      summary: attData.summary,
+      medicalRecordId: attData.medicalRecordId,
+    }).catch((err) => {
+      console.warn("Falha ao sincronizar atendimento com PostgreSQL:", err.message);
+    });
   };
 
   // Calcula a distribuição etária dinamicamente para o evento selecionado
