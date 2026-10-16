@@ -11,8 +11,10 @@ export interface AppSettings {
   systolicMax: number;
   diastolicMin: number;
   diastolicMax: number;
+  glucoseMin: number;
   glucoseMax: number;
   oxygenMin: number;
+  oxygenMax: number;
   heartRateMin: number;
   heartRateMax: number;
 
@@ -25,14 +27,16 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  eventDate: new Date().toISOString().split("T")[0],
+  eventDate: new Date().toISOString().split("T")[0] || "",
   eventLocation: "Ação Comunitária Conecta Saúde",
   systolicMin: 90,
   systolicMax: 140,
   diastolicMin: 60,
   diastolicMax: 90,
+  glucoseMin: 70,
   glucoseMax: 140,
   oxygenMin: 95,
+  oxygenMax: 100,
   heartRateMin: 50,
   heartRateMax: 100,
 
@@ -115,8 +119,10 @@ export function getStoredSettings(): AppSettings {
       systolicMax: parsed.systolicMax !== undefined ? Number(parsed.systolicMax) : (parsed.sysThreshold ? Number(parsed.sysThreshold) : DEFAULT_SETTINGS.systolicMax),
       diastolicMin: parsed.diastolicMin !== undefined ? Number(parsed.diastolicMin) : DEFAULT_SETTINGS.diastolicMin,
       diastolicMax: parsed.diastolicMax !== undefined ? Number(parsed.diastolicMax) : (parsed.diaThreshold ? Number(parsed.diaThreshold) : DEFAULT_SETTINGS.diastolicMax),
+      glucoseMin: parsed.glucoseMin !== undefined ? Number(parsed.glucoseMin) : DEFAULT_SETTINGS.glucoseMin,
       glucoseMax: Number(parsed.glucoseMax) || DEFAULT_SETTINGS.glucoseMax,
       oxygenMin: Number(parsed.oxygenMin) || DEFAULT_SETTINGS.oxygenMin,
+      oxygenMax: parsed.oxygenMax !== undefined ? Number(parsed.oxygenMax) : DEFAULT_SETTINGS.oxygenMax,
       heartRateMin: Number(parsed.heartRateMin) || DEFAULT_SETTINGS.heartRateMin,
       heartRateMax: Number(parsed.heartRateMax) || DEFAULT_SETTINGS.heartRateMax,
 
@@ -141,8 +147,10 @@ export function saveStoredSettings(settings: Partial<AppSettings>): AppSettings 
     systolicMax: settings.systolicMax !== undefined ? Number(settings.systolicMax) : current.systolicMax,
     diastolicMin: settings.diastolicMin !== undefined ? Number(settings.diastolicMin) : current.diastolicMin,
     diastolicMax: settings.diastolicMax !== undefined ? Number(settings.diastolicMax) : current.diastolicMax,
+    glucoseMin: settings.glucoseMin !== undefined ? Number(settings.glucoseMin) : current.glucoseMin,
     glucoseMax: settings.glucoseMax !== undefined ? Number(settings.glucoseMax) : current.glucoseMax,
     oxygenMin: settings.oxygenMin !== undefined ? Number(settings.oxygenMin) : current.oxygenMin,
+    oxygenMax: settings.oxygenMax !== undefined ? Number(settings.oxygenMax) : current.oxygenMax,
     heartRateMin: settings.heartRateMin !== undefined ? Number(settings.heartRateMin) : current.heartRateMin,
     heartRateMax: settings.heartRateMax !== undefined ? Number(settings.heartRateMax) : current.heartRateMax,
 
@@ -173,10 +181,17 @@ export function useSettings() {
             systolicMax: data.sysMaxThreshold ?? data.sysThreshold ?? DEFAULT_SETTINGS.systolicMax,
             diastolicMin: data.diaMinThreshold ?? DEFAULT_SETTINGS.diastolicMin,
             diastolicMax: data.diaMaxThreshold ?? data.diaThreshold ?? DEFAULT_SETTINGS.diastolicMax,
+            glucoseMin: data.glucoseMinThreshold ?? DEFAULT_SETTINGS.glucoseMin,
             glucoseMax: data.glucoseThreshold ?? DEFAULT_SETTINGS.glucoseMax,
             oxygenMin: data.spo2Threshold ?? DEFAULT_SETTINGS.oxygenMin,
+            oxygenMax: data.spo2MaxThreshold ?? DEFAULT_SETTINGS.oxygenMax,
             heartRateMin: data.hrMinThreshold ?? DEFAULT_SETTINGS.heartRateMin,
             heartRateMax: data.hrMaxThreshold ?? DEFAULT_SETTINGS.heartRateMax,
+            imcUnderweightMax: DEFAULT_SETTINGS.imcUnderweightMax,
+            imcNormalMax: DEFAULT_SETTINGS.imcNormalMax,
+            imcOverweightMax: DEFAULT_SETTINGS.imcOverweightMax,
+            imcObesity1Max: DEFAULT_SETTINGS.imcObesity1Max,
+            imcObesity2Max: DEFAULT_SETTINGS.imcObesity2Max,
           };
           saveStoredSettings(mapped);
           setSettingsState(mapped);

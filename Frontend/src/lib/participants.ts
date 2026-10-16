@@ -4,6 +4,7 @@ import {
   createParticipantApi,
   addAttendanceApi,
 } from "./api";
+import { DEFAULT_SETTINGS, type AppSettings } from "./settings";
 
 export interface AttendanceRecord {
   id: string;
@@ -13,7 +14,7 @@ export interface AttendanceRecord {
   responsible: string;
   summary: string;
   status: "Normal" | "Atenção" | "Alterado" | "Concluído";
-  medicalRecordId?: string;
+  medicalRecordId?: string | undefined;
 }
 
 export interface Participant {
@@ -82,6 +83,146 @@ export function calculateAge(birthDateString: string): { age: number; group: str
   return { age, group };
 }
 
+export interface AlterationsDetails {
+  isNormal: boolean;
+  hasAlterations: boolean;
+  alterationsList: string[];
+  cleanSummary: string;
+}
+
+export function extractAlterationsDetails(
+  summary?: string | null,
+  status?: string | null,
+  settings?: AppSettings
+): AlterationsDetails {
+  const normSummary = summary || "";
+  const lower = normSummary.toLowerCase();
+  const cfg = settings || DEFAULT_SETTINGS;
+
+  // 1. Caso o laudo já tenha o padrão explícito "Alterações detectadas: ..."
+  if (normSummary.includes("Alterações detectadas:")) {
+    const match = normSummary.match(/Alterações detectadas:\s*([^\[\]]+)/i);
+    if (match && match[1]) {
+      const items = match[1]
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      return {
+        isNormal: false,
+        hasAlterations: true,
+        alterationsList: items,
+        cleanSummary: normSummary,
+      };
+    }
+  }
+
+  // 2. Caso afirme expressamente normalidade
+  if (
+    normSummary.includes("Parâmetros Clínicos Normais") ||
+    lower.includes("parâmetros normais") ||
+    lower.includes("dentro dos limites")
+  ) {
+    return {
+      isNormal: true,
+      hasAlterations: false,
+      alterationsList: [],
+      cleanSummary: normSummary,
+    };
+  }
+
+  // 3. Fallback inteligente: analisa os valores contidos no texto ou status
+  const detected: string[] = [];
+
+  // Pressão Arterial (ex: PA 130/85 ou 150/90)
+  const paMatch = normSummary.match(/PA\s*(\d{2,3})\s*[\/x]\s*(\d{2,3})/i);
+  if (paMatch && paMatch[1] && paMatch[2]) {
+    const sys = parseInt(paMatch[1]);
+    const dia = parseInt(paMatch[2]);
+    if (sys < cfg.systolicMin || sys > cfg.systolicMax || dia < cfg.diastolicMin || dia > cfg.diastolicMax) {
+      detected.push(`Pressão Arterial Alterada (${sys}/${dia} mmHg)`);
+    } else if (sys >= 130 || dia >= 85) {
+      detected.push(`Pressão Arterial Limítrofe (${sys}/${dia} mmHg)`);
+    }
+  }
+
+  // Glicemia (ex: Glicemia 150 mg/dL)
+  const gluMatch = normSummary.match(/Glicemia\s*(\d{2,3})/i);
+  if (gluMatch && gluMatch[1]) {
+    const glu = parseFloat(gluMatch[1]);
+    const minG = cfg.glucoseMin ?? 70;
+    const maxG = cfg.glucoseMax ?? 140;
+    if (glu < minG || glu > maxG) {
+      detected.push(`Glicemia Alterada (${glu} mg/dL)`);
+    } else if (glu >= 110) {
+      detected.push(`Glicemia em Atenção (${glu} mg/dL)`);
+    }
+  }
+
+  // SpO2
+  const spo2Match = normSummary.match(/SpO[₂2]\s*(\d{2,3})/i);
+  if (spo2Match && spo2Match[1]) {
+    const ox = parseFloat(spo2Match[1]);
+    const minOx = cfg.oxygenMin ?? 95;
+    const maxOx = cfg.oxygenMax ?? 100;
+    if (ox < minOx || ox > maxOx) {
+      detected.push(`SpO₂ Alterada (${ox}%)`);
+    }
+  }
+
+  // FC
+  const fcMatch = normSummary.match(/FC\s*(\d{2,3})/i);
+  if (fcMatch && fcMatch[1]) {
+    const hr = parseFloat(fcMatch[1]);
+    if (hr < cfg.heartRateMin || hr > cfg.heartRateMax) {
+      detected.push(`Frequência Cardíaca Alterada (${hr} bpm)`);
+    }
+  }
+
+  // IMC
+  if (lower.includes("sobrepeso")) {
+    detected.push("IMC em Atenção (Sobrepeso)");
+  } else if (lower.includes("obesidade")) {
+    detected.push("IMC Alterado (Obesidade)");
+  } else if (lower.includes("abaixo do peso")) {
+    detected.push("IMC em Atenção (Abaixo do peso)");
+  }
+
+  if (detected.length > 0) {
+    return {
+      isNormal: false,
+      hasAlterations: true,
+      alterationsList: detected,
+      cleanSummary: normSummary,
+    };
+  }
+
+  // Se o status veio explicitamente como Alterado ou Atenção mas nenhum valor numérico foi pego
+  if (status === "Alterado") {
+    return {
+      isNormal: false,
+      hasAlterations: true,
+      alterationsList: ["Exame com alteração clínica registrada."],
+      cleanSummary: normSummary,
+    };
+  }
+
+  if (status === "Atenção") {
+    return {
+      isNormal: false,
+      hasAlterations: true,
+      alterationsList: ["Exame requer atenção / acompanhamento preventivo."],
+      cleanSummary: normSummary,
+    };
+  }
+
+  return {
+    isNormal: true,
+    hasAlterations: false,
+    alterationsList: [],
+    cleanSummary: normSummary,
+  };
+}
+
 export function getStoredParticipants(): Participant[] {
   if (typeof window === "undefined") return [];
   try {
@@ -136,8 +277,8 @@ export function useParticipants() {
     birthDate: string;
     cpf: string;
     phone: string;
-    eventId?: string;
-    eventName?: string;
+    eventId?: string | undefined;
+    eventName?: string | undefined;
   }): Participant => {
     const ageInfo = calculateAge(newP.birthDate) || { age: 0, group: "18–30" };
     const newId = `PART-${Date.now().toString().slice(-4)}`;
@@ -198,7 +339,7 @@ export function useParticipants() {
       responsible: string;
       status: "Normal" | "Atenção" | "Alterado" | "Concluído";
       summary: string;
-      medicalRecordId?: string;
+      medicalRecordId?: string | undefined;
     }
   ) => {
     const current = getStoredParticipants();
@@ -249,18 +390,15 @@ export function useParticipants() {
     };
 
     eventParticipants.forEach((p) => {
-      if (counts[p.ageGroup] !== undefined) {
-        counts[p.ageGroup]++;
-      } else {
-        counts["18–30"]++;
-      }
+      const group = p.ageGroup in counts ? p.ageGroup : "18–30";
+      counts[group] = (counts[group] ?? 0) + 1;
     });
 
     return [
-      { age: "18–30", count: counts["18–30"] },
-      { age: "31–45", count: counts["31–45"] },
-      { age: "46–60", count: counts["46–60"] },
-      { age: "60+", count: counts["60+"] },
+      { age: "18–30", count: counts["18–30"] ?? 0 },
+      { age: "31–45", count: counts["31–45"] ?? 0 },
+      { age: "46–60", count: counts["46–60"] ?? 0 },
+      { age: "60+", count: counts["60+"] ?? 0 },
     ];
   };
 

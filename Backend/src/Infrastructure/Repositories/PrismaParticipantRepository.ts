@@ -45,7 +45,7 @@ export class PrismaParticipantRepository implements IParticipantRepository {
             date: new Date().toLocaleDateString("pt-BR"),
             eventName: "Ação de Saúde Comunitária",
             type: "Cadastro e Acolhimento Comunitário",
-            responsible: "Equipe PRO-MOVER",
+            responsible: "Equipe Conecta Saúde",
             status: "Concluído",
             summary: "Cadastro inicial registrado no banco de dados com dados biométricos e contato.",
             medicalRecordId: `PR-${newId}`,

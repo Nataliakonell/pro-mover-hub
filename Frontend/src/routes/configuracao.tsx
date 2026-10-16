@@ -68,8 +68,10 @@ function ConfiguracaoPage() {
       systolicMax: Number(formState.systolicMax),
       diastolicMin: Number(formState.diastolicMin),
       diastolicMax: Number(formState.diastolicMax),
+      glucoseMin: Number(formState.glucoseMin),
       glucoseMax: Number(formState.glucoseMax),
       oxygenMin: Number(formState.oxygenMin),
+      oxygenMax: Number(formState.oxygenMax),
       heartRateMin: Number(formState.heartRateMin),
       heartRateMax: Number(formState.heartRateMax),
 
@@ -208,19 +210,41 @@ function ConfiguracaoPage() {
               Glicemia, Oxigenação e Frequência Cardíaca
             </h4>
             <p className="text-xs sm:text-sm text-muted-foreground mb-4 leading-relaxed">
-              Pontos de corte para detecção de hiperglicemia, saturação de oxigênio insuficiente (hipoxemia) e alterações do ritmo cardíaco.
+              Pontos de corte para detecção de hipo/hiperglicemia, saturação de oxigênio (hipoxemia) e alterações do ritmo cardíaco.
             </p>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              {/* Metabolismo e Oxigenação */}
+              {/* Glicemia (Mínima e Máxima) */}
               <div className="space-y-3 rounded-lg border border-border/60 bg-card p-4 shadow-xs">
                 <span className="text-sm font-semibold text-foreground block">
-                  Metabolismo e Oxigenação
+                  Glicemia Capilar (mg/dL)
                 </span>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
+                    <Label htmlFor="glucoseMin" className="text-xs font-medium text-foreground block">
+                      Mínima (mg/dL)
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="glucoseMin"
+                        type="number"
+                        min="30"
+                        max="200"
+                        className="h-10 text-sm font-semibold pr-12"
+                        value={formState.glucoseMin}
+                        onChange={(e) => handleInputChange("glucoseMin", e.target.value)}
+                        required
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground font-mono pointer-events-none">
+                        mg/dL
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground pt-0.5">Padrão: 70 mg/dL</p>
+                  </div>
+
+                  <div className="space-y-1.5">
                     <Label htmlFor="glucoseMax" className="text-xs font-medium text-foreground block">
-                      Glicemia máxima
+                      Máxima (mg/dL)
                     </Label>
                     <div className="relative">
                       <Input
@@ -239,10 +263,18 @@ function ConfiguracaoPage() {
                     </div>
                     <p className="text-xs text-muted-foreground pt-0.5">Padrão: 140 mg/dL</p>
                   </div>
+                </div>
+              </div>
 
+              {/* Saturação de Oxigênio SpO2 (Mínima e Máxima) */}
+              <div className="space-y-3 rounded-lg border border-border/60 bg-card p-4 shadow-xs">
+                <span className="text-sm font-semibold text-foreground block">
+                  SpO₂ - Oximetria (%)
+                </span>
+                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label htmlFor="oxygenMin" className="text-xs font-medium text-foreground block">
-                      SpO₂ mínima
+                      Mínima (%)
                     </Label>
                     <div className="relative">
                       <Input
@@ -260,6 +292,28 @@ function ConfiguracaoPage() {
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground pt-0.5">Padrão: 95%</p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="oxygenMax" className="text-xs font-medium text-foreground block">
+                      Máxima (%)
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="oxygenMax"
+                        type="number"
+                        min="70"
+                        max="100"
+                        className="h-10 text-sm font-semibold pr-7"
+                        value={formState.oxygenMax}
+                        onChange={(e) => handleInputChange("oxygenMax", e.target.value)}
+                        required
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground font-mono pointer-events-none">
+                        %
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground pt-0.5">Padrão: 100%</p>
                   </div>
                 </div>
               </div>

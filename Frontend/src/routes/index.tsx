@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useMemo, type FormEvent } from "react";
 import {
   AlertTriangle,
@@ -52,9 +52,18 @@ import {
   formatPhone,
   cleanPhoneForWhatsApp,
   Participant,
+  extractAlterationsDetails,
 } from "@/lib/participants";
+import { useTriages, TriageRecord } from "@/lib/triages";
+
+type DashboardSearch = { campanha?: string };
 
 export const Route = createFileRoute("/")({
+  // Campanha ativa fica na URL: /?campanha=ID (permite recarregar/compartilhar o link)
+  validateSearch: (search: Record<string, unknown>): DashboardSearch => {
+    const campanha = search["campanha"];
+    return typeof campanha === "string" && campanha ? { campanha } : {};
+  },
   head: () => ({
     meta: [
       { title: "Dashboard | Conecta Saúde" },
@@ -70,16 +79,23 @@ function DashboardPage() {
   const { participants, addParticipant, addAttendance } = useParticipants();
   const { events, refreshEvents } = useDashboardEvents();
 
+  // ID da campanha em que o usuário "entrou" (null = tela inicial com lista de campanhas)
+  const navigate = useNavigate();
+  const { campanha } = Route.useSearch();
+  const activeCampaignId = campanha ?? null;
+  const setActiveCampaignId = (id: string | null) =>
+    navigate({ to: "/", search: id ? { campanha: id } : {} });
+
+  const { triages: campaignTriages, addTriage } = useTriages(activeCampaignId);
+
   const firstName = (user?.name || "Usuário").trim().split(" ")[0];
   const isClinical = user.role !== "recepcao";
-
-  // ID da campanha em que o usuário "entrou" (null = tela inicial com lista de campanhas)
-  const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
 
   // Modais
   const [createCampaignOpen, setCreateCampaignOpen] = useState(false);
   const [triageDialogOpen, setTriageDialogOpen] = useState(false);
   const [personDialogOpen, setPersonDialogOpen] = useState(false);
+  const [openTriageAfterPerson, setOpenTriageAfterPerson] = useState(false);
   const [participantHistoryOpen, setParticipantHistoryOpen] = useState(false);
   const [selectedParticipantForHistory, setSelectedParticipantForHistory] = useState<Participant | null>(null);
 
@@ -99,14 +115,14 @@ function DashboardPage() {
     location: "",
   });
 
-  // Formulário: Nova Triagem (com cálculo de IMC e observação opcional)
+  // Formulário: Nova Triagem (sem valores pré-definidos para não induzir a erro)
   const [triageForm, setTriageForm] = useState({
     participantId: "",
     participantName: "",
-    pa: "120/80",
-    glucose: 98,
-    spo2: 97,
-    heartRate: 72,
+    pa: "",
+    glucose: "",
+    spo2: "",
+    heartRate: "",
     weight: "",
     height: "",
     observation: "",
@@ -127,6 +143,151 @@ function DashboardPage() {
     if (!activeCampaignId) return events[0] || EMPTY_EVENT;
     return events.find((e) => e.id === activeCampaignId) || events[0] || EMPTY_EVENT;
   }, [events, activeCampaignId]);
+
+  // Triagens dinâmicas da campanha ativa (calculadas diretamente com base nas triagens registradas)
+  const dynamicTriageStats = useMemo(() => {
+    // Filtra apenas as triagens que pertencem à campanha ativa
+    const filteredList = campaignTriages.filter((t) => !activeCampaign.id || t.eventId === activeCampaign.id);
+
+    const list = filteredList.length > 0 ? filteredList : (activeCampaign?.recentTriages?.map(r => ({
+      id: r.id,
+      participantName: r.participant,
+      time: r.time,
+      responsible: r.responsible,
+      status: r.status,
+      result: r.result,
+      systolic: 0,
+      diastolic: 0,
+      glucose: 0,
+      spo2: 0,
+      heartRate: 0,
+      eventId: activeCampaign.id
+    })) || []);
+
+    const total = list.length;
+    let altered = 0;
+    let normal = 0;
+    let paCount = 0;
+    let gluCount = 0;
+    let spo2Count = 0;
+    let imcCount = 0;
+    let hrCount = 0;
+
+    list.forEach((t) => {
+      let sys = t.systolic || 0;
+      let dia = t.diastolic || 0;
+      let glu = t.glucose || 0;
+      let spo2 = t.spo2 || 0;
+      let hr = t.heartRate || 0;
+
+      const res = (t.result || "").toLowerCase();
+
+      // Extrai valores do texto se vierem zerados (ex: do histórico ou mock)
+      if (sys === 0 || dia === 0) {
+        const paMatch = res.match(/pa\s*(\d{2,3})\s*[\/x]\s*(\d{2,3})/);
+        if (paMatch && paMatch[1] && paMatch[2]) {
+          sys = parseInt(paMatch[1]);
+          dia = parseInt(paMatch[2]);
+        }
+      }
+      if (glu === 0) {
+        const gluMatch = res.match(/glicemia\s*(\d{2,3})/);
+        if (gluMatch && gluMatch[1]) {
+          glu = parseFloat(gluMatch[1]);
+        }
+      }
+      if (spo2 === 0) {
+        const spo2Match = res.match(/spo[₂2]\s*(\d{2,3})/);
+        if (spo2Match && spo2Match[1]) {
+          spo2 = parseFloat(spo2Match[1]);
+        }
+      }
+      if (hr === 0) {
+        const hrMatch = res.match(/fc\s*(\d{2,3})/);
+        if (hrMatch && hrMatch[1]) {
+          hr = parseFloat(hrMatch[1]);
+        }
+      }
+
+      // 1. Pressão Arterial
+      const paAlteredByValue =
+        (sys > 0 && (sys < settings.systolicMin || sys > settings.systolicMax)) ||
+        (dia > 0 && (dia < settings.diastolicMin || dia > settings.diastolicMax));
+      const paLimítrofe =
+        !paAlteredByValue && sys > 0 && dia > 0 && (sys >= 130 || dia >= 85);
+      const paAlteredByText = res.includes("pressão arterial alterada") || res.includes("pressão arterial limítrofe");
+      const isPaAltered = paAlteredByValue || paLimítrofe || paAlteredByText;
+      if (isPaAltered) {
+        paCount++;
+      }
+
+      // 2. Glicemia
+      const gluMin = settings.glucoseMin ?? 70;
+      const gluMax = settings.glucoseMax ?? 140;
+      const gluAlteredByValue = glu > 0 && (glu < gluMin || glu > gluMax);
+      const gluLimítrofe = !gluAlteredByValue && glu >= 110;
+      const gluAlteredByText = res.includes("glicemia alterada") || res.includes("glicemia de atenção") || res.includes("glicemia em atenção");
+      const isGluAltered = gluAlteredByValue || gluLimítrofe || gluAlteredByText;
+      if (isGluAltered) {
+        gluCount++;
+      }
+
+      // 3. SpO₂
+      const oxMin = settings.oxygenMin ?? 95;
+      const oxMax = settings.oxygenMax ?? 100;
+      const spo2AlteredByValue = spo2 > 0 && (spo2 < oxMin || spo2 > oxMax);
+      const spo2AlteredByText = res.includes("spo₂ alterada") || res.includes("spo2 alterada");
+      const isSpo2Altered = spo2AlteredByValue || spo2AlteredByText;
+      if (isSpo2Altered) {
+        spo2Count++;
+      }
+
+      // 4. IMC
+      const isImcAltered =
+        res.includes("imc alterado") ||
+        res.includes("imc em atenção") ||
+        res.includes("sobrepeso") ||
+        res.includes("obesidade") ||
+        res.includes("abaixo do peso");
+      if (isImcAltered) {
+        imcCount++;
+      }
+
+      // 5. Frequência Cardíaca
+      const hrAlteredByValue = hr > 0 && (hr < settings.heartRateMin || hr > settings.heartRateMax);
+      const hrAlteredByText = res.includes("frequência cardíaca alterada") || res.includes("fc alterada");
+      const isHrAltered = hrAlteredByValue || hrAlteredByText;
+      if (isHrAltered) {
+        hrCount++;
+      }
+
+      // Determinação exata do exame como Normal vs Alterado:
+      // O exame é considerado alterado se pelo menos UM parâmetro estiver fora da faixa normal
+      const hasAnyAlteration = isPaAltered || isGluAltered || isSpo2Altered || isImcAltered || isHrAltered;
+      if (hasAnyAlteration) {
+        altered++;
+      } else {
+        normal++;
+      }
+    });
+
+    const normalPct = total > 0 ? Math.round((normal / total) * 100) : 100;
+    const alteredPct = total > 0 ? 100 - normalPct : 0;
+
+    return {
+      total,
+      normal,
+      altered,
+      normalPct,
+      alteredPct,
+      paCount,
+      gluCount,
+      spo2Count,
+      imcCount,
+      hrCount,
+      list,
+    };
+  }, [campaignTriages, activeCampaign, settings]);
 
   // Participantes da campanha ativa
   const campaignParticipants = useMemo(() => {
@@ -216,40 +377,92 @@ function DashboardPage() {
   // Salvar Nova Triagem
   const handleSaveTriage = async (e: FormEvent) => {
     e.preventDefault();
-    if (!triageForm.participantName.trim()) return;
-
-    const [sysStr, diaStr] = triageForm.pa.split("/");
-    const sys = parseInt(sysStr) || 120;
-    const dia = parseInt(diaStr) || 80;
-
-    let status: "Normal" | "Atenção" | "Alterado" = "Normal";
-
-    // Regras de Pressão Arterial
-    const sysAlterado = sys < settings.systolicMin || sys > settings.systolicMax;
-    const diaAlterado = dia < settings.diastolicMin || dia > settings.diastolicMax;
-    const glicemiaAlterada = triageForm.glucose >= settings.glucoseMax;
-    const spo2Alterada = triageForm.spo2 < settings.oxygenMin;
-    const fcAlterada = triageForm.heartRate < settings.heartRateMin || triageForm.heartRate > settings.heartRateMax;
-    const imcAlterado = calculatedIMC ? calculatedIMC.status === "Alterado" : false;
-
-    if (sysAlterado || diaAlterado || glicemiaAlterada || spo2Alterada || fcAlterada || imcAlterado) {
-      status = "Alterado";
-    } else if (
-      sys >= 130 || sys <= 95 ||
-      dia >= 85 || dia <= 65 ||
-      triageForm.glucose >= 110 ||
-      (calculatedIMC && calculatedIMC.status === "Atenção")
-    ) {
-      status = "Atenção";
+    if (!triageForm.participantName.trim()) {
+      showToast("Selecione ou cadastre o participante antes de salvar.");
+      return;
     }
 
-    // Monta o resumo detalhado incluindo IMC e observação opcional
+    const [sysStr, diaStr] = triageForm.pa.split("/");
+    const sys = parseInt(sysStr || "") || 0;
+    const dia = parseInt(diaStr || "") || 0;
+    const glu = parseFloat(triageForm.glucose) || 0;
+    const ox = parseFloat(triageForm.spo2) || 0;
+    const hr = parseFloat(triageForm.heartRate) || 0;
+
+    let status: "Normal" | "Atenção" | "Alterado" = "Normal";
+    const alterationsList: string[] = [];
+
+    // 1. Regras de Pressão Arterial
+    if (sys > 0 && dia > 0) {
+      if (sys < settings.systolicMin || sys > settings.systolicMax || dia < settings.diastolicMin || dia > settings.diastolicMax) {
+        alterationsList.push(`Pressão Arterial Alterada (${triageForm.pa} mmHg)`);
+        status = "Alterado";
+      } else if (sys >= 130 || dia >= 85) {
+        // Pré-hipertensão / Limítrofe (SBC: PAS 130-139 ou PAD 85-89 mmHg)
+        alterationsList.push(`Pressão Arterial Limítrofe (${triageForm.pa} mmHg)`);
+        if (status === "Normal") status = "Atenção";
+      }
+    }
+
+    // 2. Regras de Glicemia (Mínima e Máxima)
+    const gluMin = settings.glucoseMin ?? 70;
+    const gluMax = settings.glucoseMax ?? 140;
+    if (glu > 0) {
+      if (glu < gluMin || glu > gluMax) {
+        alterationsList.push(`Glicemia Alterada (${glu} mg/dL)`);
+        status = "Alterado";
+      } else if (glu >= 110) {
+        alterationsList.push(`Glicemia de Atenção (${glu} mg/dL)`);
+        if (status === "Normal") status = "Atenção";
+      }
+    }
+
+    // 3. Regras de SpO2 (Mínima e Máxima)
+    const oxMin = settings.oxygenMin ?? 95;
+    const oxMax = settings.oxygenMax ?? 100;
+    if (ox > 0) {
+      if (ox < oxMin || ox > oxMax) {
+        alterationsList.push(`SpO₂ Alterada (${ox}%)`);
+        status = "Alterado";
+      }
+    }
+
+    // 4. Regras de Frequência Cardíaca
+    if (hr > 0) {
+      if (hr < settings.heartRateMin || hr > settings.heartRateMax) {
+        alterationsList.push(`Frequência Cardíaca Alterada (${hr} bpm)`);
+        status = "Alterado";
+      }
+    }
+
+    // 5. Regras de IMC
+    if (calculatedIMC) {
+      if (calculatedIMC.status === "Alterado") {
+        alterationsList.push(`IMC Alterado (${calculatedIMC.category} - ${calculatedIMC.value})`);
+        status = "Alterado";
+      } else if (calculatedIMC.status === "Atenção") {
+        alterationsList.push(`IMC em Atenção (${calculatedIMC.category} - ${calculatedIMC.value})`);
+        if (status === "Normal") status = "Atenção";
+      }
+    }
+
+    // Monta o resumo detalhado deixando explícito o que está alterado ou se tudo está normal
+    const paText = triageForm.pa ? `PA ${triageForm.pa}` : "";
+    const gliText = triageForm.glucose ? `Glicemia ${triageForm.glucose} mg/dL` : "";
+    const spo2Text = triageForm.spo2 ? `SpO₂ ${triageForm.spo2}%` : "";
+    const hrText = triageForm.heartRate ? `FC ${triageForm.heartRate} bpm` : "";
     const imcPart = calculatedIMC ? ` · IMC ${calculatedIMC.value} (${calculatedIMC.category})` : "";
     const obsPart = triageForm.observation.trim() ? ` · Obs: ${triageForm.observation.trim()}` : "";
-    const resultString = `PA ${triageForm.pa} · Glicemia ${triageForm.glucose} mg/dL${imcPart}${obsPart}`;
+
+    const vitalsSummary = [paText, gliText, spo2Text, hrText].filter(Boolean).join(" · ");
+    const diagnosisText = alterationsList.length > 0 
+      ? `Alterações detectadas: ${alterationsList.join(", ")}`
+      : "Parâmetros Clínicos Normais (Dentro dos limites)";
+
+    const resultString = `${diagnosisText} [${vitalsSummary}${imcPart}]${obsPart}`;
 
     try {
-      await createTriageApi({
+      await addTriage({
         participantId: triageForm.participantId || undefined,
         participantName: triageForm.participantName,
         eventId: activeCampaign.id,
@@ -257,9 +470,9 @@ function DashboardPage() {
         status,
         systolic: sys,
         diastolic: dia,
-        glucose: Number(triageForm.glucose),
-        spo2: Number(triageForm.spo2),
-        heartRate: Number(triageForm.heartRate),
+        glucose: Number(triageForm.glucose) || 0,
+        spo2: Number(triageForm.spo2) || 0,
+        heartRate: Number(triageForm.heartRate) || 0,
         result: resultString,
       });
 
@@ -280,15 +493,18 @@ function DashboardPage() {
       setTriageForm({
         participantId: "",
         participantName: "",
-        pa: "120/80",
-        glucose: 98,
-        spo2: 97,
-        heartRate: 72,
+        pa: "",
+        glucose: "",
+        spo2: "",
+        heartRate: "",
         weight: "",
         height: "",
         observation: "",
       });
-      showToast("Triagem registrada com sucesso!");
+      showToast(alterationsList.length > 0 
+        ? `Triagem salva: ${alterationsList.join(" | ")}`
+        : "Triagem registrada com sucesso! Todos os parâmetros normais."
+      );
     } catch (err: any) {
       setTriageDialogOpen(false);
       showToast("Triagem registrada no sistema!");
@@ -311,7 +527,20 @@ function DashboardPage() {
 
     setPersonForm({ name: "", birthDate: "", cpf: "", phone: "" });
     setPersonDialogOpen(false);
-    showToast(`Participante ${newP.name} cadastrado na campanha!`);
+
+    // Se o cadastro foi chamado a partir da modal de Nova Triagem, reabre a triagem já com o participante selecionado!
+    if (openTriageAfterPerson) {
+      setOpenTriageAfterPerson(false);
+      setTriageForm((prev) => ({
+        ...prev,
+        participantId: newP.id,
+        participantName: newP.name,
+      }));
+      setTriageDialogOpen(true);
+      showToast(`Participante ${newP.name} cadastrado! Retornando para a Triagem.`);
+    } else {
+      showToast(`Participante ${newP.name} cadastrado na campanha!`);
+    }
   };
 
   // Abrir histórico do participante
@@ -320,35 +549,76 @@ function DashboardPage() {
     setParticipantHistoryOpen(true);
   };
 
+  // Participante ativo no histórico (sempre sincronizado com a lista de participantes)
+  const activeHistoryParticipant = useMemo(() => {
+    if (!selectedParticipantForHistory) return null;
+    return participants.find((p) => p.id === selectedParticipantForHistory.id) || selectedParticipantForHistory;
+  }, [selectedParticipantForHistory, participants]);
+
   return (
-    <AppLayout>
+    <AppLayout
+      title={
+        activeCampaignId ? (
+          <Button
+            id="header-back-campaigns"
+            variant="ghost"
+            onClick={() => setActiveCampaignId(null)}
+            className="-ml-3 gap-2 text-base font-semibold text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="size-4.5" />
+            Voltar para todas as campanhas
+          </Button>
+        ) : (
+          <>
+            Bem-vindo(a), {firstName}
+            <span className="text-primary">.</span>
+          </>
+        )
+      }
+      subtitle={
+        activeCampaignId ? undefined : "Escolha uma campanha para acompanhar ou inicie uma nova ação de saúde."
+      }
+      actions={
+        activeCampaignId ? (
+          <>
+            <Button
+              id="header-new-participant"
+              variant="outline"
+              onClick={() => setPersonDialogOpen(true)}
+              className="gap-2 h-10 px-4 text-sm font-semibold"
+            >
+              <UserPlus className="size-4 text-primary" />
+              Novo Participante
+            </Button>
+            {isClinical && (
+              <Button
+                id="header-new-triage"
+                onClick={() => setTriageDialogOpen(true)}
+                className="gap-2 h-10 px-5 text-sm font-semibold shadow-sm"
+              >
+                <Plus className="size-4.5" />
+                Nova Triagem
+              </Button>
+            )}
+          </>
+        ) : (
+          <Button
+            id="header-create-campaign"
+            onClick={() => setCreateCampaignOpen(true)}
+            className="gap-2 h-10 px-5 text-sm font-semibold shadow-sm"
+          >
+            <Plus className="size-4.5" />
+            Criar Campanha
+          </Button>
+        )
+      }
+    >
       <div className="space-y-8 max-w-6xl pb-12">
         {/* ============================================================== */}
         {/* CASO 1: TELA INICIAL (NENHUMA CAMPANHA SELECIONADA / VISÃO GERAL) */}
         {/* ============================================================== */}
         {!activeCampaignId ? (
           <div className="space-y-8 animate-in fade-in duration-200">
-            {/* Cabeçalho da Tela de Início */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-6">
-              <div>
-                <h2 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
-                  Bom dia, {firstName}
-                  <span className="text-primary">.</span>
-                </h2>
-                <p className="mt-1.5 text-sm sm:text-base text-muted-foreground">
-                  Escolha uma campanha para acompanhar ou inicie uma nova ação de saúde.
-                </p>
-              </div>
-
-              {/* Botão Principal: Criar Campanha */}
-              <Button
-                onClick={() => setCreateCampaignOpen(true)}
-                className="gap-2 shrink-0 h-11 px-5 text-sm font-semibold shadow-sm"
-              >
-                <Plus className="size-4.5" />
-                Criar Campanha
-              </Button>
-            </div>
 
             {/* Métricas Resumidas Gerais */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -498,39 +768,6 @@ function DashboardPage() {
           /* CASO 2: DENTRO DA CAMPANHA (VISUALIZAÇÕES ESPECÍFICAS)          */
           /* ============================================================== */
           <div className="space-y-8 animate-in fade-in duration-200">
-            {/* Barra Superior de Navegação da Campanha */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setActiveCampaignId(null)}
-                className="gap-2 text-muted-foreground hover:text-foreground w-fit font-medium -ml-2"
-              >
-                <ArrowLeft className="size-4" />
-                Voltar para todas as campanhas
-              </Button>
-
-              <div className="flex items-center gap-2.5">
-                <Button
-                  variant="outline"
-                  onClick={() => setPersonDialogOpen(true)}
-                  className="gap-2 h-10 px-4 text-sm font-semibold"
-                >
-                  <UserPlus className="size-4 text-primary" />
-                  Novo Participante
-                </Button>
-
-                {isClinical && (
-                  <Button
-                    onClick={() => setTriageDialogOpen(true)}
-                    className="gap-2 h-10 px-5 text-sm font-semibold shadow-sm"
-                  >
-                    <Plus className="size-4.5" />
-                    Nova Triagem
-                  </Button>
-                )}
-              </div>
-            </div>
 
             {/* Banner da Campanha Selecionada */}
             <section className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/15 via-primary/5 to-secondary/30 p-6 sm:p-7 shadow-xs">
@@ -727,7 +964,7 @@ function DashboardPage() {
                       />
                       <path
                         className="text-primary stroke-current transition-all duration-700"
-                        strokeDasharray={`${activeCampaign.charts.examResults[0].percentage}, 100`}
+                        strokeDasharray={`${dynamicTriageStats.normalPct}, 100`}
                         strokeWidth="4"
                         strokeLinecap="round"
                         fill="none"
@@ -736,7 +973,7 @@ function DashboardPage() {
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                       <span className="text-3xl font-bold font-display text-primary">
-                        {activeCampaign.charts.examResults[0].percentage}%
+                        {dynamicTriageStats.normalPct}%
                       </span>
                       <span className="text-[11px] font-semibold text-muted-foreground uppercase leading-none">
                         Normal
@@ -749,18 +986,22 @@ function DashboardPage() {
                       <span className="size-3 rounded-full bg-primary shrink-0" />
                       <div>
                         <p className="font-semibold text-foreground">
-                          Normal ({activeCampaign.charts.examResults[0].percentage}%)
+                          Normal ({dynamicTriageStats.normalPct}%)
                         </p>
-                        <p className="text-[11px] text-muted-foreground">Dentro dos limites</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {dynamicTriageStats.normal} exame(s) dentro dos limites
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="size-3 rounded-full bg-warning shrink-0" />
                       <div>
                         <p className="font-semibold text-foreground">
-                          Alterado ({activeCampaign.charts.examResults[1].percentage}%)
+                          Alterado ({dynamicTriageStats.alteredPct}%)
                         </p>
-                        <p className="text-[11px] text-muted-foreground">Requer acompanhamento</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {dynamicTriageStats.altered} exame(s) com atenção/alteração
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -785,22 +1026,36 @@ function DashboardPage() {
 
                 <div className="space-y-3 pt-1">
                   {[
-                    { exam: "Pressão Arterial", count: activeCampaign.charts.examAlterations[0]?.count || 0 },
-                    { exam: "Glicemia", count: activeCampaign.charts.examAlterations[1]?.count || 0 },
-                    { exam: "IMC / Obesidade", count: activeCampaign.charts.examAlterations[2]?.count || 0 },
-                    { exam: "SpO₂ (Oxigenação)", count: activeCampaign.charts.examAlterations[3]?.count || 0 },
+                    { exam: "Pressão Arterial", count: dynamicTriageStats.paCount },
+                    { exam: "Glicemia", count: dynamicTriageStats.gluCount },
+                    { exam: "IMC / Obesidade", count: dynamicTriageStats.imcCount },
+                    { exam: "SpO₂ (Oxigenação)", count: dynamicTriageStats.spo2Count },
+                    { exam: "Frequência Cardíaca", count: dynamicTriageStats.hrCount },
                   ].map((alt) => {
-                    const maxVal = Math.max(activeCampaign.metrics.alteredTriages || 1, 1);
+                    const maxVal = Math.max(
+                      dynamicTriageStats.paCount,
+                      dynamicTriageStats.gluCount,
+                      dynamicTriageStats.imcCount,
+                      dynamicTriageStats.spo2Count,
+                      dynamicTriageStats.hrCount,
+                      1
+                    );
+                    const barWidth = dynamicTriageStats.total > 0 && alt.count > 0
+                      ? Math.min(Math.round((alt.count / maxVal) * 100), 100)
+                      : 0;
+
                     return (
                       <div key={alt.exam} className="space-y-1">
                         <div className="flex justify-between text-xs sm:text-sm">
                           <span className="font-medium text-foreground">{alt.exam}</span>
-                          <span className="font-mono text-warning font-bold">{alt.count} casos</span>
+                          <span className={`font-mono font-bold ${alt.count > 0 ? "text-warning" : "text-muted-foreground"}`}>
+                            {alt.count} caso{alt.count !== 1 ? "s" : ""}
+                          </span>
                         </div>
                         <div className="h-2.5 rounded-full bg-secondary overflow-hidden">
                           <div
                             className="h-full bg-warning rounded-full transition-all duration-500"
-                            style={{ width: `${Math.min((alt.count / maxVal) * 100, 100)}%` }}
+                            style={{ width: `${barWidth}%` }}
                           />
                         </div>
                       </div>
@@ -850,20 +1105,20 @@ function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {activeCampaign.recentTriages.length === 0 ? (
+                    {dynamicTriageStats.list.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
                           Nenhuma triagem registrada ainda nesta campanha. Clique em "Nova Triagem" para iniciar.
                         </td>
                       </tr>
                     ) : (
-                      activeCampaign.recentTriages.map((triage) => (
+                      dynamicTriageStats.list.map((triage) => (
                         <tr key={triage.id} className="hover:bg-accent/30 transition-colors">
                           <td className="py-3.5 px-6 font-semibold text-foreground">
-                            {triage.participant}
+                            {(triage as any).participantName || (triage as any).participant}
                           </td>
                           <td className="py-3.5 px-4 font-mono text-muted-foreground text-xs sm:text-sm">
-                            {triage.time}
+                            {(triage as any).time || (triage as any).createdAt || "Recente"}
                           </td>
                           <td className="py-3.5 px-4 text-muted-foreground text-xs sm:text-sm">
                             {triage.responsible}
@@ -1000,6 +1255,7 @@ function DashboardPage() {
                   variant="ghost"
                   size="sm"
                   onClick={() => {
+                    setOpenTriageAfterPerson(true);
                     setTriageDialogOpen(false);
                     setPersonDialogOpen(true);
                   }}
@@ -1041,6 +1297,7 @@ function DashboardPage() {
                     size="sm"
                     variant="outline"
                     onClick={() => {
+                      setOpenTriageAfterPerson(true);
                       setTriageDialogOpen(false);
                       setPersonDialogOpen(true);
                     }}
@@ -1061,7 +1318,7 @@ function DashboardPage() {
                 </Label>
                 <Input
                   id="t-pa"
-                  placeholder="120/80"
+                  placeholder="Ex: 120/80"
                   value={triageForm.pa}
                   onChange={(e) => setTriageForm({ ...triageForm, pa: e.target.value })}
                   required
@@ -1079,14 +1336,14 @@ function DashboardPage() {
                 <Input
                   id="t-gli"
                   type="number"
-                  placeholder="98"
+                  placeholder="Ex: 98"
                   value={triageForm.glucose}
-                  onChange={(e) => setTriageForm({ ...triageForm, glucose: Number(e.target.value) })}
+                  onChange={(e) => setTriageForm({ ...triageForm, glucose: e.target.value })}
                   required
                   className="text-sm h-10"
                 />
                 <p className="text-[11px] text-muted-foreground font-mono">
-                  Alerta se ≥ {settings.glucoseMax} mg/dL
+                  Ref: {settings.glucoseMin ?? 70}–{settings.glucoseMax} mg/dL
                 </p>
               </div>
 
@@ -1097,14 +1354,14 @@ function DashboardPage() {
                 <Input
                   id="t-spo2"
                   type="number"
-                  placeholder="97"
+                  placeholder="Ex: 97"
                   value={triageForm.spo2}
-                  onChange={(e) => setTriageForm({ ...triageForm, spo2: Number(e.target.value) })}
+                  onChange={(e) => setTriageForm({ ...triageForm, spo2: e.target.value })}
                   required
                   className="text-sm h-10"
                 />
                 <p className="text-[11px] text-muted-foreground font-mono">
-                  Alerta se &lt; {settings.oxygenMin}%
+                  Ref: {settings.oxygenMin}%–{settings.oxygenMax ?? 100}%
                 </p>
               </div>
 
@@ -1115,9 +1372,9 @@ function DashboardPage() {
                 <Input
                   id="t-fc"
                   type="number"
-                  placeholder="72"
+                  placeholder="Ex: 72"
                   value={triageForm.heartRate}
-                  onChange={(e) => setTriageForm({ ...triageForm, heartRate: Number(e.target.value) })}
+                  onChange={(e) => setTriageForm({ ...triageForm, heartRate: e.target.value })}
                   required
                   className="text-sm h-10"
                 />
@@ -1222,7 +1479,13 @@ function DashboardPage() {
       {/* ============================================================== */}
       {/* MODAL 3: NOVO PARTICIPANTE                                     */}
       {/* ============================================================== */}
-      <Dialog open={personDialogOpen} onOpenChange={setPersonDialogOpen}>
+      <Dialog
+        open={personDialogOpen}
+        onOpenChange={(open) => {
+          setPersonDialogOpen(open);
+          if (!open) setOpenTriageAfterPerson(false);
+        }}
+      >
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-display text-xl font-bold text-foreground">
@@ -1308,7 +1571,10 @@ function DashboardPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setPersonDialogOpen(false)}
+                onClick={() => {
+                  setOpenTriageAfterPerson(false);
+                  setPersonDialogOpen(false);
+                }}
                 className="h-10 text-sm px-4"
               >
                 Cancelar
@@ -1367,41 +1633,82 @@ function DashboardPage() {
               <div className="space-y-3">
                 <h5 className="font-display text-sm font-bold text-foreground flex items-center gap-1.5">
                   <History className="size-4 text-primary" />
-                  Histórico de Atendimentos e Triagens ({selectedParticipantForHistory.attendances?.length || 0})
+                  Histórico de Atendimentos e Triagens ({activeHistoryParticipant?.attendances?.length || 0})
                 </h5>
 
-                {(!selectedParticipantForHistory.attendances || selectedParticipantForHistory.attendances.length === 0) ? (
+                {(!activeHistoryParticipant?.attendances || activeHistoryParticipant.attendances.length === 0) ? (
                   <p className="text-xs text-muted-foreground p-4 text-center rounded-lg border border-dashed border-border bg-muted/10">
                     Nenhum atendimento ou triagem registrada para este participante ainda.
                   </p>
                 ) : (
-                  <div className="space-y-2.5">
-                    {selectedParticipantForHistory.attendances.map((att) => (
-                      <div
-                        key={att.id}
-                        className="rounded-xl border border-border bg-card p-3.5 space-y-1.5 text-xs sm:text-sm shadow-2xs"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-foreground">{att.eventName}</span>
-                          <span
-                            className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                              att.status === "Alterado"
-                                ? "bg-destructive/15 text-destructive"
-                                : att.status === "Atenção"
-                                ? "bg-warning/20 text-warning-foreground"
-                                : "bg-primary/10 text-primary"
-                            }`}
-                          >
-                            {att.status}
-                          </span>
+                  <div className="space-y-3">
+                    {activeHistoryParticipant.attendances.map((att) => {
+                      const details = extractAlterationsDetails(att.summary, att.status, settings);
+                      const displayStatus = details.hasAlterations
+                        ? (att.status === "Alterado" ? "Alterado" : "Atenção")
+                        : "Normal";
+
+                      return (
+                        <div
+                          key={att.id}
+                          className="rounded-xl border border-border bg-card p-4 space-y-2.5 text-xs sm:text-sm shadow-2xs hover:border-primary/40 transition-colors"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-foreground">{att.type || "Triagem Clínica"}</span>
+                              <span className="text-muted-foreground text-xs">·</span>
+                              <span className="text-muted-foreground text-xs font-medium">{att.eventName}</span>
+                            </div>
+                            <span
+                              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                displayStatus === "Alterado"
+                                  ? "bg-destructive/15 text-destructive border border-destructive/20"
+                                  : displayStatus === "Atenção"
+                                  ? "bg-warning/20 text-warning-foreground border border-warning/30"
+                                  : "bg-primary/10 text-primary border border-primary/20"
+                              }`}
+                            >
+                              {displayStatus}
+                            </span>
+                          </div>
+
+                          {/* Bloco de Destaque das Alterações Identificadas */}
+                          {details.hasAlterations ? (
+                            <div className="rounded-lg bg-amber-500/10 border border-amber-500/25 p-2.5 space-y-1.5">
+                              <div className="flex items-center gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-400">
+                                <AlertTriangle className="size-4 shrink-0" />
+                                <span>Parâmetros / Exames com Alteração ou Atenção:</span>
+                              </div>
+                              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                                {details.alterationsList.map((altItem, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="inline-flex items-center rounded-md bg-amber-500/20 px-2 py-0.5 text-xs font-semibold text-amber-900 dark:text-amber-200"
+                                  >
+                                    {altItem}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="rounded-lg bg-primary/10 border border-primary/20 p-2 flex items-center gap-2 text-xs text-primary font-medium">
+                              <CheckCircle2 className="size-3.5 shrink-0" />
+                              <span>Todos os parâmetros clínicos dentro dos limites normais configurados.</span>
+                            </div>
+                          )}
+
+                          {/* Resumo completo com valores aferidos */}
+                          <p className="text-muted-foreground leading-relaxed">
+                            {att.summary}
+                          </p>
+
+                          <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1.5 border-t border-border/40">
+                            <span>Data: {att.date}</span>
+                            <span>Responsável: {att.responsible}</span>
+                          </div>
                         </div>
-                        <p className="text-muted-foreground">{att.summary}</p>
-                        <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1 border-t border-border/40">
-                          <span>Data: {att.date}</span>
-                          <span>Resp: {att.responsible}</span>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

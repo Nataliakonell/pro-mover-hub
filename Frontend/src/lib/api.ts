@@ -1,6 +1,6 @@
 // Cliente de API HTTP para comunicação com o Backend (Node.js/Express na porta 5000)
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_BASE = (import.meta.env as Record<string, string | undefined>)["VITE_API_URL"] || "http://localhost:5000/api";
 
 export async function fetchFromApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
@@ -32,7 +32,7 @@ export async function createParticipantApi(data: {
   ageGroup: string;
   cpf: string;
   phone: string;
-  eventId?: string;
+  eventId?: string | undefined;
 }) {
   return fetchFromApi<any>("/participants", {
     method: "POST",
@@ -49,7 +49,7 @@ export async function addAttendanceApi(
     responsible: string;
     status: string;
     summary: string;
-    medicalRecordId?: string;
+    medicalRecordId?: string | undefined;
   }
 ) {
   return fetchFromApi<any>(`/participants/${participantId}/attendances`, {
@@ -78,10 +78,10 @@ export async function getTriagesApi(eventId?: string) {
 }
 
 export async function createTriageApi(data: {
-  participantId?: string;
+  participantId?: string | undefined;
   participantName: string;
   eventId: string;
-  time?: string;
+  time?: string | undefined;
   responsible: string;
   status: string;
   systolic: number;
@@ -89,7 +89,7 @@ export async function createTriageApi(data: {
   glucose: number;
   spo2: number;
   heartRate: number;
-  result?: string;
+  result?: string | undefined;
 }) {
   return fetchFromApi<any>("/triages", {
     method: "POST",

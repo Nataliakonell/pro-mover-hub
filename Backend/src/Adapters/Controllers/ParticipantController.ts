@@ -52,7 +52,7 @@ export class ParticipantController {
         date: date || new Date().toLocaleDateString("pt-BR"),
         eventName: eventName || "Ação de Saúde",
         type: type || "Triagem de Sinais Vitais",
-        responsible: responsible || "Equipe PRO-MOVER",
+        responsible: responsible || "Equipe Conecta Saúde",
         status: status || "Normal",
         summary: summary || "",
         medicalRecordId,

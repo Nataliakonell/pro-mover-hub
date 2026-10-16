@@ -55,11 +55,25 @@ export class EventController {
             { age: "60+", count: ageGroupsMap["60+"] },
           ];
 
+          // Obtém as configurações clínicas do banco de dados (ou padrões)
+          const dbSettings = await prisma.settings.findFirst({ where: { id: 1 } });
+          const sysMin = dbSettings?.sysMinThreshold ?? 90;
+          const sysMax = dbSettings?.sysMaxThreshold ?? 140;
+          const diaMin = dbSettings?.diaMinThreshold ?? 60;
+          const diaMax = dbSettings?.diaMaxThreshold ?? 90;
+          const gluMin = 70;
+          const gluMax = dbSettings?.glucoseThreshold ?? 140;
+          const oxMin = dbSettings?.spo2Threshold ?? 95;
+          const oxMax = 100;
+          const hrMin = dbSettings?.hrMinThreshold ?? 50;
+          const hrMax = dbSettings?.hrMaxThreshold ?? 100;
+
           // Alterações reais detectadas nos sinais vitais
-          const paAlterada = triages.filter((t) => (t.systolic && t.systolic >= 140) || (t.diastolic && t.diastolic >= 90)).length;
-          const glicemiaAlterada = triages.filter((t) => t.glucose && t.glucose >= 140).length;
-          const spo2Alterada = triages.filter((t) => t.spo2 && t.spo2 < 95).length;
-          const fcAlterada = triages.filter((t) => t.heartRate && (t.heartRate < 50 || t.heartRate > 100)).length;
+          const paAlterada = triages.filter((t) => (t.systolic && (t.systolic < sysMin || t.systolic > sysMax)) || (t.diastolic && (t.diastolic < diaMin || t.diastolic > diaMax))).length;
+          const glicemiaAlterada = triages.filter((t) => t.glucose && (t.glucose < gluMin || t.glucose > gluMax)).length;
+          const spo2Alterada = triages.filter((t) => t.spo2 && (t.spo2 < oxMin || t.spo2 > oxMax)).length;
+          const imcAlterada = triages.filter((t) => t.result && (t.result.includes("Sobrepeso") || t.result.includes("Obesidade") || t.result.includes("Abaixo do peso"))).length;
+          const fcAlterada = triages.filter((t) => t.heartRate && (t.heartRate < hrMin || t.heartRate > hrMax)).length;
 
           // Cortesias e utilizações registradas
           const courtesyRecords = await prisma.courtesyRecord.findMany({
@@ -104,7 +118,8 @@ export class EventController {
               examAlterations: [
                 { exam: "Pressão Arterial", count: paAlterada },
                 { exam: "Glicemia", count: glicemiaAlterada },
-                { exam: "SpO₂ Baixa", count: spo2Alterada },
+                { exam: "IMC / Obesidade", count: imcAlterada },
+                { exam: "SpO₂ (Oxigenação)", count: spo2Alterada },
                 { exam: "Frequência Cardíaca", count: fcAlterada },
               ],
               eventEvolution: [

@@ -15,6 +15,7 @@ import {
   History,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   Sparkles,
   ChevronRight,
   Filter,
@@ -41,7 +42,9 @@ import {
   cleanPhoneForWhatsApp,
   Participant,
   AttendanceRecord,
+  extractAlterationsDetails,
 } from "@/lib/participants";
+import { useSettings } from "@/lib/settings";
 import { useDashboardEvents } from "@/lib/dashboard-data";
 
 export const Route = createFileRoute("/participantes")({
@@ -58,6 +61,7 @@ function ParticipantesPage() {
   const navigate = useNavigate();
   const { participants, addParticipant, addAttendance } = useParticipants();
   const { events } = useDashboardEvents();
+  const { settings } = useSettings();
 
   // Estados de busca e filtros
   const [searchTerm, setSearchTerm] = useState("");
@@ -66,6 +70,10 @@ function ParticipantesPage() {
   // Diálogo de Detalhes / Ficha do Participante
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+
+  const handleGoToMedicalRecord = (_name?: string) => {
+    navigate({ to: "/prontuarios" });
+  };
 
   // Diálogo de Cadastro de Novo Participante
   const [newParticipantOpen, setNewParticipantOpen] = useState(false);
@@ -539,55 +547,87 @@ function ParticipantesPage() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {selectedParticipant.attendances.map((att, idx) => (
-                      <div
-                        key={att.id || idx}
-                        className="rounded-xl border border-border bg-card p-4 space-y-2.5 transition-all hover:border-primary/40 shadow-2xs"
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-sm">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-foreground">
-                              {att.type}
-                            </span>
-                            <span className="text-muted-foreground">·</span>
-                            <span className="text-muted-foreground font-medium">
-                              {att.eventName}
-                            </span>
+                    {selectedParticipant.attendances.map((att, idx) => {
+                      const details = extractAlterationsDetails(att.summary, att.status, settings);
+                      const displayStatus = details.hasAlterations
+                        ? (att.status === "Alterado" ? "Alterado" : "Atenção")
+                        : (att.status === "Concluído" ? "Concluído" : "Normal");
+
+                      return (
+                        <div
+                          key={att.id || idx}
+                          className="rounded-xl border border-border bg-card p-4 space-y-2.5 transition-all hover:border-primary/40 shadow-2xs"
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-sm">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-foreground">
+                                {att.type}
+                              </span>
+                              <span className="text-muted-foreground">·</span>
+                              <span className="text-muted-foreground font-medium">
+                                {att.eventName}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs sm:text-sm text-muted-foreground font-medium">
+                                {att.date}
+                              </span>
+                              <span
+                                className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                  displayStatus === "Alterado"
+                                    ? "bg-destructive/15 text-destructive border border-destructive/20"
+                                    : displayStatus === "Atenção"
+                                    ? "bg-warning/20 text-warning-foreground border border-warning/30"
+                                    : displayStatus === "Concluído"
+                                    ? "bg-primary/10 text-primary border border-primary/20"
+                                    : "bg-muted text-muted-foreground"
+                                }`}
+                              >
+                                {displayStatus}
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs sm:text-sm text-muted-foreground font-medium">
-                              {att.date}
-                            </span>
-                            <span
-                              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                                att.status === "Alterado"
-                                  ? "bg-destructive/15 text-destructive"
-                                  : att.status === "Atenção"
-                                  ? "bg-warning/20 text-warning-foreground"
-                                  : att.status === "Concluído"
-                                  ? "bg-primary/10 text-primary"
-                                  : "bg-muted text-muted-foreground"
-                              }`}
-                            >
-                              {att.status}
-                            </span>
+
+                          {/* Bloco de Destaque das Alterações Identificadas */}
+                          {details.hasAlterations ? (
+                            <div className="rounded-lg bg-amber-500/10 border border-amber-500/25 p-2.5 space-y-1.5">
+                              <div className="flex items-center gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-400">
+                                <AlertTriangle className="size-4 shrink-0" />
+                                <span>Parâmetros / Exames com Alteração ou Atenção:</span>
+                              </div>
+                              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                                {details.alterationsList.map((altItem, altIdx) => (
+                                  <span
+                                    key={altIdx}
+                                    className="inline-flex items-center rounded-md bg-amber-500/20 px-2 py-0.5 text-xs font-semibold text-amber-900 dark:text-amber-200"
+                                  >
+                                    {altItem}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          ) : att.type?.includes("Triagem") ? (
+                            <div className="rounded-lg bg-primary/10 border border-primary/20 p-2 flex items-center gap-2 text-xs text-primary font-medium">
+                              <CheckCircle2 className="size-3.5 shrink-0" />
+                              <span>Todos os parâmetros clínicos dentro dos limites normais configurados.</span>
+                            </div>
+                          ) : null}
+
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            {att.summary}
+                          </p>
+
+                          <div className="flex items-center justify-between pt-2 border-t border-border/50 text-xs sm:text-sm text-muted-foreground">
+                            <span>Responsável: <strong className="text-foreground">{att.responsible}</strong></span>
+                            {att.medicalRecordId && (
+                              <span className="font-mono text-xs font-semibold text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+                                {att.medicalRecordId}
+                              </span>
+                            )}
                           </div>
                         </div>
-
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          {att.summary}
-                        </p>
-
-                        <div className="flex items-center justify-between pt-2 border-t border-border/50 text-xs sm:text-sm text-muted-foreground">
-                          <span>Responsável: <strong className="text-foreground">{att.responsible}</strong></span>
-                          {att.medicalRecordId && (
-                            <span className="font-mono text-xs font-semibold text-muted-foreground bg-secondary px-2 py-0.5 rounded">
-                              {att.medicalRecordId}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

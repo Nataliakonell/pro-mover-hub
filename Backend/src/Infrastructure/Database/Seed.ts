@@ -123,12 +123,6 @@ export async function runSeed() {
 
   // 2. Usuários para autenticação dos perfis do sistema
   const passwordHash = await bcrypt.hash("123456", 10);
-  const users = [
-    { name: "Adriane Câmara", email: "admin@promover.com", role: "admin", passwordHash },
-    { name: "Lucas Lima", email: "fisio@promover.com", role: "fisioterapeuta", passwordHash },
-    { name: "Camila Rocha", email: "avaliador@promover.com", role: "avaliador", passwordHash },
-    { name: "Mariana Costa", email: "recepcao@promover.com", role: "recepcao", passwordHash },
-  ];
 
   for (const u of users) {
     await prisma.user.upsert({
@@ -139,7 +133,6 @@ export async function runSeed() {
   }
   console.log("[Seed] Usuários do sistema configurados.");
 
-  // 3. Configurações Iniciais do Sistema (limites de alerta e faixas de IMC)
   await prisma.settings.upsert({
     where: { id: 1 },
     update: {},
