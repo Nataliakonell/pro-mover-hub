@@ -42,11 +42,12 @@ import {
   Participant,
   AttendanceRecord,
 } from "@/lib/participants";
+import { useDashboardEvents } from "@/lib/dashboard-data";
 
 export const Route = createFileRoute("/participantes")({
   head: () => ({
     meta: [
-      { title: "Participantes | PRO-MOVER" },
+      { title: "Participantes | Conecta Saúde" },
       { name: "description", content: "Cadastro de participantes, dados de contato e histórico de presenças nas ações de saúde." },
     ],
   }),
@@ -56,6 +57,7 @@ export const Route = createFileRoute("/participantes")({
 function ParticipantesPage() {
   const navigate = useNavigate();
   const { participants, addParticipant, addAttendance } = useParticipants();
+  const { events } = useDashboardEvents();
 
   // Estados de busca e filtros
   const [searchTerm, setSearchTerm] = useState("");
@@ -77,9 +79,9 @@ function ParticipantesPage() {
   // Diálogo para adicionar novo atendimento ao histórico do participante selecionado
   const [newAttendanceOpen, setNewAttendanceOpen] = useState(false);
   const [attendanceForm, setAttendanceForm] = useState({
-    eventName: "Ação de Saúde: Farmácia Popular Santa Luzia",
+    eventName: "",
     type: "Triagem de Sinais Vitais",
-    responsible: "Equipe PRO-MOVER",
+    responsible: "Equipe Conecta Saúde",
     status: "Normal" as "Normal" | "Atenção" | "Alterado" | "Concluído",
     summary: "",
   });
@@ -128,12 +130,14 @@ function ParticipantesPage() {
     e.preventDefault();
     if (!formData.name.trim() || !formData.birthDate) return;
 
+    const targetEvent = events[0];
     const newP = addParticipant({
       name: formData.name,
       birthDate: formData.birthDate,
       cpf: formData.cpf,
       phone: formData.phone,
-      eventId: "evt-01",
+      eventId: targetEvent ? targetEvent.id : undefined,
+      eventName: targetEvent ? targetEvent.name : "Ação de Saúde Comunitária",
     });
 
     setFormData({ name: "", birthDate: "", cpf: "", phone: "" });
@@ -148,8 +152,11 @@ function ParticipantesPage() {
     e.preventDefault();
     if (!selectedParticipant || !attendanceForm.summary.trim()) return;
 
+    const targetEvent = events[0];
+    const eventName = attendanceForm.eventName || targetEvent?.name || "Ação de Saúde Comunitária";
+
     addAttendance(selectedParticipant.id, {
-      eventName: attendanceForm.eventName,
+      eventName,
       type: attendanceForm.type,
       responsible: attendanceForm.responsible,
       status: attendanceForm.status,
@@ -165,9 +172,9 @@ function ParticipantesPage() {
 
     setNewAttendanceOpen(false);
     setAttendanceForm({
-      eventName: "Ação de Saúde: Farmácia Popular Santa Luzia",
+      eventName: targetEvent?.name || "Ação de Saúde Comunitária",
       type: "Triagem de Sinais Vitais",
-      responsible: "Equipe PRO-MOVER",
+      responsible: "Equipe Conecta Saúde",
       status: "Normal",
       summary: "",
     });
@@ -180,13 +187,6 @@ function ParticipantesPage() {
     setDetailsOpen(true);
   };
 
-  // Redirecionar para o Prontuário do participante
-  const handleGoToMedicalRecord = (name: string) => {
-    navigate({
-      to: "/prontuarios",
-      search: { search: name } as any,
-    });
-  };
 
   return (
     <AppLayout
@@ -260,30 +260,8 @@ function ParticipantesPage() {
           </div>
         </div>
 
-        {/* Card Didático: Diferença entre Participantes e Prontuários */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 rounded-xl border border-primary/25 bg-primary/5 p-4 sm:p-5 text-sm">
-          <div className="flex items-start gap-3.5">
-            <Info className="size-5 text-primary shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <p className="font-bold text-foreground text-sm sm:text-base">
-                Diferença entre Participantes e Prontuários:
-              </p>
-              <p className="text-muted-foreground leading-relaxed text-sm">
-                Nesta tela você gerencia os <strong>dados cadastrais, contatos via WhatsApp e o histórico de presenças</strong> do participante.
-                Para consultar aferições de sinais vitais detalhadas, hipóteses diagnósticas e evoluções clínicas, clique em <strong>"Ir até o prontuário"</strong> na ficha de cada um.
-              </p>
-            </div>
-          </div>
-          <Link
-            to="/prontuarios"
-            className="shrink-0 inline-flex items-center gap-1.5 font-semibold text-primary hover:underline text-sm"
-          >
-            Ver tela de Prontuários
-            <ArrowUpRight className="size-4" />
-          </Link>
-        </div>
-
         {/* Barra de Busca e Filtros */}
+
         <div className="flex flex-col gap-3.5 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3.5 top-1/2 size-4.5 -translate-y-1/2 text-muted-foreground" />
@@ -434,19 +412,9 @@ function ParticipantesPage() {
                               <History className="size-3.5 text-muted-foreground" />
                               Ver Histórico
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleGoToMedicalRecord(p.name)}
-                              className="h-8.5 text-xs sm:text-sm px-2.5 text-primary hover:text-primary gap-1 font-semibold"
-                              title="Ir para o Prontuário Clínico"
-                            >
-                              <ClipboardList className="size-4" />
-                              Prontuário
-                              <ArrowUpRight className="size-3.5" />
-                            </Button>
                           </div>
                         </td>
+
                       </tr>
                     );
                   })
@@ -613,13 +581,9 @@ function ParticipantesPage() {
                         <div className="flex items-center justify-between pt-2 border-t border-border/50 text-xs sm:text-sm text-muted-foreground">
                           <span>Responsável: <strong className="text-foreground">{att.responsible}</strong></span>
                           {att.medicalRecordId && (
-                            <button
-                              onClick={() => handleGoToMedicalRecord(selectedParticipant.name)}
-                              className="text-primary hover:underline font-mono text-xs font-semibold inline-flex items-center gap-1"
-                            >
+                            <span className="font-mono text-xs font-semibold text-muted-foreground bg-secondary px-2 py-0.5 rounded">
                               {att.medicalRecordId}
-                              <ArrowUpRight className="size-3" />
-                            </button>
+                            </span>
                           )}
                         </div>
                       </div>
@@ -646,23 +610,14 @@ function ParticipantesPage() {
                   </Button>
                 ) : <div />}
 
-                <div className="flex items-center gap-2.5">
-                  <Button
-                    variant="outline"
-                    onClick={() => setDetailsOpen(false)}
-                    className="text-sm h-10 px-4"
-                  >
-                    Fechar
-                  </Button>
-                  <Button
-                    onClick={() => handleGoToMedicalRecord(selectedParticipant.name)}
-                    className="text-sm h-10 px-4 gap-1.5 font-semibold"
-                  >
-                    <ClipboardList className="size-4" />
-                    Abrir Prontuário
-                  </Button>
-                </div>
+                <Button
+                  onClick={() => setDetailsOpen(false)}
+                  className="text-sm h-10 px-5 font-semibold"
+                >
+                  Fechar
+                </Button>
               </DialogFooter>
+
             </div>
           )}
         </DialogContent>
@@ -809,8 +764,9 @@ function ParticipantesPage() {
                 >
                   <option value="Triagem de Sinais Vitais">Triagem de Sinais Vitais</option>
                   <option value="Avaliação Funcional">Avaliação Funcional</option>
-                  <option value="Sessão Cortesia">Sessão Cortesia</option>
+                  <option value="Acompanhamento Fisioterapêutico">Acompanhamento Fisioterapêutico</option>
                   <option value="Orientações Posturais">Orientações Posturais</option>
+
                 </select>
               </div>
 

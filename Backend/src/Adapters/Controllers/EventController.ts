@@ -1,9 +1,14 @@
 import { Request, Response } from "express";
 import { GetAllEvents } from "../../UseCases/Events/GetAllEvents";
+import { CreateEvent } from "../../UseCases/Events/CreateEvent";
 import { prisma } from "../../Infrastructure/Database/PrismaClient";
 
 export class EventController {
-  constructor(private getAllEvents: GetAllEvents) {}
+  constructor(
+    private getAllEvents: GetAllEvents,
+    private createEvent: CreateEvent
+  ) {}
+
 
   async list(req: Request, res: Response) {
     try {
@@ -127,4 +132,24 @@ export class EventController {
       return res.status(500).json({ error: error.message });
     }
   }
+
+  async create(req: Request, res: Response) {
+    try {
+      const { name, date, location } = req.body;
+      if (!name || !date || !location) {
+        return res.status(400).json({ error: "Nome da campanha, data e endereço são obrigatórios." });
+      }
+
+      const created = await this.createEvent.execute({
+        name,
+        date,
+        location,
+      });
+
+      return res.status(201).json(created);
+    } catch (error: any) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
 }
+

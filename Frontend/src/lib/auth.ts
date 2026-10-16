@@ -10,7 +10,7 @@ export interface UserProfile {
 
 const DEFAULT_USER: UserProfile = {
   name: "Natália",
-  email: "natalia@promover.org",
+  email: "natalia@conectasaude.org",
   role: "admin",
 };
 

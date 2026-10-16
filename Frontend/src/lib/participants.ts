@@ -24,7 +24,7 @@ export interface Participant {
   ageGroup: string; // "18–30" | "31–45" | "46–60" | "60+" | "< 18"
   cpf: string;
   phone: string;
-  eventId: string;
+  eventId?: string | null;
   createdAt: string;
   attendances: AttendanceRecord[];
 }
@@ -136,7 +136,7 @@ export function useParticipants() {
     birthDate: string;
     cpf: string;
     phone: string;
-    eventId: string;
+    eventId?: string;
     eventName?: string;
   }): Participant => {
     const ageInfo = calculateAge(newP.birthDate) || { age: 0, group: "18–30" };
@@ -151,7 +151,7 @@ export function useParticipants() {
       ageGroup: ageInfo.group,
       cpf: newP.cpf,
       phone: newP.phone,
-      eventId: newP.eventId,
+      eventId: newP.eventId || null,
       createdAt: new Date().toLocaleDateString("pt-BR"),
       attendances: [
         {
@@ -159,7 +159,7 @@ export function useParticipants() {
           date: new Date().toLocaleDateString("pt-BR"),
           eventName: eventLabel,
           type: "Cadastro e Acolhimento Comunitário",
-          responsible: "Equipe PRO-MOVER",
+          responsible: "Equipe Conecta Saúde",
           status: "Concluído",
           summary: "Cadastro inicial registrado. Elegível para triagem clínica e prontuário.",
           medicalRecordId: `PR-${newId}`,
@@ -180,7 +180,7 @@ export function useParticipants() {
       ageGroup: participant.ageGroup,
       cpf: participant.cpf,
       phone: participant.phone,
-      eventId: participant.eventId,
+      eventId: participant.eventId || undefined,
     })
       .then(() => refreshParticipants())
       .catch((err) => {

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { getSettingsApi, updateSettingsApi } from "./api";
 
 export interface AppSettings {
-  // Bloco Evento comunitário
+  // Bloco Evento comunitário (legado mantido para compatibilidade)
   eventDate: string;
   eventLocation: string;
 
@@ -15,11 +15,18 @@ export interface AppSettings {
   oxygenMin: number;
   heartRateMin: number;
   heartRateMax: number;
+
+  // Bloco Parâmetros de Classificação do IMC
+  imcUnderweightMax: number; // Abaixo do peso: < 18.5
+  imcNormalMax: number;      // Peso normal: 18.5 – 24.9
+  imcOverweightMax: number;  // Sobrepeso: 25.0 – 29.9
+  imcObesity1Max: number;    // Obesidade Grau 1: 30.0 – 34.9
+  imcObesity2Max: number;    // Obesidade Grau 2: 35.0 – 39.9
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
   eventDate: new Date().toISOString().split("T")[0],
-  eventLocation: "Farmácia Popular Santa Luzia",
+  eventLocation: "Ação Comunitária Conecta Saúde",
   systolicMin: 90,
   systolicMax: 140,
   diastolicMin: 60,
@@ -28,7 +35,70 @@ export const DEFAULT_SETTINGS: AppSettings = {
   oxygenMin: 95,
   heartRateMin: 50,
   heartRateMax: 100,
+
+  // Valores padrão para IMC (OMS)
+  imcUnderweightMax: 18.5,
+  imcNormalMax: 24.9,
+  imcOverweightMax: 29.9,
+  imcObesity1Max: 34.9,
+  imcObesity2Max: 39.9,
 };
+
+export interface IMCClassification {
+  category: "Abaixo do peso" | "Peso normal" | "Sobrepeso" | "Obesidade Grau 1" | "Obesidade Grau 2" | "Obesidade Grau 3";
+  status: "Normal" | "Atenção" | "Alterado";
+  badgeClass: string;
+}
+
+export function classifyIMC(imc: number, settings?: AppSettings): IMCClassification {
+  const s = settings || DEFAULT_SETTINGS;
+  const under = s.imcUnderweightMax ?? 18.5;
+  const normal = s.imcNormalMax ?? 24.9;
+  const over = s.imcOverweightMax ?? 29.9;
+  const ob1 = s.imcObesity1Max ?? 34.9;
+  const ob2 = s.imcObesity2Max ?? 39.9;
+
+  if (imc < under) {
+    return {
+      category: "Abaixo do peso",
+      status: "Atenção",
+      badgeClass: "bg-amber-500/15 text-amber-600 border border-amber-500/30",
+    };
+  }
+  if (imc <= normal) {
+    return {
+      category: "Peso normal",
+      status: "Normal",
+      badgeClass: "bg-primary/10 text-primary border border-primary/20",
+    };
+  }
+  if (imc <= over) {
+    return {
+      category: "Sobrepeso",
+      status: "Atenção",
+      badgeClass: "bg-amber-500/15 text-amber-600 border border-amber-500/30",
+    };
+  }
+  if (imc <= ob1) {
+    return {
+      category: "Obesidade Grau 1",
+      status: "Alterado",
+      badgeClass: "bg-destructive/15 text-destructive border border-destructive/20",
+    };
+  }
+  if (imc <= ob2) {
+    return {
+      category: "Obesidade Grau 2",
+      status: "Alterado",
+      badgeClass: "bg-destructive/20 text-destructive border border-destructive/30 font-semibold",
+    };
+  }
+  return {
+    category: "Obesidade Grau 3",
+    status: "Alterado",
+    badgeClass: "bg-destructive text-destructive-foreground font-bold shadow-2xs",
+  };
+}
 
 const STORAGE_KEY = "pro_mover_settings";
 
@@ -49,6 +119,12 @@ export function getStoredSettings(): AppSettings {
       oxygenMin: Number(parsed.oxygenMin) || DEFAULT_SETTINGS.oxygenMin,
       heartRateMin: Number(parsed.heartRateMin) || DEFAULT_SETTINGS.heartRateMin,
       heartRateMax: Number(parsed.heartRateMax) || DEFAULT_SETTINGS.heartRateMax,
+
+      imcUnderweightMax: parsed.imcUnderweightMax !== undefined ? Number(parsed.imcUnderweightMax) : DEFAULT_SETTINGS.imcUnderweightMax,
+      imcNormalMax: parsed.imcNormalMax !== undefined ? Number(parsed.imcNormalMax) : DEFAULT_SETTINGS.imcNormalMax,
+      imcOverweightMax: parsed.imcOverweightMax !== undefined ? Number(parsed.imcOverweightMax) : DEFAULT_SETTINGS.imcOverweightMax,
+      imcObesity1Max: parsed.imcObesity1Max !== undefined ? Number(parsed.imcObesity1Max) : DEFAULT_SETTINGS.imcObesity1Max,
+      imcObesity2Max: parsed.imcObesity2Max !== undefined ? Number(parsed.imcObesity2Max) : DEFAULT_SETTINGS.imcObesity2Max,
     };
   } catch {
     return DEFAULT_SETTINGS;
@@ -69,6 +145,12 @@ export function saveStoredSettings(settings: Partial<AppSettings>): AppSettings 
     oxygenMin: settings.oxygenMin !== undefined ? Number(settings.oxygenMin) : current.oxygenMin,
     heartRateMin: settings.heartRateMin !== undefined ? Number(settings.heartRateMin) : current.heartRateMin,
     heartRateMax: settings.heartRateMax !== undefined ? Number(settings.heartRateMax) : current.heartRateMax,
+
+    imcUnderweightMax: settings.imcUnderweightMax !== undefined ? Number(settings.imcUnderweightMax) : current.imcUnderweightMax,
+    imcNormalMax: settings.imcNormalMax !== undefined ? Number(settings.imcNormalMax) : current.imcNormalMax,
+    imcOverweightMax: settings.imcOverweightMax !== undefined ? Number(settings.imcOverweightMax) : current.imcOverweightMax,
+    imcObesity1Max: settings.imcObesity1Max !== undefined ? Number(settings.imcObesity1Max) : current.imcObesity1Max,
+    imcObesity2Max: settings.imcObesity2Max !== undefined ? Number(settings.imcObesity2Max) : current.imcObesity2Max,
   };
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));

@@ -9,8 +9,10 @@
     "start": "node dist/index.js",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
-    "seed": "ts-node src/Infrastructure/Database/Seed.ts"
+    "seed": "ts-node src/Infrastructure/Database/Seed.ts",
+    "test:a2a": "ts-node src/Infrastructure/Database/Seed.ts"
   },
+
   "dependencies": {
     "@prisma/client": "^5.14.0",
     "bcryptjs": "^2.4.3",

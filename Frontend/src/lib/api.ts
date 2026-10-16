@@ -58,10 +58,18 @@ export async function addAttendanceApi(
   });
 }
 
-// 2. Eventos Comunitários
+// 2. Eventos Comunitários / Campanhas
 export async function getEventsApi() {
   return fetchFromApi<any[]>("/events");
 }
+
+export async function createEventApi(data: { name: string; date: string; location: string }) {
+  return fetchFromApi<any>("/events", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
 
 // 3. Triagens Clínicas
 export async function getTriagesApi(eventId?: string) {

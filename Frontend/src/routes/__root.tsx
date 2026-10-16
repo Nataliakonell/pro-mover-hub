@@ -78,11 +78,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "PRO-MOVER" },
-      { name: "description", content: "Gestão de saúde comunitária e atendimentos." },
-      { name: "author", content: "PRO-MOVER" },
-      { property: "og:title", content: "PRO-MOVER" },
-      { property: "og:description", content: "Gestão de saúde comunitária e atendimentos." },
+      { title: "Conecta Saúde" },
+      { name: "description", content: "Conecta Saúde - Gestão de saúde comunitária e atendimentos." },
+      { name: "author", content: "Conecta Saúde" },
+      { property: "og:title", content: "Conecta Saúde" },
+      { property: "og:description", content: "Conecta Saúde - Gestão de saúde comunitária e atendimentos." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -97,7 +97,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
       },
-      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+      { rel: "icon", href: "/conecta_saude-no-bg.svg", type: "image/svg+xml" },
+      { rel: "shortcut icon", href: "/conecta_saude-no-bg.svg", type: "image/svg+xml" },
+      { rel: "apple-touch-icon", href: "/conecta_saude-no-bg.svg" },
     ],
   }),
   shellComponent: RootShell,
@@ -124,14 +126,17 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   useEffect(() => {
-    // Limpeza garantida de dados mockados/residuais no navegador para sincronizar 100% com o PostgreSQL
-    if (typeof window !== "undefined" && !localStorage.getItem("pro_mover_mock_purged_v2")) {
-      localStorage.removeItem("pro_mover_participants_list");
-      localStorage.removeItem("pro_mover_courtesy_records");
-      localStorage.removeItem("pro_mover_events_cache");
-      localStorage.setItem("pro_mover_mock_purged_v2", "true");
+    // Limpeza garantida de dados residuais e campanhas antigas do frontend para carregar 100% do banco
+    if (typeof window !== "undefined") {
+      if (!localStorage.getItem("pro_mover_clean_sync_v6")) {
+        localStorage.removeItem("pro_mover_events_cache");
+        localStorage.removeItem("pro_mover_participants_list");
+        localStorage.removeItem("pro_mover_courtesy_records");
+        localStorage.setItem("pro_mover_clean_sync_v6", "true");
+      }
     }
   }, []);
+
 
   return (
     <QueryClientProvider client={queryClient}>

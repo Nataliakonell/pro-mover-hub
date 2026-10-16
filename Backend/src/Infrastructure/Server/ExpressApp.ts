@@ -21,6 +21,7 @@ import { CreateMedicalRecord } from "../../UseCases/MedicalRecords/CreateMedical
 import { GetCourtesyRecords } from "../../UseCases/Courtesy/GetCourtesyRecords";
 import { ScheduleSession } from "../../UseCases/Courtesy/ScheduleSession";
 import { GetAllEvents } from "../../UseCases/Events/GetAllEvents";
+import { CreateEvent } from "../../UseCases/Events/CreateEvent";
 import { GetSettings } from "../../UseCases/Settings/GetSettings";
 import { UpdateSettings } from "../../UseCases/Settings/UpdateSettings";
 import { LoginUser } from "../../UseCases/Auth/LoginUser";
@@ -74,7 +75,10 @@ const courtesyController = new CourtesyController(
   courtesyRepo
 );
 
-const eventController = new EventController(new GetAllEvents(eventRepo));
+const eventController = new EventController(
+  new GetAllEvents(eventRepo),
+  new CreateEvent(eventRepo)
+);
 
 const settingsController = new SettingsController(
   new GetSettings(settingsRepo),
@@ -101,6 +105,8 @@ app.post("/api/auth/register", (req, res) => authController.register(req, res));
 
 // Eventos Comunitários
 app.get("/api/events", authMiddleware, (req, res) => eventController.list(req, res));
+app.post("/api/events", authMiddleware, (req, res) => eventController.create(req, res));
+
 
 // Participantes
 app.get("/api/participants", authMiddleware, (req, res) => participantController.list(req, res));

@@ -1,17 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect, type FormEvent } from "react";
-import {
-  AlertTriangle,
-  Calendar,
-  MapPin,
-  HeartPulse,
-  Save,
-  ShieldAlert,
-  Users,
-  Info,
-  CheckCircle2,
-  Activity,
-} from "lucide-react";
+import {AlertTriangle, HeartPulse, Save, ShieldAlert, Info, CheckCircle2, Activity, Scale } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,8 +11,8 @@ import { useSettings, type AppSettings } from "@/lib/settings";
 export const Route = createFileRoute("/configuracao")({
   head: () => ({
     meta: [
-      { title: "Configurações | PRO-MOVER" },
-      { name: "description", content: "Configurações do evento ativo e limites de alertas clínicos demonstrativos." },
+      { title: "Configurações | Conecta Saúde" },
+      { name: "description", content: "Configurações clínicas, limites de alertas e parâmetros de IMC do Conecta Saúde." },
     ],
   }),
   component: ConfiguracaoPage,
@@ -37,7 +26,7 @@ function ConfiguracaoPage() {
   const [formState, setFormState] = useState<AppSettings>(settings);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // 1. Acesso restrito: somente perfil 'admin' acessa
+  // Acesso restrito: somente perfil 'admin' acessa
   useEffect(() => {
     if (!isAdmin) {
       navigate({ to: "/" });
@@ -72,7 +61,6 @@ function ConfiguracaoPage() {
   const handleSave = (e: FormEvent) => {
     e.preventDefault();
 
-    // 4. Salvar configurações convertendo campos numéricos para number
     const updated = updateSettings({
       eventDate: formState.eventDate,
       eventLocation: formState.eventLocation,
@@ -84,132 +72,66 @@ function ConfiguracaoPage() {
       oxygenMin: Number(formState.oxygenMin),
       heartRateMin: Number(formState.heartRateMin),
       heartRateMax: Number(formState.heartRateMax),
+
+      imcUnderweightMax: Number(formState.imcUnderweightMax),
+      imcNormalMax: Number(formState.imcNormalMax),
+      imcOverweightMax: Number(formState.imcOverweightMax),
+      imcObesity1Max: Number(formState.imcObesity1Max),
+      imcObesity2Max: Number(formState.imcObesity2Max),
     });
 
     setFormState(updated);
-    setToastMessage("Configurações salvas.");
+    setToastMessage("Configurações clínicas e parâmetros de IMC salvos com sucesso.");
     window.setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const profileDescriptions = [
-    {
-      title: "Administrador (Admin)",
-      badge: "Acesso Total",
-      description: "Gerencia parâmetros do evento, edita limites de alertas clínicos, configura o sistema e tem acesso irrestrito a todos os dados.",
-    },
-    {
-      title: "Fisioterapeuta",
-      badge: "Clínico",
-      description: "Acessa prontuários, registra avaliações funcionais, acompanha casos prioritários e agenda sessões cortesia.",
-    },
-    {
-      title: "Avaliador / Voluntário",
-      badge: "Operacional",
-      description: "Realiza cadastro ágil de novos participantes e executa a coleta dos sinais vitais nas triagens comunitárias.",
-    },
-    {
-      title: "Recepção",
-      badge: "Atendimento",
-      description: "Acolhe participantes, organiza a fila de espera do evento e verifica a lista de agendamentos do dia.",
-    },
-  ];
-
   return (
     <AppLayout
-      title="Configurações do Sistema"
-      subtitle="Gerencie o evento ativo, limites clínicos de alerta e visualize regras de permissão"
+      title="Configurações Clínicas"
+      subtitle="Defina os parâmetros de IMC e limites demonstrativos para detecção de alterações nas triagens"
     >
       <form onSubmit={handleSave} className="space-y-8 max-w-4xl pb-12">
-        {/* Bloco 2: Evento comunitário */}
-        <section className="rounded-lg border border-border bg-card p-6 shadow-xs">
+        {/* Bloco 2: Parâmetros demonstrativos de alerta de sinais vitais */}
+        <section className="rounded-xl border border-border bg-card p-6 shadow-xs">
           <div className="flex items-center gap-3 border-b border-border pb-4 mb-5">
-            <span className="grid size-9 place-items-center rounded-md bg-primary/10 text-primary">
-              <Calendar className="size-5" />
+            <span className="grid size-10 place-items-center rounded-lg bg-warning/10 text-warning-foreground">
+              <HeartPulse className="size-5.5 text-warning" />
             </span>
             <div>
-              <h3 className="font-display text-lg font-semibold sm:text-xl">Evento Comunitário Ativo</h3>
+              <h3 className="font-display text-lg font-bold sm:text-xl text-foreground">
+                Parâmetros Demonstrativos de Alerta de Sinais Vitais
+              </h3>
               <p className="text-sm text-muted-foreground">
-                Define a data de referência e o local onde os atendimentos e triagens estão sendo realizados.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="eventDate" className="text-sm font-semibold text-foreground">Data do evento</Label>
-              <Input
-                id="eventDate"
-                type="date"
-                className="h-10 text-sm"
-                value={formState.eventDate}
-                onChange={(e) => handleInputChange("eventDate", e.target.value)}
-                required
-              />
-              <p className="text-xs text-muted-foreground">
-                Define qual ação de saúde fica selecionada por padrão no app todo.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="eventLocation" className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                <MapPin className="size-4 text-muted-foreground" />
-                Local do evento
-              </Label>
-              <Input
-                id="eventLocation"
-                type="text"
-                className="h-10 text-sm"
-                placeholder="Ex: Farmácia Popular Santa Luzia"
-                value={formState.eventLocation}
-                onChange={(e) => handleInputChange("eventLocation", e.target.value)}
-                required
-              />
-              <p className="text-xs text-muted-foreground">
-                Nome do posto de atendimento, farmácia ou espaço comunitário parceiro.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Bloco 3: Parâmetros demonstrativos de alerta */}
-        <section className="rounded-lg border border-border bg-card p-6 shadow-xs">
-          <div className="flex items-center gap-3 border-b border-border pb-4 mb-5">
-            <span className="grid size-9 place-items-center rounded-md bg-warning/10 text-warning-foreground">
-              <HeartPulse className="size-5 text-warning" />
-            </span>
-            <div>
-              <h3 className="font-display text-lg font-semibold sm:text-xl">Parâmetros Demonstrativos de Alerta</h3>
-              <p className="text-sm text-muted-foreground">
-                Valores de corte que acionam avisos visuais de risco durante a triagem de sinais vitais.
+                Valores de corte que acionam avisos visuais de risco durante a triagem.
               </p>
             </div>
           </div>
 
           {/* Aviso Amarelo */}
-          <div className="mb-6 rounded-md border border-warning/40 bg-warning/10 p-4 text-sm text-warning-foreground">
+          <div className="mb-6 rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm text-warning-foreground">
             <div className="flex gap-3">
               <AlertTriangle className="size-5 shrink-0 text-warning" />
               <div className="space-y-1">
                 <p className="font-bold text-base">Atenção: Parâmetros clínicos não validados</p>
-                <p className="leading-relaxed">
-                  Estes valores são estritamente demonstrativos para uso em adultos saudáveis e <strong>não constituem um protocolo clínico validado</strong>. A equipe técnica e médica responsável pelo projeto deve revisar e homologar esses limites antes de qualquer aplicação em ambiente real.
+                <p className="leading-relaxed text-xs sm:text-sm">
+                  Estes valores são estritamente demonstrativos para uso em adultos saudáveis e <strong>não constituem um protocolo clínico definitivo</strong>. A equipe técnica e médica deve revisar e homologar esses limites antes de qualquer aplicação em ambiente hospitalar.
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Faixas de Pressão Arterial (Mínima e Máxima) */}
-          <div className="mb-6 rounded-lg border border-border bg-muted/20 p-4 sm:p-5">
+          {/* Faixas de Pressão Arterial */}
+          <div className="mb-6 rounded-xl border border-border bg-muted/20 p-4 sm:p-5">
             <h4 className="text-sm font-bold text-foreground mb-1.5 flex items-center gap-2">
               <HeartPulse className="size-4.5 text-primary" />
               Faixas de Referência para Pressão Arterial (mmHg)
             </h4>
             <p className="text-xs sm:text-sm text-muted-foreground mb-4 leading-relaxed">
-              A pressão arterial possui um valor médio de referência (ex: 120 x 80 mmHg). Se a medição do participante estiver <strong>abaixo do mínimo</strong> (hipotensão) ou <strong>acima do máximo</strong> (hipertensão), a triagem será classificada como <strong>Alterada</strong>.
+              Medições <strong>abaixo do mínimo</strong> (hipotensão) ou <strong>acima do máximo</strong> (hipertensão) serão sinalizadas como <strong>Alteradas</strong>.
             </p>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-3 rounded-md border border-border/60 bg-card p-4">
+              <div className="space-y-3 rounded-lg border border-border/60 bg-card p-4">
                 <span className="text-sm font-semibold text-foreground block">Pressão Sistólica (máxima)</span>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
@@ -243,7 +165,7 @@ function ConfiguracaoPage() {
                 </div>
               </div>
 
-              <div className="space-y-3 rounded-md border border-border/60 bg-card p-4">
+              <div className="space-y-3 rounded-lg border border-border/60 bg-card p-4">
                 <span className="text-sm font-semibold text-foreground block">Pressão Diastólica (mínima)</span>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
@@ -279,196 +201,318 @@ function ConfiguracaoPage() {
             </div>
           </div>
 
-          {/* Card Unificado: Parâmetros de Glicemia, Oxigenação e Frequência Cardíaca */}
-          <div className="mb-6 rounded-lg border border-border bg-muted/20 p-4 sm:p-5">
+          {/* Glicemia, Oxigenação e Frequência Cardíaca */}
+          <div className="rounded-xl border border-border bg-muted/20 p-4 sm:p-5">
             <h4 className="text-sm font-bold text-foreground mb-1.5 flex items-center gap-2">
               <Activity className="size-4.5 text-primary" />
-              Parâmetros de Glicemia, Oxigenação e Frequência Cardíaca
+              Glicemia, Oxigenação e Frequência Cardíaca
             </h4>
             <p className="text-xs sm:text-sm text-muted-foreground mb-4 leading-relaxed">
-              Definição dos pontos de corte para detecção de hiperglicemia, saturação de oxigênio insuficiente (hipoxemia) e alterações do ritmo cardíaco.
+              Pontos de corte para detecção de hiperglicemia, saturação de oxigênio insuficiente (hipoxemia) e alterações do ritmo cardíaco.
             </p>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              {/* Bloco 1: Glicemia e Oxigenação (SpO2) */}
-              <div className="space-y-3 rounded-md border border-border/60 bg-card p-4 shadow-xs">
+              {/* Metabolismo e Oxigenação */}
+              <div className="space-y-3 rounded-lg border border-border/60 bg-card p-4 shadow-xs">
                 <span className="text-sm font-semibold text-foreground block">
                   Metabolismo e Oxigenação
                 </span>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5 flex flex-col justify-between">
-                    <div>
-                      <Label htmlFor="glucoseMax" className="text-xs font-medium text-foreground block min-h-[28px] flex items-center">
-                        Glicemia alterada a partir de
-                      </Label>
-                      <div className="relative mt-1">
-                        <Input
-                          id="glucoseMax"
-                          type="number"
-                          min="40"
-                          max="500"
-                          className="h-10 text-sm font-semibold pr-12"
-                          value={formState.glucoseMax}
-                          onChange={(e) => handleInputChange("glucoseMax", e.target.value)}
-                          required
-                        />
-                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground font-mono pointer-events-none">
-                          mg/dL
-                        </span>
-                      </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="glucoseMax" className="text-xs font-medium text-foreground block">
+                      Glicemia máxima
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="glucoseMax"
+                        type="number"
+                        min="40"
+                        max="500"
+                        className="h-10 text-sm font-semibold pr-12"
+                        value={formState.glucoseMax}
+                        onChange={(e) => handleInputChange("glucoseMax", e.target.value)}
+                        required
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground font-mono pointer-events-none">
+                        mg/dL
+                      </span>
                     </div>
-                    <p className="text-xs text-muted-foreground pt-1">Padrão: 140 mg/dL</p>
+                    <p className="text-xs text-muted-foreground pt-0.5">Padrão: 140 mg/dL</p>
                   </div>
 
-                  <div className="space-y-1.5 flex flex-col justify-between">
-                    <div>
-                      <Label htmlFor="oxygenMin" className="text-xs font-medium text-foreground block min-h-[28px] flex items-center">
-                        SpO₂ alterada abaixo de
-                      </Label>
-                      <div className="relative mt-1">
-                        <Input
-                          id="oxygenMin"
-                          type="number"
-                          min="50"
-                          max="100"
-                          className="h-10 text-sm font-semibold pr-7"
-                          value={formState.oxygenMin}
-                          onChange={(e) => handleInputChange("oxygenMin", e.target.value)}
-                          required
-                        />
-                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground font-mono pointer-events-none">
-                          %
-                        </span>
-                      </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="oxygenMin" className="text-xs font-medium text-foreground block">
+                      SpO₂ mínima
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="oxygenMin"
+                        type="number"
+                        min="50"
+                        max="100"
+                        className="h-10 text-sm font-semibold pr-7"
+                        value={formState.oxygenMin}
+                        onChange={(e) => handleInputChange("oxygenMin", e.target.value)}
+                        required
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground font-mono pointer-events-none">
+                        %
+                      </span>
                     </div>
-                    <p className="text-xs text-muted-foreground pt-1">Padrão: 95%</p>
+                    <p className="text-xs text-muted-foreground pt-0.5">Padrão: 95%</p>
                   </div>
                 </div>
               </div>
 
-              {/* Bloco 2: Frequência Cardíaca (mínima e máxima) */}
-              <div className="space-y-3 rounded-md border border-border/60 bg-card p-4 shadow-xs">
+              {/* Frequência Cardíaca */}
+              <div className="space-y-3 rounded-lg border border-border/60 bg-card p-4 shadow-xs">
                 <span className="text-sm font-semibold text-foreground block">
                   Frequência Cardíaca (Ritmo)
                 </span>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5 flex flex-col justify-between">
-                    <div>
-                      <Label htmlFor="heartRateMin" className="text-xs font-medium text-foreground block min-h-[28px] flex items-center">
-                        Frequência mínima
-                      </Label>
-                      <div className="relative mt-1">
-                        <Input
-                          id="heartRateMin"
-                          type="number"
-                          min="30"
-                          max="120"
-                          className="h-10 text-sm font-semibold pr-10"
-                          value={formState.heartRateMin}
-                          onChange={(e) => handleInputChange("heartRateMin", e.target.value)}
-                          required
-                        />
-                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground font-mono pointer-events-none">
-                          bpm
-                        </span>
-                      </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="heartRateMin" className="text-xs font-medium text-foreground block">
+                      Frequência mínima
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="heartRateMin"
+                        type="number"
+                        min="30"
+                        max="120"
+                        className="h-10 text-sm font-semibold pr-10"
+                        value={formState.heartRateMin}
+                        onChange={(e) => handleInputChange("heartRateMin", e.target.value)}
+                        required
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground font-mono pointer-events-none">
+                        bpm
+                      </span>
                     </div>
-                    <p className="text-xs text-muted-foreground pt-1">Padrão: 50 bpm (bradicardia)</p>
+                    <p className="text-xs text-muted-foreground pt-0.5">Padrão: 50 bpm (bradicardia)</p>
                   </div>
 
-                  <div className="space-y-1.5 flex flex-col justify-between">
-                    <div>
-                      <Label htmlFor="heartRateMax" className="text-xs font-medium text-foreground block min-h-[28px] flex items-center">
-                        Frequência máxima
-                      </Label>
-                      <div className="relative mt-1">
-                        <Input
-                          id="heartRateMax"
-                          type="number"
-                          min="80"
-                          max="220"
-                          className="h-10 text-sm font-semibold pr-10"
-                          value={formState.heartRateMax}
-                          onChange={(e) => handleInputChange("heartRateMax", e.target.value)}
-                          required
-                        />
-                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground font-mono pointer-events-none">
-                          bpm
-                        </span>
-                      </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="heartRateMax" className="text-xs font-medium text-foreground block">
+                      Frequência máxima
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="heartRateMax"
+                        type="number"
+                        min="80"
+                        max="220"
+                        className="h-10 text-sm font-semibold pr-10"
+                        value={formState.heartRateMax}
+                        onChange={(e) => handleInputChange("heartRateMax", e.target.value)}
+                        required
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground font-mono pointer-events-none">
+                        bpm
+                      </span>
                     </div>
-                    <p className="text-xs text-muted-foreground pt-1">Padrão: 100 bpm (taquicardia)</p>
+                    <p className="text-xs text-muted-foreground pt-0.5">Padrão: 100 bpm (taquicardia)</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+        </section>
+        {/* Bloco 1: Parâmetros de Classificação do IMC */}
+        <section className="rounded-xl border border-border bg-card p-6 shadow-xs">
+          <div className="flex items-center gap-3 border-b border-border pb-4 mb-5">
+            <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
+              <Scale className="size-5.5" />
+            </span>
+            <div>
+              <h3 className="font-display text-lg font-bold sm:text-xl text-foreground">
+                Parâmetros de Classificação do IMC (Índice de Massa Corporal)
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Configure os pontos de corte (kg/m²) utilizados no cálculo automático do IMC durante a triagem.
+              </p>
+            </div>
+          </div>
 
-          {/* Nota com regras complementares fixas */}
-          <div className="mt-6 rounded-md bg-secondary/50 p-4 sm:p-5 border border-border">
-            <h4 className="flex items-center gap-2 text-sm font-bold text-foreground mb-2">
-              <Info className="size-4.5 text-primary" />
-              Regras complementares já fixas no código:
-            </h4>
-            <ul className="list-disc list-inside space-y-1.5 text-xs sm:text-sm text-muted-foreground leading-relaxed">
-              <li><strong>Hipotensão (pressão baixa):</strong> Sistólica &lt; 90 mmHg ou Diastólica &lt; 60 mmHg.</li>
-              <li><strong>Hipoglicemia severa:</strong> Glicemia &lt; 70 mg/dL.</li>
-              <li><strong>Classificação do IMC:</strong> Baixo peso (&lt; 18,5), Eutrófico (18,5 – 24,9), Sobrepeso (25,0 – 29,9) e Obesidade (≥ 30,0).</li>
-              <li><strong>Faixas de atenção:</strong> Variações limítrofes acionam sinalização visual de alerta intermediário antes do encaminhamento prioritário.</li>
-            </ul>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {/* 1. Abaixo do peso */}
+            <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="imcUnderweightMax" className="text-sm font-semibold text-foreground">
+                  Abaixo do peso
+                </Label>
+                <span className="rounded-full bg-amber-500/15 text-amber-600 px-2.5 py-0.5 text-xs font-bold">
+                  Atenção
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">Classificado para valores abaixo de:</p>
+              <div className="relative">
+                <Input
+                  id="imcUnderweightMax"
+                  type="number"
+                  step="0.1"
+                  min="10"
+                  max="25"
+                  className="h-10 text-sm font-semibold pr-14"
+                  value={formState.imcUnderweightMax}
+                  onChange={(e) => handleInputChange("imcUnderweightMax", e.target.value)}
+                  required
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono pointer-events-none">
+                  kg/m²
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground">Padrão OMS: &lt; 18,5 kg/m²</p>
+            </div>
+
+            {/* 2. Peso normal */}
+            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="imcNormalMax" className="text-sm font-semibold text-foreground">
+                  Peso normal (Eutrófico)
+                </Label>
+                <span className="rounded-full bg-primary/20 text-primary px-2.5 py-0.5 text-xs font-bold">
+                  Normal
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">Faixa ideal até o limite de:</p>
+              <div className="relative">
+                <Input
+                  id="imcNormalMax"
+                  type="number"
+                  step="0.1"
+                  min="18"
+                  max="30"
+                  className="h-10 text-sm font-semibold pr-14"
+                  value={formState.imcNormalMax}
+                  onChange={(e) => handleInputChange("imcNormalMax", e.target.value)}
+                  required
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono pointer-events-none">
+                  kg/m²
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground">Padrão OMS: 18,5 a 24,9 kg/m²</p>
+            </div>
+
+            {/* 3. Sobrepeso */}
+            <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="imcOverweightMax" className="text-sm font-semibold text-foreground">
+                  Sobrepeso
+                </Label>
+                <span className="rounded-full bg-amber-500/15 text-amber-600 px-2.5 py-0.5 text-xs font-bold">
+                  Atenção
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">Faixa de sobrepeso até:</p>
+              <div className="relative">
+                <Input
+                  id="imcOverweightMax"
+                  type="number"
+                  step="0.1"
+                  min="24"
+                  max="35"
+                  className="h-10 text-sm font-semibold pr-14"
+                  value={formState.imcOverweightMax}
+                  onChange={(e) => handleInputChange("imcOverweightMax", e.target.value)}
+                  required
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono pointer-events-none">
+                  kg/m²
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground">Padrão OMS: 25,0 a 29,9 kg/m²</p>
+            </div>
+
+            {/* 4. Obesidade Grau 1 */}
+            <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="imcObesity1Max" className="text-sm font-semibold text-foreground">
+                  Obesidade Grau 1
+                </Label>
+                <span className="rounded-full bg-destructive/15 text-destructive px-2.5 py-0.5 text-xs font-bold">
+                  Alterado
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">Grau leve (moderado) até:</p>
+              <div className="relative">
+                <Input
+                  id="imcObesity1Max"
+                  type="number"
+                  step="0.1"
+                  min="29"
+                  max="40"
+                  className="h-10 text-sm font-semibold pr-14"
+                  value={formState.imcObesity1Max}
+                  onChange={(e) => handleInputChange("imcObesity1Max", e.target.value)}
+                  required
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono pointer-events-none">
+                  kg/m²
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground">Padrão OMS: 30,0 a 34,9 kg/m²</p>
+            </div>
+
+            {/* 5. Obesidade Grau 2 */}
+            <div className="rounded-xl border border-destructive/25 bg-destructive/5 p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="imcObesity2Max" className="text-sm font-semibold text-foreground">
+                  Obesidade Grau 2
+                </Label>
+                <span className="rounded-full bg-destructive/20 text-destructive px-2.5 py-0.5 text-xs font-bold">
+                  Alterado
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">Grau severo até:</p>
+              <div className="relative">
+                <Input
+                  id="imcObesity2Max"
+                  type="number"
+                  step="0.1"
+                  min="34"
+                  max="50"
+                  className="h-10 text-sm font-semibold pr-14"
+                  value={formState.imcObesity2Max}
+                  onChange={(e) => handleInputChange("imcObesity2Max", e.target.value)}
+                  required
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono pointer-events-none">
+                  kg/m²
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground">Padrão OMS: 35,0 a 39,9 kg/m²</p>
+            </div>
+
+            {/* 6. Obesidade Grau 3 */}
+            <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-foreground">
+                  Obesidade Grau 3 (Grave)
+                </span>
+                <span className="rounded-full bg-destructive text-destructive-foreground px-2.5 py-0.5 text-xs font-bold">
+                  Crítico
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">Classificado automaticamente:</p>
+              <div className="h-10 flex items-center px-3 rounded-lg border border-border bg-background text-sm font-bold font-mono text-destructive">
+                ≥ {Number(formState.imcObesity2Max) + 0.1 || "40.0"} kg/m²
+              </div>
+              <p className="text-[11px] text-muted-foreground">Acima do teto de Obesidade Grau 2</p>
+            </div>
           </div>
         </section>
-
-        {/* Bloco 4: Botão Salvar configurações */}
+        {/* Botão Salvar configurações */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
           <p className="text-xs sm:text-sm text-muted-foreground">
-            As alterações são salvas localmente no navegador e persistidas neste dispositivo.
+            As alterações são salvas e persistidas no sistema para todas as triagens.
           </p>
           <Button type="submit" className="gap-2 px-6 h-11 text-sm font-semibold shadow-sm">
             <Save className="size-4.5" />
             Salvar configurações
           </Button>
         </div>
-
-        {/* Bloco 5: Perfis e acesso nesta interface */}
-        <section className="rounded-lg border border-border bg-card p-6 shadow-xs">
-          <div className="flex items-center gap-3 border-b border-border pb-4 mb-5">
-            <span className="grid size-9 place-items-center rounded-md bg-secondary text-secondary-foreground">
-              <Users className="size-5 text-primary" />
-            </span>
-            <div>
-              <h3 className="font-display text-lg font-semibold sm:text-xl">Perfis e Acesso nesta Interface</h3>
-              <p className="text-sm text-muted-foreground">
-                Painel informativo dos níveis de privilégio e escopo de cada função no PRO-MOVER Hub.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            {profileDescriptions.map((item) => (
-              <div key={item.title} className="rounded-md border border-border bg-background p-4.5">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-sm sm:text-base font-bold text-foreground">{item.title}</h4>
-                  <span className="rounded bg-secondary px-2.5 py-1 text-xs font-semibold text-secondary-foreground">
-                    {item.badge}
-                  </span>
-                </div>
-                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{item.description}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Aviso Importante de Fechamento */}
-          <div className="mt-6 rounded-md border border-primary/20 bg-primary/5 p-4 sm:p-5 text-sm text-foreground">
-            <p className="font-bold text-sm sm:text-base flex items-center gap-2 mb-1.5">
-              <ShieldAlert className="size-5 text-primary shrink-0" />
-              Aviso Importante sobre Segurança e Controle de Acesso
-            </p>
-            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-              Esta versão controla o fluxo de navegação e a experiência de uso da interface, <strong>não configurando uma camada de segurança de dados definitiva</strong>. Para uso clínico e corporativo real, é mandatória a integração com autenticação via backend, tokens criptografados e controle de permissões centralizado (RBAC).
-            </p>
-          </div>
-        </section>
       </form>
 
       {/* Notificação Toast */}

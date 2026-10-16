@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 135" width="100%" height="100%">
+  <!-- ================= ÍCONE IDÊNTICO À REFERÊNCIA ================= -->
+  <g transform="translate(18, 10)">
+    
+    <!-- 1. CORAÇÃO SUPERIOR ENVOLVENTE (DOIS ARCOS) -->
+    <!-- Lado Esquerdo do Coração (Verde-Água / Turquesa) -->
+    <path 
+      d="M 55 24 
+         C 46 10, 26 4, 13 14 
+         C 0 24, -2 43, 4 58 
+         C 9 70, 19 82, 33 93 
+         C 23 81, 15 70, 12 59 
+         C 8 46, 10 32, 20 24 
+         C 30 16, 46 20, 55 31 Z" 
+      fill="#00A896" 
+    />
+
+    <!-- Lado Direito do Coração (Azul Petróleo) -->
+    <path 
+      d="M 55 24 
+         C 64 10, 84 4, 97 14 
+         C 110 24, 112 43, 106 58 
+         C 101 70, 91 82, 77 93 
+         C 87 81, 95 70, 98 59 
+         C 102 46, 100 32, 90 24 
+         C 80 16, 64 20, 55 31 Z" 
+      fill="#0C3C4C" 
+    />
+
+    <!-- 2. TRÊS FIGURAS HUMANAS NO INTERIOR -->
+    <!-- Figura Esquerda (Paciente/Comunidade) -->
+    <circle cx="38" cy="42" r="7.5" fill="#14B8A6" />
+    <path 
+      d="M 28 66 
+         C 28 55, 34 49, 44 49 
+         C 47 49, 50 50, 52 52 
+         C 47 56, 42 63, 41 71 
+         C 35 71, 28 69, 28 66 Z" 
+      fill="#14B8A6" 
+    />
+
+    <!-- Figura Direita (Paciente/Comunidade) -->
+    <circle cx="72" cy="42" r="7.5" fill="#155E75" />
+    <path 
+      d="M 82 66 
+         C 82 55, 76 49, 66 49 
+         C 63 49, 60 50, 58 52 
+         C 63 56, 68 63, 69 71 
+         C 75 71, 82 69, 82 66 Z" 
+      fill="#155E75" 
+    />
+
+    <!-- Figura Central Maior (Acolhedor / Profissional de Saúde) -->
+    <circle cx="55" cy="35" r="9" fill="#0E4A5C" />
+    <path 
+      d="M 39 71 
+         C 39 56, 46 47, 55 47 
+         C 64 47, 71 56, 71 71 
+         H 39 Z" 
+      fill="#0E4A5C" 
+    />
+
+    <!-- 3. FOLHAS / MÃOS DE SUSTENTAÇÃO NA BASE -->
+    <!-- Folha Esquerda -->
+    <path 
+      d="M 22 60 
+         C 20 74, 30 89, 48 97 
+         C 38 93, 27 83, 24 72 
+         C 22 66, 22 62, 22 60 Z" 
+      fill="#00A896" 
+    />
+    <path 
+      d="M 22 60 
+         C 32 76, 44 87, 52 92 
+         C 40 88, 30 78, 22 60 Z" 
+      fill="#2DD4BF" 
+    />
+    <!-- Nervura da Folha Esquerda -->
+    <path d="M 27 68 C 33 76, 41 83, 48 87" fill="none" stroke="#0C3C4C" stroke-width="1.6" stroke-linecap="round" />
+
+    <!-- Folha Direita -->
+    <path 
+      d="M 88 60 
+         C 90 74, 80 89, 62 97 
+         C 72 93, 83 83, 86 72 
+         C 88 66, 88 62, 88 60 Z" 
+      fill="#0C3C4C" 
+    />
+    <path 
+      d="M 88 60 
+         C 78 76, 66 87, 58 92 
+         C 70 88, 80 78, 88 60 Z" 
+      fill="#0E5E77" 
+    />
+    <!-- Nervura da Folha Direita -->
+    <path d="M 83 68 C 77 76, 69 83, 62 87" fill="none" stroke="#2DD4BF" stroke-width="1.6" stroke-linecap="round" />
+
+    <!-- 4. CRUZ DA SAÚDE CENTRAL COM BORDA BRANCA -->
+    <path 
+      d="M 48 57 
+         H 62 
+         C 63.5 57, 64.5 58, 64.5 59.5 
+         V 66 
+         H 71 
+         C 72.5 66, 73.5 67, 73.5 68.5 
+         V 82.5 
+         C 73.5 84, 72.5 85, 71 85 
+         H 64.5 
+         V 91.5 
+         C 64.5 93, 63.5 94, 62 94 
+         H 48 
+         C 46.5 94, 45.5 93, 45.5 91.5 
+         V 85 
+         H 39 
+         C 37.5 85, 36.5 84, 36.5 82.5 
+         V 68.5 
+         C 36.5 67, 37.5 66, 39 66 
+         H 45.5 
+         V 59.5 
+         C 45.5 58, 46.5 57, 48 57 Z" 
+      fill="#00A896" 
+      stroke="#FFFFFF" 
+      stroke-width="3.5" 
+      stroke-linejoin="round" 
+    />
+
+  </g>
+
+  <!-- ================= TIPOGRAFIA: CONECTA SAÚDE ================= -->
+  <g transform="translate(145, 0)">
+    <text x="0" y="70" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif">
+      <tspan font-size="38" font-weight="300" fill="#0F172A" letter-spacing="-0.5">Conecta</tspan>
+      <tspan font-size="38"> </tspan>
+      <tspan font-size="38" font-weight="800" fill="#0C3C4C" letter-spacing="-0.5">Saúde</tspan>
+      <tspan font-size="38" font-weight="800" fill="#00A896">.</tspan>
+    </text>
+  </g>
+</svg>

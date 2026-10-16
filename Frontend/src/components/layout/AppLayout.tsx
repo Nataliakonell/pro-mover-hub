@@ -3,8 +3,6 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard,
   Users,
-  ClipboardList,
-  Gift,
   Settings,
   Activity,
   HeartPulse,
@@ -28,10 +26,10 @@ export function AppLayout({ children, title, subtitle, actions }: AppLayoutProps
   const navigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Participantes", href: "/participantes", icon: Users },
-    { name: "Prontuários", href: "/prontuarios", icon: ClipboardList },
-    { name: "Sessões Cortesia", href: "/sessoes-cortesia", icon: Gift },
     { name: "Configurações", href: "/configuracao", icon: Settings },
   ];
+
+
 
   const roleLabels: Record<UserRole, string> = {
     admin: "Administrador",
@@ -49,15 +47,19 @@ export function AppLayout({ children, title, subtitle, actions }: AppLayoutProps
     <div className="min-h-screen bg-background text-foreground antialiased md:grid md:grid-cols-[260px_minmax(0,1fr)]">
       {/* Barra Lateral / Sidebar */}
       <aside className="bg-card px-4 py-6 md:sticky md:top-0 md:flex md:h-screen md:flex-col md:border-r md:border-border md:py-8">
-        <div className="flex min-w-0 items-center gap-3 px-2">
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-            <Activity className="size-6" strokeWidth={2} />
-          </span>
+        <Link to="/" className="flex min-w-0 items-center gap-3 px-2 group transition-opacity hover:opacity-90">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary/80 border border-border shadow-2xs p-1.5 transition-transform group-hover:scale-105">
+            <img
+              src="/conecta_saude-no-bg.svg"
+              alt="Ícone Conecta Saúde"
+              className="size-8 object-contain"
+            />
+          </div>
           <div className="min-w-0">
-            <h1 className="truncate font-display text-xl font-bold tracking-tight">PRO-MOVER.</h1>
+            <h1 className="truncate font-display text-lg font-bold tracking-tight text-foreground">Conecta Saúde</h1>
             <p className="mt-0.5 text-xs uppercase font-medium tracking-wider text-muted-foreground">Saúde em movimento</p>
           </div>
-        </div>
+        </Link>
 
         <p className="mb-3 mt-9 hidden px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/80 md:block">
           Área de trabalho
@@ -88,13 +90,6 @@ export function AppLayout({ children, title, subtitle, actions }: AppLayoutProps
         </nav>
 
         {/* Rodapé da Sidebar */}
-        <div className="mt-auto hidden pt-6 md:block">
-          <div className="border-t border-border px-2 pt-5">
-            <HeartPulse className="mb-2 size-5 text-primary" strokeWidth={1.8} />
-            <p className="text-sm font-semibold text-foreground">Cuidar conecta pessoas.</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Studio Adriane Câmara</p>
-          </div>
-        </div>
       </aside>
 
       {/* Conteúdo Principal */}
@@ -102,7 +97,10 @@ export function AppLayout({ children, title, subtitle, actions }: AppLayoutProps
         {/* Cabeçalho Superior */}
         <header className="grid h-[74px] sm:h-20 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border bg-card px-5 lg:px-8">
           <div className="flex items-center gap-2 truncate text-sm">
-            <span className="text-muted-foreground">Plataforma comunitária</span>
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <img src="/conecta_saude-no-bg.svg" alt="Conecta Saúde" className="size-4.5 object-contain" />
+              <span>Conecta Saúde</span>
+            </span>
             <span className="text-muted-foreground">/</span>
             <span className="font-semibold text-foreground">
               {navigation.find((n) => isActive(n.href))?.name || "Painel"}

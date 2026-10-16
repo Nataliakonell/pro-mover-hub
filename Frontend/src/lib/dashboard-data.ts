@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getEventsApi } from "./api";
+import { getEventsApi, createEventApi } from "./api";
 
 export interface RecentTriage {
   id: string;
@@ -35,10 +35,10 @@ export interface DashboardEvent {
 }
 
 export const EMPTY_EVENT: DashboardEvent = {
-  id: "evt-01",
-  name: "Carregando evento...",
+  id: "",
+  name: "Nenhuma campanha ativa",
   date: new Date().toLocaleDateString("pt-BR"),
-  location: "Carregando...",
+  location: "",
   metrics: {
     attended: 0,
     triagesDone: 0,
@@ -66,7 +66,7 @@ export const EMPTY_EVENT: DashboardEvent = {
     examAlterations: [
       { exam: "Pressão Arterial", count: 0 },
       { exam: "Glicemia", count: 0 },
-      { exam: "IMC Elevado", count: 0 },
+      { exam: "IMC / Obesidade", count: 0 },
       { exam: "SpO₂ Baixa", count: 0 },
     ],
     eventEvolution: [
@@ -82,19 +82,28 @@ export const EMPTY_EVENT: DashboardEvent = {
 const STORAGE_KEY = "pro_mover_events_cache";
 
 export function getCachedEvents(): DashboardEvent[] {
-  if (typeof window === "undefined") return [EMPTY_EVENT];
+  if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [EMPTY_EVENT];
-    return JSON.parse(raw);
+    if (!raw) return [];
+    const list = JSON.parse(raw);
+    if (!Array.isArray(list)) return [];
+    // Filtra campanhas residuais de mocks antigos
+    return list.filter((e) => e && e.id && !["evt-01", "evt-02", "evt-03"].includes(e.id));
   } catch {
-    return [EMPTY_EVENT];
+    return [];
   }
 }
 
 export function saveCachedEvents(events: DashboardEvent[]) {
   if (typeof window === "undefined") return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+  window.dispatchEvent(new Event("pro_mover_events_change"));
+}
+
+export function clearStoredCampaigns() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(STORAGE_KEY);
   window.dispatchEvent(new Event("pro_mover_events_change"));
 }
 
@@ -105,7 +114,7 @@ export function useDashboardEvents() {
   const refreshEvents = async () => {
     try {
       const data = await getEventsApi();
-      if (Array.isArray(data) && data.length > 0) {
+      if (Array.isArray(data)) {
         setEvents(data);
         saveCachedEvents(data);
       }
@@ -134,3 +143,72 @@ export function useDashboardEvents() {
     refreshEvents,
   };
 }
+
+export async function createDashboardCampaign(data: { name: string; date: string; location: string }): Promise<DashboardEvent> {
+  let createdId = `evt-${Date.now().toString().slice(-6)}`;
+
+  try {
+    const apiResult = await createEventApi({
+      name: data.name.trim(),
+      date: data.date.trim(),
+      location: data.location.trim(),
+    });
+    if (apiResult && apiResult.id) {
+      createdId = apiResult.id;
+    }
+  } catch (err: any) {
+    console.warn("Backend offline ou erro ao salvar campanha:", err.message);
+  }
+
+  const newEvent: DashboardEvent = {
+    id: createdId,
+    name: data.name.trim(),
+    date: data.date.trim(),
+    location: data.location.trim(),
+    metrics: {
+      attended: 0,
+      triagesDone: 0,
+      alteredTriages: 0,
+      referrals: 0,
+      courtesyGranted: 0,
+      scheduledToday: 0,
+    },
+    charts: {
+      ageGroups: [
+        { age: "18–30", count: 0 },
+        { age: "31–45", count: 0 },
+        { age: "46–60", count: 0 },
+        { age: "60+", count: 0 },
+      ],
+      examResults: [
+        { name: "Dentro dos parâmetros", percentage: 100, color: "var(--color-primary)" },
+        { name: "Com alterações", percentage: 0, color: "var(--color-warning)" },
+      ],
+      servicesDist: [
+        { name: "Triagem Sinais", count: 0 },
+        { name: "Avaliação Funcional", count: 0 },
+        { name: "Orientações Posturais", count: 0 },
+      ],
+      examAlterations: [
+        { exam: "Pressão Arterial", count: 0 },
+        { exam: "Glicemia", count: 0 },
+        { exam: "IMC / Obesidade", count: 0 },
+        { exam: "SpO₂ Baixa", count: 0 },
+      ],
+      eventEvolution: [
+        { event: data.name.split(":")[0] || "Nova Ação", atendimentos: 0 },
+      ],
+      referrals: [
+        { destination: "Studio Adriane Câmara", count: 0, color: "#1b806a" },
+      ],
+    },
+    recentTriages: [],
+  };
+
+  const current = getCachedEvents();
+  const updated = [newEvent, ...current.filter((e) => e.id !== createdId)];
+  saveCachedEvents(updated);
+
+  return newEvent;
+}
+
