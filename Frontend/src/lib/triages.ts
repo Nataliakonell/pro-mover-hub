@@ -39,7 +39,7 @@ export function saveCachedTriages(list: TriageRecord[]) {
 }
 
 export function useTriages(eventId?: string | null) {
-  const [triages, setTriages] = useState<TriageRecord[]>(getCachedTriages);
+  const [triages, setTriages] = useState<TriageRecord[]>([]);
 
   const refreshTriages = async () => {
     try {
@@ -58,6 +58,10 @@ export function useTriages(eventId?: string | null) {
   };
 
   useEffect(() => {
+    const cached = getCachedTriages();
+    if (cached.length > 0) {
+      setTriages(cached);
+    }
     refreshTriages();
 
     const handler = () => {

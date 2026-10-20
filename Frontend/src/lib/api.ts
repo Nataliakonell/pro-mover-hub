@@ -63,7 +63,13 @@ export async function getEventsApi() {
   return fetchFromApi<any[]>("/events");
 }
 
-export async function createEventApi(data: { name: string; date: string; location: string }) {
+export async function createEventApi(data: {
+  name: string;
+  date?: string;
+  startDate?: string;
+  endDate?: string;
+  location: string;
+}) {
   return fetchFromApi<any>("/events", {
     method: "POST",
     body: JSON.stringify(data),

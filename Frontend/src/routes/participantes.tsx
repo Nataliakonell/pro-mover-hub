@@ -435,7 +435,7 @@ function ParticipantesPage() {
 
       {/* MODAL 1: Ficha do Participante & Histórico de Atendimentos */}
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:max-w-4xl md:max-w-5xl max-h-[92vh] overflow-y-auto p-5 sm:p-7">
           {selectedParticipant && (
             <div className="space-y-6">
               <DialogHeader>
@@ -665,103 +665,110 @@ function ParticipantesPage() {
 
       {/* MODAL 2: Cadastro de Novo Participante */}
       <Dialog open={newParticipantOpen} onOpenChange={setNewParticipantOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="font-display text-xl sm:text-2xl font-bold text-foreground">
-              Cadastrar Novo Participante
-            </DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">
-              Preencha os dados de identificação e contato. A idade e a faixa etária são calculadas automaticamente.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="w-[95vw] sm:max-w-2xl md:max-w-3xl max-h-[92vh] overflow-y-auto p-5 sm:p-7">
+          <div className="flex items-center gap-3.5 pb-4 border-b border-border">
+            <div className="size-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20">
+              <UserPlus className="size-5" />
+            </div>
+            <div>
+              <DialogTitle className="font-display text-xl sm:text-2xl font-bold text-foreground">
+                Cadastrar Novo Participante
+              </DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                Preencha os dados de identificação e contato. A idade e a faixa etária são calculadas automaticamente.
+              </DialogDescription>
+            </div>
+          </div>
 
-          <form onSubmit={handleSaveParticipant} className="space-y-4 pt-1">
+          <form onSubmit={handleSaveParticipant} className="space-y-5 pt-3">
             {/* Nome Completo */}
-            <div className="space-y-1.5">
-              <Label htmlFor="part-name" className="text-sm font-semibold">Nome completo</Label>
+            <div className="space-y-2">
+              <Label htmlFor="part-name" className="text-sm font-semibold text-foreground">Nome completo</Label>
               <Input
                 id="part-name"
                 placeholder="Ex: Maria José de Oliveira"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
-                className="text-sm h-10"
+                className="text-base sm:text-sm h-11 rounded-xl"
               />
             </div>
 
-            {/* Data de Nascimento com feedback de Idade */}
-            <div className="space-y-1.5">
-              <Label htmlFor="part-birth" className="text-sm font-semibold">Data de nascimento</Label>
-              <Input
-                id="part-birth"
-                type="date"
-                value={formData.birthDate}
-                onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
-                required
-                className="text-sm h-10"
-              />
+            {/* Data de Nascimento com feedback de Idade & CPF em 2 Colunas */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="part-birth" className="text-sm font-semibold text-foreground">Data de nascimento</Label>
+                <Input
+                  id="part-birth"
+                  type="date"
+                  value={formData.birthDate}
+                  onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
+                  required
+                  className="text-base sm:text-sm h-11 rounded-xl"
+                />
 
-              {calculatedAge ? (
-                <div className="flex items-center justify-between rounded-lg bg-primary/10 border border-primary/25 px-3.5 py-2.5 text-sm">
-                  <span className="flex items-center gap-2 text-primary font-medium">
-                    <CheckCircle2 className="size-4.5 shrink-0" />
-                    Idade calculada: <strong className="font-bold">{calculatedAge.age} anos</strong>
-                  </span>
-                  <span className="rounded-full bg-primary/20 text-primary font-bold px-2.5 py-0.5 text-xs">
-                    Faixa: {calculatedAge.group} anos
-                  </span>
-                </div>
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  Selecione a data para calcular automaticamente a idade e a faixa etária.
-                </p>
-              )}
-            </div>
+                {calculatedAge ? (
+                  <div className="flex items-center justify-between rounded-xl bg-primary/10 border border-primary/25 px-3 py-2 text-xs sm:text-sm">
+                    <span className="flex items-center gap-1.5 text-primary font-medium">
+                      <CheckCircle2 className="size-4 shrink-0" />
+                      Idade: <strong className="font-bold">{calculatedAge.age} anos</strong>
+                    </span>
+                    <span className="rounded-full bg-primary/20 text-primary font-bold px-2.5 py-0.5 text-xs">
+                      Faixa: {calculatedAge.group} anos
+                    </span>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Selecione a data para calcular idade automaticamente.
+                  </p>
+                )}
+              </div>
 
-            {/* CPF */}
-            <div className="space-y-1.5">
-              <Label htmlFor="part-cpf" className="text-sm font-semibold flex items-center gap-1.5">
-                <Fingerprint className="size-4 text-muted-foreground" />
-                CPF
-              </Label>
-              <Input
-                id="part-cpf"
-                placeholder="000.000.000-00"
-                maxLength={14}
-                value={formData.cpf}
-                onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
-                required
-                className="text-sm h-10"
-              />
+              {/* CPF */}
+              <div className="space-y-2">
+                <Label htmlFor="part-cpf" className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                  <Fingerprint className="size-4 text-muted-foreground" />
+                  CPF
+                </Label>
+                <Input
+                  id="part-cpf"
+                  placeholder="000.000.000-00"
+                  maxLength={14}
+                  value={formData.cpf}
+                  onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
+                  required
+                  className="text-base sm:text-sm h-11 rounded-xl"
+                />
+              </div>
             </div>
 
             {/* WhatsApp / Telefone */}
-            <div className="space-y-1.5">
-              <Label htmlFor="part-phone" className="text-sm font-semibold flex items-center gap-1.5">
+            <div className="space-y-2">
+              <Label htmlFor="part-phone" className="text-sm font-semibold text-foreground flex items-center gap-1.5">
                 <Phone className="size-4 text-muted-foreground" />
                 Número do WhatsApp / Telefone
               </Label>
               <Input
                 id="part-phone"
-                placeholder="(65) 99999-9999"
+                placeholder="(67) 99999-9999"
                 maxLength={15}
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: formatPhone(e.target.value) })}
                 required
-                className="text-sm h-10"
+                className="text-base sm:text-sm h-11 rounded-xl"
               />
             </div>
 
-            <DialogFooter className="gap-2.5 pt-3">
+            <DialogFooter className="gap-3 pt-4 border-t border-border">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setNewParticipantOpen(false)}
-                className="text-sm h-10 px-4"
+                className="h-11 text-sm px-6 font-semibold rounded-xl"
               >
                 Cancelar
               </Button>
-              <Button type="submit" className="text-sm h-10 px-5 font-semibold">
+              <Button type="submit" className="h-11 text-sm px-7 font-semibold rounded-xl shadow-md">
                 Concluir Cadastro
               </Button>
             </DialogFooter>
@@ -771,47 +778,51 @@ function ParticipantesPage() {
 
       {/* MODAL 3: Adicionar Atendimento no Histórico */}
       <Dialog open={newAttendanceOpen} onOpenChange={setNewAttendanceOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="font-display text-xl font-bold text-foreground">
-              Registrar Atendimento / Participação
-            </DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">
-              Adicione um novo registro à linha do tempo de <strong>{selectedParticipant?.name}</strong>.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="w-[95vw] sm:max-w-2xl md:max-w-3xl max-h-[92vh] overflow-y-auto p-5 sm:p-7">
+          <div className="flex items-center gap-3.5 pb-4 border-b border-border">
+            <div className="size-11 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0 border border-blue-500/20">
+              <ClipboardList className="size-5" />
+            </div>
+            <div>
+              <DialogTitle className="font-display text-xl sm:text-2xl font-bold text-foreground">
+                Registrar Atendimento / Participação
+              </DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                Adicione um novo registro à linha do tempo de <strong>{selectedParticipant?.name}</strong>.
+              </DialogDescription>
+            </div>
+          </div>
 
-          <form onSubmit={handleSaveAttendance} className="space-y-4 pt-1">
-            <div className="space-y-1.5">
-              <Label htmlFor="att-event" className="text-sm font-semibold">Ação / Local do Evento</Label>
+          <form onSubmit={handleSaveAttendance} className="space-y-5 pt-3">
+            <div className="space-y-2">
+              <Label htmlFor="att-event" className="text-sm font-semibold text-foreground">Ação / Local do Evento</Label>
               <Input
                 id="att-event"
                 value={attendanceForm.eventName}
                 onChange={(e) => setAttendanceForm({ ...attendanceForm, eventName: e.target.value })}
                 required
-                className="text-sm h-10"
+                className="text-base sm:text-sm h-11 rounded-xl"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3.5">
-              <div className="space-y-1.5">
-                <Label htmlFor="att-type" className="text-sm font-semibold">Tipo de Atendimento</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="att-type" className="text-sm font-semibold text-foreground">Tipo de Atendimento</Label>
                 <select
                   id="att-type"
                   value={attendanceForm.type}
                   onChange={(e) => setAttendanceForm({ ...attendanceForm, type: e.target.value })}
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-medium"
+                  className="w-full rounded-xl border border-input bg-background px-3.5 py-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring font-medium"
                 >
                   <option value="Triagem de Sinais Vitais">Triagem de Sinais Vitais</option>
                   <option value="Avaliação Funcional">Avaliação Funcional</option>
                   <option value="Acompanhamento Fisioterapêutico">Acompanhamento Fisioterapêutico</option>
                   <option value="Orientações Posturais">Orientações Posturais</option>
-
                 </select>
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="att-status" className="text-sm font-semibold">Resultado</Label>
+              <div className="space-y-2">
+                <Label htmlFor="att-status" className="text-sm font-semibold text-foreground">Resultado</Label>
                 <select
                   id="att-status"
                   value={attendanceForm.status}
@@ -821,7 +832,7 @@ function ParticipantesPage() {
                       status: e.target.value as any,
                     })
                   }
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-medium"
+                  className="w-full rounded-xl border border-input bg-background px-3.5 py-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring font-medium"
                 >
                   <option value="Normal">Normal</option>
                   <option value="Atenção">Atenção</option>
@@ -831,40 +842,40 @@ function ParticipantesPage() {
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="att-resp" className="text-sm font-semibold">Profissional Responsável</Label>
+            <div className="space-y-2">
+              <Label htmlFor="att-resp" className="text-sm font-semibold text-foreground">Profissional Responsável</Label>
               <Input
                 id="att-resp"
                 placeholder="Ex: Dra. Adriane Câmara"
                 value={attendanceForm.responsible}
                 onChange={(e) => setAttendanceForm({ ...attendanceForm, responsible: e.target.value })}
                 required
-                className="text-sm h-10"
+                className="text-base sm:text-sm h-11 rounded-xl"
               />
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="att-sum" className="text-sm font-semibold">Resumo do Atendimento</Label>
+            <div className="space-y-2">
+              <Label htmlFor="att-sum" className="text-sm font-semibold text-foreground">Resumo do Atendimento</Label>
               <Input
                 id="att-sum"
                 placeholder="Ex: Pressão aferida, orientações ergonômicas passadas..."
                 value={attendanceForm.summary}
                 onChange={(e) => setAttendanceForm({ ...attendanceForm, summary: e.target.value })}
                 required
-                className="text-sm h-10"
+                className="text-base sm:text-sm h-11 rounded-xl"
               />
             </div>
 
-            <DialogFooter className="gap-2.5 pt-3">
+            <DialogFooter className="gap-3 pt-4 border-t border-border">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setNewAttendanceOpen(false)}
-                className="text-sm h-10 px-4"
+                className="h-11 text-sm px-6 font-semibold rounded-xl"
               >
                 Cancelar
               </Button>
-              <Button type="submit" className="text-sm h-10 px-5 font-semibold">
+              <Button type="submit" className="h-11 text-sm px-7 font-semibold rounded-xl shadow-md">
                 Salvar Atendimento
               </Button>
             </DialogFooter>

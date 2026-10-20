@@ -87,6 +87,8 @@ export class EventController {
             id: ev.id,
             name: ev.name,
             date: ev.date,
+            startDate: (ev as any).startDate || ev.date,
+            endDate: (ev as any).endDate || (ev as any).startDate || ev.date,
             location: ev.location,
             metrics: {
               attended: participantCount,
@@ -150,14 +152,19 @@ export class EventController {
 
   async create(req: Request, res: Response) {
     try {
-      const { name, date, location } = req.body;
-      if (!name || !date || !location) {
-        return res.status(400).json({ error: "Nome da campanha, data e endereço são obrigatórios." });
+      const { name, date, startDate, endDate, location } = req.body;
+      const finalStartDate = (startDate || date || "").trim();
+      const finalEndDate = (endDate || finalStartDate).trim();
+
+      if (!name?.trim() || !finalStartDate || !location?.trim()) {
+        return res.status(400).json({ error: "Nome da campanha, data de início e fim e endereço são obrigatórios." });
       }
 
       const created = await this.createEvent.execute({
         name,
-        date,
+        date: date || (finalStartDate === finalEndDate ? finalStartDate : `${finalStartDate} a ${finalEndDate}`),
+        startDate: finalStartDate,
+        endDate: finalEndDate,
         location,
       });
 

@@ -17,14 +17,16 @@ export class PrismaEventRepository implements IEventRepository {
     return event as any;
   }
 
-  async create(data: { id: string; name: string; date: string; location: string }): Promise<EventEntity> {
+  async create(data: { id: string; name: string; date: string; startDate?: string; endDate?: string; location: string }): Promise<EventEntity> {
     const created = await prisma.event.create({
       data: {
         id: data.id,
         name: data.name,
         date: data.date,
+        startDate: data.startDate,
+        endDate: data.endDate,
         location: data.location,
-      },
+      } as any,
     });
     return created as any;
   }

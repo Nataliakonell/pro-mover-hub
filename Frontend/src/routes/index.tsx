@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useMemo, type FormEvent } from "react";
+import { useState, useMemo, useEffect, useRef, type FormEvent } from "react";
 import {
   AlertTriangle,
   Calendar,
@@ -22,6 +22,9 @@ import {
   BarChart3,
   FileText,
   UserPlus,
+  LocateFixed,
+  Loader2,
+  Stethoscope,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -43,6 +46,8 @@ import {
   createDashboardCampaign,
   DashboardEvent,
   EMPTY_EVENT,
+  formatCampaignPeriod,
+  formatDisplayDate,
 } from "@/lib/dashboard-data";
 import { createTriageApi } from "@/lib/api";
 import {
@@ -108,10 +113,11 @@ function DashboardPage() {
     window.setTimeout(() => setToastMessage(null), 4000);
   };
 
-  // Formulário: Criar Campanha (nome, dia, endereço)
+  // Formulário: Criar Campanha (nome, data início, data fim, endereço com número)
   const [newCampaignForm, setNewCampaignForm] = useState({
     name: "",
-    date: new Date().toISOString().split("T")[0],
+    startDate: new Date().toISOString().split("T")[0],
+    endDate: new Date().toISOString().split("T")[0],
     location: "",
   });
 
@@ -351,27 +357,306 @@ function DashboardPage() {
     };
   }, [triageForm.weight, triageForm.height, settings]);
 
-  // Salvar Nova Campanha (nome, dia, endereço)
+  // Salvar Nova Campanha (nome, data início, data fim, endereço completo com número no mesmo campo)
   const handleCreateCampaign = async (e: FormEvent) => {
     e.preventDefault();
-    if (!newCampaignForm.name.trim() || !newCampaignForm.date || !newCampaignForm.location.trim()) {
+    if (
+      !newCampaignForm.name.trim() ||
+      !newCampaignForm.startDate ||
+      !newCampaignForm.endDate ||
+      !newCampaignForm.location.trim()
+    ) {
+      return;
+    }
+
+    if (newCampaignForm.endDate < newCampaignForm.startDate) {
+      showToast("A data de término não pode ser anterior à data de início.");
       return;
     }
 
     const created = await createDashboardCampaign({
       name: newCampaignForm.name,
-      date: newCampaignForm.date,
-      location: newCampaignForm.location,
+      startDate: newCampaignForm.startDate,
+      endDate: newCampaignForm.endDate,
+      date: formatCampaignPeriod(newCampaignForm.startDate, newCampaignForm.endDate),
+      location: newCampaignForm.location.trim(),
     });
 
     setCreateCampaignOpen(false);
+    const today = new Date().toISOString().split("T")[0];
     setNewCampaignForm({
       name: "",
-      date: new Date().toISOString().split("T")[0],
+      startDate: today,
+      endDate: today,
       location: "",
     });
     setActiveCampaignId(created.id);
     showToast(`Campanha "${created.name}" criada com sucesso! Você já está nela.`);
+  };
+
+  // Autocomplete e busca inteligente de endereços / CEP com PRIORIDADE em Campo Grande - MS
+  interface AddressSuggestion {
+    id: string;
+    primary: string;
+    secondary: string;
+    fullAddress: string;
+    houseNumber?: string;
+  }
+
+  const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+  const [showAddressDropdown, setShowAddressDropdown] = useState(false);
+  const addressSearchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const addressWrapperRef = useRef<HTMLDivElement>(null);
+  const lastTypedNumberRef = useRef<string>("");
+
+  // Fecha dropdown de endereços ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (addressWrapperRef.current && !addressWrapperRef.current.contains(e.target as Node)) {
+        setShowAddressDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Busca sugestões de endereços (ViaCEP se for CEP, ou Nominatim com prioridade para Campo Grande - MS)
+  const searchAddressSuggestions = async (query: string) => {
+    const trimmed = query.trim();
+    if (trimmed.length < 3) {
+      setAddressSuggestions([]);
+      setShowAddressDropdown(false);
+      return;
+    }
+
+    // Se o usuário digitou o número no mesmo campo (ex: "Afonso Pena, 1200" ou "Rua 14 de Julho, 350")
+    const numberMatch = trimmed.match(/(?:,\s*(?:n[ºo]\s*)?|\s+n[ºo]\s*)(\d+[a-zA-Z]?|\bS\/N\b)/i);
+    const typedNumber = numberMatch ? numberMatch[1] : "";
+    lastTypedNumberRef.current = typedNumber;
+    const queryForSearch = numberMatch ? trimmed.replace(numberMatch[0], "").trim() : trimmed;
+
+    setIsSearchingAddress(true);
+    const results: AddressSuggestion[] = [];
+
+    // 1. Se for formato de CEP (8 dígitos)
+    const cleanCep = trimmed.replace(/\D/g, "");
+    if (cleanCep.length === 8) {
+      try {
+        const cepRes = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+        const cepData = await cepRes.json();
+        if (cepData && !cepData.erro) {
+          const full = [cepData.logradouro, cepData.bairro, `${cepData.localidade} - ${cepData.uf}`, `CEP: ${cepData.cep}`]
+            .filter(Boolean)
+            .join(" - ");
+          results.push({
+            id: `cep-${cepData.cep}`,
+            primary: cepData.logradouro || `CEP ${cepData.cep}`,
+            secondary: `${cepData.bairro ? `${cepData.bairro}, ` : ""}${cepData.localidade} - ${cepData.uf}`,
+            fullAddress: full,
+            houseNumber: typedNumber,
+          });
+        }
+      } catch (err) {
+        console.warn("Erro ao buscar no ViaCEP:", err);
+      }
+    }
+
+    // 2. Busca no OpenStreetMap Nominatim com PRIORIDADE em Campo Grande - MS
+    // Bounding Box de Campo Grande - MS: viewbox=-54.80,-20.30,-54.40,-20.65
+    try {
+      // Etapa 2A: Tenta primeiro dentro de Campo Grande - MS (bounded=1)
+      const localUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryForSearch || trimmed)}&viewbox=-54.80,-20.30,-54.40,-20.65&bounded=1&countrycodes=br&limit=6&addressdetails=1`;
+      let res = await fetch(localUrl, {
+        headers: { "Accept-Language": "pt-BR,pt;q=0.9" },
+      });
+      let data = await res.json();
+
+      // Etapa 2B: Se não encontrou restrito, busca com viés/prioridade em Campo Grande (bounded=0)
+      if (!Array.isArray(data) || data.length === 0) {
+        const biasedUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryForSearch || trimmed)}&viewbox=-54.80,-20.30,-54.40,-20.65&bounded=0&countrycodes=br&limit=5&addressdetails=1`;
+        res = await fetch(biasedUrl, {
+          headers: { "Accept-Language": "pt-BR,pt;q=0.9" },
+        });
+        data = await res.json();
+      }
+
+      if (Array.isArray(data)) {
+        data.forEach((item: any) => {
+          const addr = item.address || {};
+          const road = addr.road || addr.pedestrian || addr.street || item.name || "";
+          const house = addr.house_number || typedNumber || "";
+          const neighborhood = addr.suburb || addr.neighbourhood || addr.city_district || "";
+          const city = addr.city || addr.town || addr.municipality || addr.village || "Campo Grande";
+          const state = addr["ISO3166-2-lvl4"] ? addr["ISO3166-2-lvl4"].replace("BR-", "") : (addr.state || "MS");
+
+          const primaryText = road || item.name || item.display_name.split(",")[0];
+          const secondaryParts = [neighborhood, city, state].filter(Boolean);
+          const secondaryText = secondaryParts.join(" - ");
+
+          const formattedFull = [primaryText, neighborhood, city, state]
+            .filter(Boolean)
+            .join(" - ");
+
+          results.push({
+            id: String(item.place_id || Math.random()),
+            primary: primaryText,
+            secondary: secondaryText || item.display_name,
+            fullAddress: formattedFull || item.display_name,
+            houseNumber: house,
+          });
+        });
+      }
+    } catch (err) {
+      console.warn("Erro ao buscar no Nominatim:", err);
+    }
+
+    setAddressSuggestions(results);
+    setShowAddressDropdown(results.length > 0);
+    setIsSearchingAddress(false);
+  };
+
+  const handleAddressInputChange = (val: string) => {
+    setNewCampaignForm((prev) => ({ ...prev, location: val }));
+
+    if (addressSearchTimeoutRef.current) {
+      clearTimeout(addressSearchTimeoutRef.current);
+    }
+
+    if (val.trim().length >= 3) {
+      addressSearchTimeoutRef.current = setTimeout(() => {
+        searchAddressSuggestions(val);
+      }, 350);
+    } else {
+      setAddressSuggestions([]);
+      setShowAddressDropdown(false);
+    }
+  };
+
+  const handleSelectAddressSuggestion = (suggestion: AddressSuggestion) => {
+    const num = suggestion.houseNumber || lastTypedNumberRef.current;
+    let finalAddr = suggestion.fullAddress;
+
+    // Se tiver número identificado ou digitado previamente, insere junto ao logradouro
+    if (num && !finalAddr.includes(num)) {
+      if (finalAddr.includes(" - ")) {
+        const parts = finalAddr.split(" - ");
+        finalAddr = `${parts[0]}, ${num} - ${parts.slice(1).join(" - ")}`;
+      } else {
+        finalAddr = `${finalAddr}, ${num}`;
+      }
+    }
+
+    setNewCampaignForm((prev) => ({
+      ...prev,
+      location: finalAddr,
+    }));
+    setShowAddressDropdown(false);
+    setAddressSuggestions([]);
+  };
+
+  // Obter endereço do local atual via Geolocation do navegador + OpenStreetMap Nominatim / BigDataCloud
+  const [loadingLocation, setLoadingLocation] = useState(false);
+
+  const handleGetCurrentLocation = () => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      showToast("Seu dispositivo ou navegador não suporta geolocalização.");
+      return;
+    }
+
+    setLoadingLocation(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          let finalAddress = "";
+
+          // Tentativa 1: OpenStreetMap Nominatim
+          try {
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+              {
+                headers: {
+                  "Accept-Language": "pt-BR,pt;q=0.9",
+                },
+              }
+            );
+
+            if (response.ok) {
+              const data = await response.json();
+              if (data && data.address) {
+                const { road, pedestrian, street, house_number, suburb, neighbourhood, city, town, municipality, state } = data.address;
+                const streetName = (road || pedestrian || street) || "";
+                const logradouro = streetName
+                  ? (house_number ? `${streetName}, ${house_number}` : streetName)
+                  : "";
+                const bairro = suburb || neighbourhood || "";
+                const cidade = city || town || municipality || "Campo Grande";
+                const uf = data.address["ISO3166-2-lvl4"] ? data.address["ISO3166-2-lvl4"].replace("BR-", "") : (state || "MS");
+
+                finalAddress = [logradouro, bairro, cidade, uf].filter(Boolean).join(" - ");
+                if (!finalAddress && data.display_name) {
+                  finalAddress = data.display_name;
+                }
+              }
+            }
+          } catch (osmErr) {
+            console.warn("Nominatim indisponível, tentando BigDataCloud:", osmErr);
+          }
+
+          // Tentativa 2: BigDataCloud Reverse Geocoding Client API (fallback rápido e gratuito)
+          if (!finalAddress) {
+            try {
+              const bdcRes = await fetch(
+                `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=pt`
+              );
+              if (bdcRes.ok) {
+                const bdcData = await bdcRes.json();
+                const locality = bdcData.locality || bdcData.city || "Campo Grande";
+                const state = bdcData.principalSubdivision || "MS";
+                finalAddress = [locality, state].filter(Boolean).join(" - ");
+              }
+            } catch (bdcErr) {
+              console.warn("BigDataCloud fallback falhou:", bdcErr);
+            }
+          }
+
+          if (finalAddress) {
+            setNewCampaignForm((prev) => ({
+              ...prev,
+              location: finalAddress,
+            }));
+            setShowAddressDropdown(false);
+            showToast("Endereço atual preenchido com sucesso!");
+          } else {
+            showToast("Não foi possível identificar o endereço deste ponto. Digite o local manualmente.");
+          }
+        } catch (error: any) {
+          console.error("Erro ao buscar endereço da localização:", error);
+          showToast("Erro ao converter coordenadas em endereço.");
+        } finally {
+          setLoadingLocation(false);
+        }
+      },
+      (error) => {
+        setLoadingLocation(false);
+        if (error.code === error.PERMISSION_DENIED) {
+          showToast("Permissão de localização negada no navegador.");
+        } else if (error.code === error.TIMEOUT) {
+          showToast("Tempo esgotado ao buscar localização.");
+        } else {
+          showToast("Não foi possível obter sua localização atual.");
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 30000,
+      }
+    );
   };
 
   // Salvar Nova Triagem
@@ -627,7 +912,7 @@ function DashboardPage() {
                   <span className="text-xs font-bold uppercase tracking-wider">Campanhas Ativas</span>
                   <Calendar className="size-5 text-primary" />
                 </div>
-                <p className="font-display text-3xl font-bold text-foreground">
+                <p className="font-display text-3xl font-bold text-foreground" suppressHydrationWarning>
                   {events.length}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">Ações cadastradas</p>
@@ -638,7 +923,7 @@ function DashboardPage() {
                   <span className="text-xs font-bold uppercase tracking-wider">Total de Participantes</span>
                   <Users className="size-5 text-primary" />
                 </div>
-                <p className="font-display text-3xl font-bold text-foreground">
+                <p className="font-display text-3xl font-bold text-foreground" suppressHydrationWarning>
                   {participants.length}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">Pessoas acolhidas</p>
@@ -649,7 +934,7 @@ function DashboardPage() {
                   <span className="text-xs font-bold uppercase tracking-wider">Triagens Realizadas</span>
                   <ClipboardList className="size-5 text-primary" />
                 </div>
-                <p className="font-display text-3xl font-bold text-foreground">
+                <p className="font-display text-3xl font-bold text-foreground" suppressHydrationWarning>
                   {events.reduce((acc, ev) => acc + (ev.metrics?.triagesDone || 0), 0)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">Avaliações clínicas registradas</p>
@@ -667,15 +952,6 @@ function DashboardPage() {
                     Clique em <strong>"Entrar na Campanha"</strong> para gerenciar participantes, gráficos e triagens
                   </p>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCreateCampaignOpen(true)}
-                  className="gap-1.5 text-xs sm:text-sm h-9"
-                >
-                  <Plus className="size-3.5 text-primary" />
-                  Nova Campanha
-                </Button>
               </div>
 
               {events.length === 0 ? (
@@ -725,7 +1001,17 @@ function DashboardPage() {
                           <div className="space-y-2 text-xs sm:text-sm text-muted-foreground pt-1">
                             <div className="flex items-center gap-2">
                               <Calendar className="size-4 text-primary shrink-0" />
-                              <span>Dia: <strong className="text-foreground">{camp.date}</strong></span>
+                              <span>
+                                {camp.startDate && camp.endDate ? (
+                                  camp.startDate === camp.endDate ? (
+                                    <>Data: <strong className="text-foreground">{formatDisplayDate(camp.startDate)}</strong></>
+                                  ) : (
+                                    <>Período: <strong className="text-foreground">{formatDisplayDate(camp.startDate)} até {formatDisplayDate(camp.endDate)}</strong></>
+                                  )
+                                ) : (
+                                  <>Data: <strong className="text-foreground">{formatDisplayDate(camp.date)}</strong></>
+                                )}
+                              </span>
                             </div>
                             <div className="flex items-start gap-2">
                               <MapPin className="size-4 text-primary shrink-0 mt-0.5" />
@@ -784,7 +1070,15 @@ function DashboardPage() {
                 <div className="flex flex-wrap items-center gap-5 text-sm text-muted-foreground pt-1">
                   <span className="flex items-center gap-1.5 font-medium text-foreground">
                     <Calendar className="size-4 text-primary" />
-                    Dia: {activeCampaign.date}
+                    {activeCampaign.startDate && activeCampaign.endDate ? (
+                      activeCampaign.startDate === activeCampaign.endDate ? (
+                        <>Data: {formatDisplayDate(activeCampaign.startDate)}</>
+                      ) : (
+                        <>Período: {formatDisplayDate(activeCampaign.startDate)} até {formatDisplayDate(activeCampaign.endDate)}</>
+                      )
+                    ) : (
+                      <>Data: {formatDisplayDate(activeCampaign.date)}</>
+                    )}
                   </span>
                   <span className="flex items-center gap-1.5 font-medium text-foreground">
                     <MapPin className="size-4 text-primary" />
@@ -1151,23 +1445,25 @@ function DashboardPage() {
       </div>
 
       {/* ============================================================== */}
-      {/* MODAL 1: CRIAR CAMPANHA (Nome, Dia, Endereço)                  */}
+      {/* MODAL 1: CRIAR CAMPANHA (Nome, Data Início, Data Fim, Endereço) */}
       {/* ============================================================== */}
       <Dialog open={createCampaignOpen} onOpenChange={setCreateCampaignOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-display text-xl font-bold text-foreground">
-              Criar Nova Campanha
-            </DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">
-              Cadastre uma nova ação comunitária informando nome, data e o local de atendimento.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="w-[95vw] sm:max-w-2xl md:max-w-3xl max-h-[92vh] overflow-y-auto p-5 sm:p-7">
+          <div className="flex items-center gap-3.5 pb-4 border-b border-border">
+            <div className="size-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20">
+              <Calendar className="size-5" />
+            </div>
+            <div>
+              <DialogTitle className="font-display text-xl sm:text-2xl font-bold text-foreground">
+                Criar Nova Campanha
+              </DialogTitle>
+            </div>
+          </div>
 
-          <form onSubmit={handleCreateCampaign} className="space-y-4 pt-2">
+          <form onSubmit={handleCreateCampaign} className="space-y-5 pt-3">
             {/* Nome da Campanha */}
-            <div className="space-y-1.5">
-              <Label htmlFor="camp-name" className="text-sm font-semibold">
+            <div className="space-y-2">
+              <Label htmlFor="camp-name" className="text-sm font-semibold text-foreground">
                 Nome da campanha
               </Label>
               <Input
@@ -1176,52 +1472,147 @@ function DashboardPage() {
                 value={newCampaignForm.name}
                 onChange={(e) => setNewCampaignForm({ ...newCampaignForm, name: e.target.value })}
                 required
-                className="h-10 text-sm"
+                className="h-11 text-base sm:text-sm rounded-xl"
               />
             </div>
 
-            {/* Dia / Data */}
-            <div className="space-y-1.5">
-              <Label htmlFor="camp-date" className="text-sm font-semibold flex items-center gap-1.5">
-                <Calendar className="size-4 text-muted-foreground" />
-                Dia do evento
-              </Label>
-              <Input
-                id="camp-date"
-                type="date"
-                value={newCampaignForm.date}
-                onChange={(e) => setNewCampaignForm({ ...newCampaignForm, date: e.target.value })}
-                required
-                className="h-10 text-sm"
-              />
+            {/* Datas da Campanha: Início e Fim */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="camp-start-date" className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                  <Calendar className="size-4 text-muted-foreground" />
+                  Data de Início
+                </Label>
+                <Input
+                  id="camp-start-date"
+                  type="date"
+                  value={newCampaignForm.startDate}
+                  onChange={(e) => {
+                    const newStart = e.target.value;
+                    setNewCampaignForm((prev) => ({
+                      ...prev,
+                      startDate: newStart,
+                      endDate: prev.endDate && prev.endDate < newStart ? newStart : prev.endDate,
+                    }));
+                  }}
+                  required
+                  className="h-11 text-base sm:text-sm rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="camp-end-date" className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                  <Calendar className="size-4 text-muted-foreground" />
+                  Data de Fim
+                </Label>
+                <Input
+                  id="camp-end-date"
+                  type="date"
+                  min={newCampaignForm.startDate}
+                  value={newCampaignForm.endDate}
+                  onChange={(e) => setNewCampaignForm((prev) => ({ ...prev, endDate: e.target.value }))}
+                  required
+                  className="h-11 text-base sm:text-sm rounded-xl"
+                />
+              </div>
             </div>
 
-            {/* Endereço / Local */}
-            <div className="space-y-1.5">
-              <Label htmlFor="camp-loc" className="text-sm font-semibold flex items-center gap-1.5">
-                <MapPin className="size-4 text-muted-foreground" />
-                Endereço / Local
-              </Label>
-              <Input
-                id="camp-loc"
-                placeholder="Ex: Rua das Palmeiras, 350 - Praça Central"
-                value={newCampaignForm.location}
-                onChange={(e) => setNewCampaignForm({ ...newCampaignForm, location: e.target.value })}
-                required
-                className="h-10 text-sm"
-              />
+            {/* Endereço / Local (com número no mesmo campo, autocomplete com prioridade em Campo Grande e GPS) */}
+            <div className="space-y-2" ref={addressWrapperRef}>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="camp-loc" className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                  <MapPin className="size-4 text-muted-foreground" />
+                  Endereço e Número
+                </Label>
+                <button
+                  type="button"
+                  onClick={handleGetCurrentLocation}
+                  disabled={loadingLocation}
+                  className="text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1.5 font-medium disabled:opacity-50 cursor-pointer"
+                  title="Puxar endereço do local atual via GPS"
+                >
+                  {loadingLocation ? (
+                    <>
+                      <Loader2 className="size-3.5 animate-spin" />
+                      <span>Buscando local...</span>
+                    </>
+                  ) : (
+                    <>
+                      <LocateFixed className="size-3.5" />
+                      <span>Usar local atual</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="relative">
+                <Input
+                  id="camp-loc"
+                  placeholder="Ex: Av. Afonso Pena, 1200 - Centro ou CEP..."
+                  value={newCampaignForm.location}
+                  onChange={(e) => handleAddressInputChange(e.target.value)}
+                  onFocus={() => {
+                    if (addressSuggestions.length > 0) {
+                      setShowAddressDropdown(true);
+                    }
+                  }}
+                  required
+                  className="h-11 text-base sm:text-sm pr-9 rounded-xl"
+                  autoComplete="off"
+                />
+
+                {isSearchingAddress && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                  </div>
+                )}
+
+                {/* Dropdown de sugestões de endereço em tempo real */}
+                {showAddressDropdown && addressSuggestions.length > 0 && (
+                  <div className="absolute z-50 left-0 right-0 top-full mt-1.5 max-h-60 overflow-y-auto rounded-xl border border-border bg-popover p-1 shadow-lg text-popover-foreground text-xs animate-in fade-in-50 zoom-in-95">
+                    <div className="px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/50 flex items-center justify-between">
+                      <span>Sugestões em Campo Grande - MS ({addressSuggestions.length})</span>
+                      <span className="text-[10px] text-primary font-normal">Prioridade local</span>
+                    </div>
+                    {addressSuggestions.map((sug) => (
+                      <button
+                        key={sug.id}
+                        type="button"
+                        onClick={() => handleSelectAddressSuggestion(sug)}
+                        className="w-full text-left px-3 py-2 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors flex items-start gap-2.5 group cursor-pointer"
+                      >
+                        <MapPin className="size-4 text-primary shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-foreground truncate text-xs sm:text-sm">
+                            {sug.primary}
+                          </p>
+                          {sug.secondary && (
+                            <p className="text-muted-foreground text-[11px] truncate">
+                              {sug.secondary}
+                            </p>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>Prioridade: <strong className="text-foreground">Campo Grande - MS</strong></span>
+                <span>Informe rua e número no mesmo campo</span>
+              </div>
             </div>
 
-            <DialogFooter className="gap-2 pt-3">
+            <DialogFooter className="gap-3 pt-4 border-t border-border">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setCreateCampaignOpen(false)}
-                className="h-10 text-sm px-4"
+                className="h-11 text-sm px-6 font-semibold rounded-xl"
               >
                 Cancelar
               </Button>
-              <Button type="submit" className="h-10 text-sm px-5 font-semibold">
+              <Button type="submit" className="h-11 text-sm px-7 font-semibold rounded-xl shadow-md">
                 Criar Campanha
               </Button>
             </DialogFooter>
@@ -1233,17 +1624,22 @@ function DashboardPage() {
       {/* MODAL 2: NOVA TRIAGEM (PA, Glicemia, SpO2, FC + IMC + Obs)     */}
       {/* ============================================================== */}
       <Dialog open={triageDialogOpen} onOpenChange={setTriageDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="font-display text-xl font-bold text-foreground">
-              Nova Triagem de Sinais Vitais
-            </DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">
-              Campanha ativa: <strong>{activeCampaign.name}</strong>
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="w-[95vw] sm:max-w-4xl md:max-w-5xl max-h-[92vh] overflow-y-auto p-5 sm:p-7">
+          <div className="flex items-center gap-3.5 pb-4 border-b border-border">
+            <div className="size-11 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0 border border-blue-500/20">
+              <Stethoscope className="size-6" />
+            </div>
+            <div>
+              <DialogTitle className="font-display text-xl sm:text-2xl font-bold text-foreground">
+                Nova Triagem de Sinais Vitais
+              </DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                Campanha ativa: <strong>{activeCampaign.name}</strong>
+              </DialogDescription>
+            </div>
+          </div>
 
-          <form onSubmit={handleSaveTriage} className="space-y-4 pt-1">
+          <form onSubmit={handleSaveTriage} className="space-y-5 pt-3">
             {/* Seleção do Participante */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -1259,7 +1655,7 @@ function DashboardPage() {
                     setTriageDialogOpen(false);
                     setPersonDialogOpen(true);
                   }}
-                  className="h-7 px-2 text-xs font-semibold text-primary gap-1"
+                  className="h-8 px-3 text-xs font-semibold text-primary gap-1.5 hover:bg-primary/10 rounded-lg"
                 >
                   <Plus className="size-3.5" />
                   Novo Cadastro
@@ -1280,7 +1676,7 @@ function DashboardPage() {
                     });
                   }}
                   required
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring cursor-pointer font-medium"
+                  className="w-full rounded-xl border border-input bg-background px-3.5 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring cursor-pointer font-medium"
                 >
                   <option value="">Selecione o participante cadastrado...</option>
                   {participants.map((p) => (
@@ -1290,7 +1686,7 @@ function DashboardPage() {
                   ))}
                 </select>
               ) : (
-                <div className="rounded-xl border border-dashed border-border p-4 text-center space-y-2 bg-muted/20">
+                <div className="rounded-xl border border-dashed border-border p-5 text-center space-y-2 bg-muted/20">
                   <p className="text-sm text-muted-foreground">Nenhum participante cadastrado ainda.</p>
                   <Button
                     type="button"
@@ -1301,7 +1697,7 @@ function DashboardPage() {
                       setTriageDialogOpen(false);
                       setPersonDialogOpen(true);
                     }}
-                    className="text-sm gap-1.5 h-9 px-3"
+                    className="text-sm gap-1.5 h-10 px-4 rounded-xl"
                   >
                     <UserPlus className="size-4 text-primary" />
                     Cadastrar participante agora
@@ -1310,88 +1706,93 @@ function DashboardPage() {
               )}
             </div>
 
-            {/* Sinais Vitais Convencionais */}
-            <div className="grid grid-cols-2 gap-3.5">
-              <div className="space-y-1.5">
-                <Label htmlFor="t-pa" className="text-xs sm:text-sm font-semibold">
-                  Pressão arterial (mmHg)
-                </Label>
-                <Input
-                  id="t-pa"
-                  placeholder="Ex: 120/80"
-                  value={triageForm.pa}
-                  onChange={(e) => setTriageForm({ ...triageForm, pa: e.target.value })}
-                  required
-                  className="text-sm h-10"
-                />
-                <p className="text-[11px] text-muted-foreground font-mono">
-                  Ref: {settings.systolicMin}–{settings.systolicMax} x {settings.diastolicMin}–{settings.diastolicMax}
-                </p>
-              </div>
+            {/* Sinais Vitais Convencionais em Grid de 4 Colunas no Desktop */}
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Sinais Vitais
+              </Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="space-y-1.5 rounded-xl border border-border/70 bg-card p-3.5">
+                  <Label htmlFor="t-pa" className="text-xs sm:text-sm font-semibold">
+                    Pressão arterial (mmHg)
+                  </Label>
+                  <Input
+                    id="t-pa"
+                    placeholder="Ex: 120/80"
+                    value={triageForm.pa}
+                    onChange={(e) => setTriageForm({ ...triageForm, pa: e.target.value })}
+                    required
+                    className="text-sm h-11 rounded-xl"
+                  />
+                  <p className="text-[11px] text-muted-foreground font-mono">
+                    Ref: {settings.systolicMin}–{settings.systolicMax} x {settings.diastolicMin}–{settings.diastolicMax}
+                  </p>
+                </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="t-gli" className="text-xs sm:text-sm font-semibold">
-                  Glicemia (mg/dL)
-                </Label>
-                <Input
-                  id="t-gli"
-                  type="number"
-                  placeholder="Ex: 98"
-                  value={triageForm.glucose}
-                  onChange={(e) => setTriageForm({ ...triageForm, glucose: e.target.value })}
-                  required
-                  className="text-sm h-10"
-                />
-                <p className="text-[11px] text-muted-foreground font-mono">
-                  Ref: {settings.glucoseMin ?? 70}–{settings.glucoseMax} mg/dL
-                </p>
-              </div>
+                <div className="space-y-1.5 rounded-xl border border-border/70 bg-card p-3.5">
+                  <Label htmlFor="t-gli" className="text-xs sm:text-sm font-semibold">
+                    Glicemia (mg/dL)
+                  </Label>
+                  <Input
+                    id="t-gli"
+                    type="number"
+                    placeholder="Ex: 98"
+                    value={triageForm.glucose}
+                    onChange={(e) => setTriageForm({ ...triageForm, glucose: e.target.value })}
+                    required
+                    className="text-sm h-11 rounded-xl"
+                  />
+                  <p className="text-[11px] text-muted-foreground font-mono">
+                    Ref: {settings.glucoseMin ?? 70}–{settings.glucoseMax} mg/dL
+                  </p>
+                </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="t-spo2" className="text-xs sm:text-sm font-semibold">
-                  SpO₂ (%)
-                </Label>
-                <Input
-                  id="t-spo2"
-                  type="number"
-                  placeholder="Ex: 97"
-                  value={triageForm.spo2}
-                  onChange={(e) => setTriageForm({ ...triageForm, spo2: e.target.value })}
-                  required
-                  className="text-sm h-10"
-                />
-                <p className="text-[11px] text-muted-foreground font-mono">
-                  Ref: {settings.oxygenMin}%–{settings.oxygenMax ?? 100}%
-                </p>
-              </div>
+                <div className="space-y-1.5 rounded-xl border border-border/70 bg-card p-3.5">
+                  <Label htmlFor="t-spo2" className="text-xs sm:text-sm font-semibold">
+                    SpO₂ (%)
+                  </Label>
+                  <Input
+                    id="t-spo2"
+                    type="number"
+                    placeholder="Ex: 97"
+                    value={triageForm.spo2}
+                    onChange={(e) => setTriageForm({ ...triageForm, spo2: e.target.value })}
+                    required
+                    className="text-sm h-11 rounded-xl"
+                  />
+                  <p className="text-[11px] text-muted-foreground font-mono">
+                    Ref: {settings.oxygenMin}%–{settings.oxygenMax ?? 100}%
+                  </p>
+                </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="t-fc" className="text-xs sm:text-sm font-semibold">
-                  Frequência Cardíaca (bpm)
-                </Label>
-                <Input
-                  id="t-fc"
-                  type="number"
-                  placeholder="Ex: 72"
-                  value={triageForm.heartRate}
-                  onChange={(e) => setTriageForm({ ...triageForm, heartRate: e.target.value })}
-                  required
-                  className="text-sm h-10"
-                />
-                <p className="text-[11px] text-muted-foreground font-mono">
-                  Ref: {settings.heartRateMin}–{settings.heartRateMax} bpm
-                </p>
+                <div className="space-y-1.5 rounded-xl border border-border/70 bg-card p-3.5">
+                  <Label htmlFor="t-fc" className="text-xs sm:text-sm font-semibold">
+                    Freq. Cardíaca (bpm)
+                  </Label>
+                  <Input
+                    id="t-fc"
+                    type="number"
+                    placeholder="Ex: 72"
+                    value={triageForm.heartRate}
+                    onChange={(e) => setTriageForm({ ...triageForm, heartRate: e.target.value })}
+                    required
+                    className="text-sm h-11 rounded-xl"
+                  />
+                  <p className="text-[11px] text-muted-foreground font-mono">
+                    Ref: {settings.heartRateMin}–{settings.heartRateMax} bpm
+                  </p>
+                </div>
               </div>
             </div>
 
             {/* SEÇÃO ADICIONADA: CÁLCULO DE IMC */}
-            <div className="rounded-xl border border-primary/25 bg-primary/5 p-4 space-y-3">
+            <div className="rounded-xl border border-primary/25 bg-primary/5 p-4 sm:p-5 space-y-3">
               <div className="flex items-center gap-2 text-primary font-bold text-sm">
                 <Scale className="size-4.5" />
-                <span>Cálculo do IMC (Índice de Massa Corporal)</span>
+                <span>Antropometria & Cálculo de IMC</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
                 <div className="space-y-1.5">
                   <Label htmlFor="t-weight" className="text-xs font-semibold text-foreground">
                     Peso (kg)
@@ -1403,7 +1804,7 @@ function DashboardPage() {
                     placeholder="Ex: 72.5"
                     value={triageForm.weight}
                     onChange={(e) => setTriageForm({ ...triageForm, weight: e.target.value })}
-                    className="text-sm h-9 bg-card"
+                    className="text-sm h-10 bg-card rounded-xl"
                   />
                 </div>
 
@@ -1418,57 +1819,59 @@ function DashboardPage() {
                     placeholder="Ex: 172 ou 1.72"
                     value={triageForm.height}
                     onChange={(e) => setTriageForm({ ...triageForm, height: e.target.value })}
-                    className="text-sm h-9 bg-card"
+                    className="text-sm h-10 bg-card rounded-xl"
                   />
                 </div>
-              </div>
 
-              {/* Card reativo do cálculo do IMC */}
-              {calculatedIMC ? (
-                <div className="flex items-center justify-between rounded-lg bg-card border border-border p-3 text-sm animate-in fade-in duration-200">
-                  <div>
-                    <span className="text-xs text-muted-foreground block">IMC Calculado:</span>
-                    <span className="text-lg font-bold font-display text-foreground">
-                      {calculatedIMC.value} <span className="text-xs font-normal text-muted-foreground">kg/m²</span>
-                    </span>
-                  </div>
-                  <span className={`rounded-full px-3 py-1 text-xs font-bold ${calculatedIMC.badgeClass}`}>
-                    {calculatedIMC.category}
-                  </span>
+                {/* Card reativo do cálculo do IMC */}
+                <div className="sm:pt-5">
+                  {calculatedIMC ? (
+                    <div className="flex items-center justify-between rounded-xl bg-card border border-border p-3 text-sm shadow-xs animate-in fade-in duration-200">
+                      <div>
+                        <span className="text-[11px] text-muted-foreground block">IMC Calculado:</span>
+                        <span className="text-base sm:text-lg font-bold font-display text-foreground">
+                          {calculatedIMC.value} <span className="text-xs font-normal text-muted-foreground">kg/m²</span>
+                        </span>
+                      </div>
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${calculatedIMC.badgeClass}`}>
+                        {calculatedIMC.category}
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Preencha peso e altura para classificar o IMC automaticamente.
+                    </p>
+                  )}
                 </div>
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  Informe o peso e a altura para o sistema calcular e classificar o IMC automaticamente.
-                </p>
-              )}
+              </div>
             </div>
 
-            {/* SEÇÃO ADICIONADA: OBSERVAÇÃO OPCIONAL */}
-            <div className="space-y-1.5">
-              <Label htmlFor="t-obs" className="text-xs sm:text-sm font-semibold flex items-center gap-1.5">
+            {/* SEÇÃO: OBSERVAÇÃO CLÍNICA */}
+            <div className="space-y-2">
+              <Label htmlFor="t-obs" className="text-sm font-semibold flex items-center gap-1.5">
                 <FileText className="size-4 text-muted-foreground" />
-                Observação Clínica (Opcional)
+                Observação Clínica e Conduta (Opcional)
               </Label>
               <Textarea
                 id="t-obs"
-                rows={2}
+                rows={3}
                 placeholder="Ex: Participante em jejum, refere queixa de dor na coluna ou tonturas frequentes..."
                 value={triageForm.observation}
                 onChange={(e) => setTriageForm({ ...triageForm, observation: e.target.value })}
-                className="text-sm resize-none"
+                className="text-sm resize-none rounded-xl"
               />
             </div>
 
-            <DialogFooter className="gap-2 pt-2">
+            <DialogFooter className="gap-3 pt-4 border-t border-border">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setTriageDialogOpen(false)}
-                className="h-10 text-sm px-4"
+                className="h-11 text-sm px-6 font-semibold rounded-xl"
               >
                 Cancelar
               </Button>
-              <Button type="submit" className="h-10 text-sm px-5 font-semibold">
+              <Button type="submit" className="h-11 text-sm px-7 font-semibold rounded-xl shadow-md">
                 Concluir Triagem
               </Button>
             </DialogFooter>
@@ -1486,19 +1889,24 @@ function DashboardPage() {
           if (!open) setOpenTriageAfterPerson(false);
         }}
       >
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="font-display text-xl font-bold text-foreground">
-              Cadastrar Novo Participante
-            </DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">
-              Vincule o participante à campanha ativa: <strong>{activeCampaign.name}</strong>
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="w-[95vw] sm:max-w-2xl md:max-w-3xl max-h-[92vh] overflow-y-auto p-5 sm:p-7">
+          <div className="flex items-center gap-3.5 pb-4 border-b border-border">
+            <div className="size-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20">
+              <UserPlus className="size-5" />
+            </div>
+            <div>
+              <DialogTitle className="font-display text-xl sm:text-2xl font-bold text-foreground">
+                Cadastrar Novo Participante
+              </DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                Vincule o participante à campanha ativa: <strong>{activeCampaign.name}</strong>
+              </DialogDescription>
+            </div>
+          </div>
 
-          <form onSubmit={handleSavePerson} className="space-y-4 pt-1">
-            <div className="space-y-1.5">
-              <Label htmlFor="dp-name" className="text-sm font-semibold">
+          <form onSubmit={handleSavePerson} className="space-y-5 pt-3">
+            <div className="space-y-2">
+              <Label htmlFor="dp-name" className="text-sm font-semibold text-foreground">
                 Nome completo
               </Label>
               <Input
@@ -1507,67 +1915,69 @@ function DashboardPage() {
                 value={personForm.name}
                 onChange={(e) => setPersonForm({ ...personForm, name: e.target.value })}
                 required
-                className="text-sm h-10"
+                className="text-base sm:text-sm h-11 rounded-xl"
               />
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="dp-birth" className="text-sm font-semibold">
-                Data de nascimento
-              </Label>
-              <Input
-                id="dp-birth"
-                type="date"
-                value={personForm.birthDate}
-                onChange={(e) => setPersonForm({ ...personForm, birthDate: e.target.value })}
-                required
-                className="text-sm h-10"
-              />
-              {agePreview ? (
-                <div className="flex items-center justify-between rounded-lg bg-primary/10 border border-primary/25 px-3 py-2 text-xs sm:text-sm">
-                  <span className="text-primary font-medium">
-                    Idade: <strong>{agePreview.age} anos</strong>
-                  </span>
-                  <span className="rounded-full bg-primary/20 text-primary font-bold px-2.5 py-0.5 text-xs">
-                    Faixa: {agePreview.group} anos
-                  </span>
-                </div>
-              ) : null}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="dp-birth" className="text-sm font-semibold text-foreground">
+                  Data de nascimento
+                </Label>
+                <Input
+                  id="dp-birth"
+                  type="date"
+                  value={personForm.birthDate}
+                  onChange={(e) => setPersonForm({ ...personForm, birthDate: e.target.value })}
+                  required
+                  className="text-base sm:text-sm h-11 rounded-xl"
+                />
+                {agePreview ? (
+                  <div className="flex items-center justify-between rounded-xl bg-primary/10 border border-primary/25 px-3 py-2 text-xs sm:text-sm">
+                    <span className="text-primary font-medium">
+                      Idade: <strong>{agePreview.age} anos</strong>
+                    </span>
+                    <span className="rounded-full bg-primary/20 text-primary font-bold px-2.5 py-0.5 text-xs">
+                      Faixa: {agePreview.group} anos
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="dp-cpf" className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                  <Fingerprint className="size-4 text-muted-foreground" />
+                  CPF
+                </Label>
+                <Input
+                  id="dp-cpf"
+                  placeholder="000.000.000-00"
+                  maxLength={14}
+                  value={personForm.cpf}
+                  onChange={(e) => setPersonForm({ ...personForm, cpf: formatCPF(e.target.value) })}
+                  required
+                  className="text-base sm:text-sm h-11 rounded-xl"
+                />
+              </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="dp-cpf" className="text-sm font-semibold flex items-center gap-1.5">
-                <Fingerprint className="size-4 text-muted-foreground" />
-                CPF
-              </Label>
-              <Input
-                id="dp-cpf"
-                placeholder="000.000.000-00"
-                maxLength={14}
-                value={personForm.cpf}
-                onChange={(e) => setPersonForm({ ...personForm, cpf: formatCPF(e.target.value) })}
-                required
-                className="text-sm h-10"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="dp-phone" className="text-sm font-semibold flex items-center gap-1.5">
+            <div className="space-y-2">
+              <Label htmlFor="dp-phone" className="text-sm font-semibold text-foreground flex items-center gap-1.5">
                 <Phone className="size-4 text-muted-foreground" />
-                WhatsApp / Telefone
+                WhatsApp / Telefone de Contato
               </Label>
               <Input
                 id="dp-phone"
-                placeholder="(65) 99999-9999"
+                placeholder="(67) 99999-9999"
                 maxLength={15}
                 value={personForm.phone}
                 onChange={(e) => setPersonForm({ ...personForm, phone: formatPhone(e.target.value) })}
                 required
-                className="text-sm h-10"
+                className="text-base sm:text-sm h-11 rounded-xl"
               />
             </div>
 
-            <DialogFooter className="gap-2 pt-2">
+            <DialogFooter className="gap-3 pt-4 border-t border-border">
               <Button
                 type="button"
                 variant="outline"
@@ -1575,11 +1985,11 @@ function DashboardPage() {
                   setOpenTriageAfterPerson(false);
                   setPersonDialogOpen(false);
                 }}
-                className="h-10 text-sm px-4"
+                className="h-11 text-sm px-6 font-semibold rounded-xl"
               >
                 Cancelar
               </Button>
-              <Button type="submit" className="h-10 text-sm px-5 font-semibold">
+              <Button type="submit" className="h-11 text-sm px-7 font-semibold rounded-xl shadow-md">
                 Cadastrar Participante
               </Button>
             </DialogFooter>
@@ -1591,57 +2001,55 @@ function DashboardPage() {
       {/* MODAL 4: HISTÓRICO DO PARTICIPANTE                             */}
       {/* ============================================================== */}
       <Dialog open={participantHistoryOpen} onOpenChange={setParticipantHistoryOpen}>
-        <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:max-w-4xl md:max-w-5xl max-h-[92vh] overflow-y-auto p-5 sm:p-7">
           {selectedParticipantForHistory && (
-            <div className="space-y-5">
-              <DialogHeader>
-                <div className="flex items-center gap-3">
-                  <div className="grid size-12 place-items-center rounded-full bg-primary/20 text-primary font-bold text-base shrink-0">
-                    {selectedParticipantForHistory.name.slice(0, 2).toUpperCase()}
-                  </div>
-                  <div>
-                    <DialogTitle className="font-display text-xl font-bold text-foreground">
-                      {selectedParticipantForHistory.name}
-                    </DialogTitle>
-                    <DialogDescription className="text-xs sm:text-sm text-muted-foreground">
-                      {selectedParticipantForHistory.age} anos · Faixa [{selectedParticipantForHistory.ageGroup}] · CPF: {selectedParticipantForHistory.cpf || "S/ CPF"}
-                    </DialogDescription>
-                  </div>
+            <div className="space-y-6">
+              <div className="flex items-center gap-4 pb-4 border-b border-border">
+                <div className="grid size-14 place-items-center rounded-2xl bg-primary/20 text-primary font-bold text-lg shrink-0 border border-primary/25">
+                  {selectedParticipantForHistory.name.slice(0, 2).toUpperCase()}
                 </div>
-              </DialogHeader>
+                <div className="min-w-0 flex-1">
+                  <DialogTitle className="font-display text-xl sm:text-2xl font-bold text-foreground truncate">
+                    {selectedParticipantForHistory.name}
+                  </DialogTitle>
+                  <DialogDescription className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                    {selectedParticipantForHistory.age} anos · Faixa [{selectedParticipantForHistory.ageGroup}] · CPF: {selectedParticipantForHistory.cpf || "S/ CPF"}
+                  </DialogDescription>
+                </div>
+              </div>
 
               {/* Contatos */}
               {selectedParticipantForHistory.phone && (
-                <div className="flex items-center justify-between rounded-xl border border-border bg-card p-3 text-sm">
-                  <span className="text-muted-foreground flex items-center gap-1.5">
-                    <Phone className="size-4 text-primary" />
-                    WhatsApp: <strong className="text-foreground font-mono">{selectedParticipantForHistory.phone}</strong>
+                <div className="flex items-center justify-between rounded-xl border border-border bg-card p-3.5 text-sm shadow-xs">
+                  <span className="text-muted-foreground flex items-center gap-2">
+                    <Phone className="size-4.5 text-primary" />
+                    <span>WhatsApp / Contato: <strong className="text-foreground font-mono">{selectedParticipantForHistory.phone}</strong></span>
                   </span>
                   <a
                     href={`https://wa.me/${cleanPhoneForWhatsApp(selectedParticipantForHistory.phone)}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:underline"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 text-xs font-semibold transition-colors"
                   >
-                    <MessageCircle className="size-3.5" />
-                    Abrir conversa
+                    <MessageCircle className="size-4" />
+                    Abrir WhatsApp
                   </a>
                 </div>
               )}
 
               {/* Linha do tempo de atendimentos */}
-              <div className="space-y-3">
-                <h5 className="font-display text-sm font-bold text-foreground flex items-center gap-1.5">
-                  <History className="size-4 text-primary" />
+              <div className="space-y-4">
+                <h5 className="font-display text-base font-bold text-foreground flex items-center gap-2">
+                  <History className="size-4.5 text-primary" />
                   Histórico de Atendimentos e Triagens ({activeHistoryParticipant?.attendances?.length || 0})
                 </h5>
 
                 {(!activeHistoryParticipant?.attendances || activeHistoryParticipant.attendances.length === 0) ? (
-                  <p className="text-xs text-muted-foreground p-4 text-center rounded-lg border border-dashed border-border bg-muted/10">
+                  <p className="text-sm text-muted-foreground p-6 text-center rounded-xl border border-dashed border-border bg-muted/10">
                     Nenhum atendimento ou triagem registrada para este participante ainda.
                   </p>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-3.5">
                     {activeHistoryParticipant.attendances.map((att) => {
                       const details = extractAlterationsDetails(att.summary, att.status, settings);
                       const displayStatus = details.hasAlterations
@@ -1651,16 +2059,16 @@ function DashboardPage() {
                       return (
                         <div
                           key={att.id}
-                          className="rounded-xl border border-border bg-card p-4 space-y-2.5 text-xs sm:text-sm shadow-2xs hover:border-primary/40 transition-colors"
+                          className="rounded-xl border border-border bg-card p-4 sm:p-5 space-y-3 text-xs sm:text-sm shadow-xs hover:border-primary/40 transition-colors"
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <span className="font-bold text-foreground">{att.type || "Triagem Clínica"}</span>
+                              <span className="font-bold text-foreground text-sm sm:text-base">{att.type || "Triagem Clínica"}</span>
                               <span className="text-muted-foreground text-xs">·</span>
                               <span className="text-muted-foreground text-xs font-medium">{att.eventName}</span>
                             </div>
                             <span
-                              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                              className={`rounded-full px-3 py-0.5 text-xs font-semibold ${
                                 displayStatus === "Alterado"
                                   ? "bg-destructive/15 text-destructive border border-destructive/20"
                                   : displayStatus === "Atenção"
@@ -1674,7 +2082,7 @@ function DashboardPage() {
 
                           {/* Bloco de Destaque das Alterações Identificadas */}
                           {details.hasAlterations ? (
-                            <div className="rounded-lg bg-amber-500/10 border border-amber-500/25 p-2.5 space-y-1.5">
+                            <div className="rounded-xl bg-amber-500/10 border border-amber-500/25 p-3 space-y-1.5">
                               <div className="flex items-center gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-400">
                                 <AlertTriangle className="size-4 shrink-0" />
                                 <span>Parâmetros / Exames com Alteração ou Atenção:</span>
@@ -1683,7 +2091,7 @@ function DashboardPage() {
                                 {details.alterationsList.map((altItem, idx) => (
                                   <span
                                     key={idx}
-                                    className="inline-flex items-center rounded-md bg-amber-500/20 px-2 py-0.5 text-xs font-semibold text-amber-900 dark:text-amber-200"
+                                    className="inline-flex items-center rounded-lg bg-amber-500/20 px-2.5 py-1 text-xs font-semibold text-amber-900 dark:text-amber-200"
                                   >
                                     {altItem}
                                   </span>
@@ -1691,20 +2099,20 @@ function DashboardPage() {
                               </div>
                             </div>
                           ) : (
-                            <div className="rounded-lg bg-primary/10 border border-primary/20 p-2 flex items-center gap-2 text-xs text-primary font-medium">
-                              <CheckCircle2 className="size-3.5 shrink-0" />
+                            <div className="rounded-xl bg-primary/10 border border-primary/20 p-2.5 flex items-center gap-2 text-xs text-primary font-medium">
+                              <CheckCircle2 className="size-4 shrink-0" />
                               <span>Todos os parâmetros clínicos dentro dos limites normais configurados.</span>
                             </div>
                           )}
 
                           {/* Resumo completo com valores aferidos */}
-                          <p className="text-muted-foreground leading-relaxed">
+                          <p className="text-muted-foreground leading-relaxed text-sm">
                             {att.summary}
                           </p>
 
-                          <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1.5 border-t border-border/40">
-                            <span>Data: {att.date}</span>
-                            <span>Responsável: {att.responsible}</span>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
+                            <span>Data da Aferição: <strong className="text-foreground">{att.date}</strong></span>
+                            <span>Avaliador: <strong className="text-foreground">{att.responsible}</strong></span>
                           </div>
                         </div>
                       );
@@ -1713,10 +2121,10 @@ function DashboardPage() {
                 )}
               </div>
 
-              <DialogFooter>
+              <DialogFooter className="pt-4 border-t border-border">
                 <Button
                   onClick={() => setParticipantHistoryOpen(false)}
-                  className="h-10 text-sm px-5 font-semibold"
+                  className="h-11 text-sm px-7 font-semibold rounded-xl"
                 >
                   Fechar
                 </Button>

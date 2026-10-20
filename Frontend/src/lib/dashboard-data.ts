@@ -14,6 +14,8 @@ export interface DashboardEvent {
   id: string;
   name: string;
   date: string;
+  startDate?: string;
+  endDate?: string;
   location: string;
   metrics: {
     attended: number;
@@ -34,10 +36,35 @@ export interface DashboardEvent {
   recentTriages: RecentTriage[];
 }
 
+export function formatDisplayDate(dateStr?: string): string {
+  if (!dateStr) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [y, m, d] = dateStr.split("-");
+    return `${d}/${m}/${y}`;
+  }
+  return dateStr;
+}
+
+export function formatCampaignPeriod(startDate?: string, endDate?: string, fallbackDate?: string): string {
+  if (startDate && endDate) {
+    const startFormatted = formatDisplayDate(startDate);
+    const endFormatted = formatDisplayDate(endDate);
+    if (startDate === endDate) {
+      return startFormatted;
+    }
+    return `${startFormatted} a ${endFormatted}`;
+  }
+  if (startDate) return formatDisplayDate(startDate);
+  if (fallbackDate) return formatDisplayDate(fallbackDate);
+  return "";
+}
+
 export const EMPTY_EVENT: DashboardEvent = {
   id: "",
   name: "Nenhuma campanha ativa",
   date: new Date().toLocaleDateString("pt-BR"),
+  startDate: new Date().toISOString().split("T")[0],
+  endDate: new Date().toISOString().split("T")[0],
   location: "",
   metrics: {
     attended: 0,
@@ -108,7 +135,7 @@ export function clearStoredCampaigns() {
 }
 
 export function useDashboardEvents() {
-  const [events, setEvents] = useState<DashboardEvent[]>(getCachedEvents);
+  const [events, setEvents] = useState<DashboardEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refreshEvents = async () => {
@@ -126,6 +153,10 @@ export function useDashboardEvents() {
   };
 
   useEffect(() => {
+    const cached = getCachedEvents();
+    if (cached.length > 0) {
+      setEvents(cached);
+    }
     refreshEvents();
 
     const handler = () => {
@@ -144,13 +175,24 @@ export function useDashboardEvents() {
   };
 }
 
-export async function createDashboardCampaign(data: { name: string; date: string; location: string }): Promise<DashboardEvent> {
+export async function createDashboardCampaign(data: {
+  name: string;
+  date?: string;
+  startDate?: string;
+  endDate?: string;
+  location: string;
+}): Promise<DashboardEvent> {
   let createdId = `evt-${Date.now().toString().slice(-6)}`;
+  const startDate = (data.startDate || data.date || new Date().toISOString().split("T")[0]).trim();
+  const endDate = (data.endDate || startDate).trim();
+  const dateFormatted = data.date?.trim() || formatCampaignPeriod(startDate, endDate);
 
   try {
     const apiResult = await createEventApi({
       name: data.name.trim(),
-      date: data.date.trim(),
+      date: dateFormatted,
+      startDate,
+      endDate,
       location: data.location.trim(),
     });
     if (apiResult && apiResult.id) {
@@ -163,7 +205,9 @@ export async function createDashboardCampaign(data: { name: string; date: string
   const newEvent: DashboardEvent = {
     id: createdId,
     name: data.name.trim(),
-    date: data.date.trim(),
+    date: dateFormatted,
+    startDate,
+    endDate,
     location: data.location.trim(),
     metrics: {
       attended: 0,

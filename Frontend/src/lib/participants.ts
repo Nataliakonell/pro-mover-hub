@@ -243,7 +243,7 @@ export function saveStoredParticipants(data: Participant[]) {
 }
 
 export function useParticipants() {
-  const [participants, setParticipants] = useState<Participant[]>(getStoredParticipants);
+  const [participants, setParticipants] = useState<Participant[]>([]);
 
   // Sincroniza diretamente com o banco de dados PostgreSQL
   const refreshParticipants = async () => {
@@ -259,6 +259,10 @@ export function useParticipants() {
   };
 
   useEffect(() => {
+    const cached = getStoredParticipants();
+    if (cached.length > 0) {
+      setParticipants(cached);
+    }
     refreshParticipants();
 
     const handler = () => {

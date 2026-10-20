@@ -39,9 +39,10 @@ export function saveStoredUser(user: UserProfile) {
 }
 
 export function useAuth() {
-  const [user, setUser] = useState<UserProfile>(getStoredUser);
+  const [user, setUser] = useState<UserProfile>(DEFAULT_USER);
 
   useEffect(() => {
+    setUser(getStoredUser());
     const handleAuthChange = () => {
       setUser(getStoredUser());
     };
