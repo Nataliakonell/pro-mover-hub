@@ -128,11 +128,13 @@ function RootComponent() {
   useEffect(() => {
     // Limpeza garantida de dados residuais e campanhas antigas do frontend para carregar 100% do banco
     if (typeof window !== "undefined") {
-      if (!localStorage.getItem("pro_mover_clean_sync_v6")) {
+      if (!localStorage.getItem("pro_mover_clean_sync_v7_real_only")) {
+        localStorage.removeItem("pro_mover_linked_pharmacies");
+        localStorage.removeItem("pro_mover_linked_pharmacies_db");
         localStorage.removeItem("pro_mover_events_cache");
         localStorage.removeItem("pro_mover_participants_list");
         localStorage.removeItem("pro_mover_courtesy_records");
-        localStorage.setItem("pro_mover_clean_sync_v6", "true");
+        localStorage.setItem("pro_mover_clean_sync_v7_real_only", "true");
       }
     }
   }, []);

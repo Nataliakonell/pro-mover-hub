@@ -757,34 +757,38 @@ function DashboardPage() {
   };
 
   // Salvar Novo Participante
-  const handleSavePerson = (e: FormEvent) => {
+  const handleSavePerson = async (e: FormEvent) => {
     e.preventDefault();
     if (!personForm.name || !personForm.birthDate) return;
 
-    const newP = addParticipant({
-      name: personForm.name,
-      birthDate: personForm.birthDate,
-      cpf: personForm.cpf,
-      phone: personForm.phone,
-      eventId: activeCampaign.id,
-      eventName: activeCampaign.name,
-    });
+    try {
+      const newP = await addParticipant({
+        name: personForm.name,
+        birthDate: personForm.birthDate,
+        cpf: personForm.cpf,
+        phone: personForm.phone,
+        eventId: activeCampaign.id,
+        eventName: activeCampaign.name,
+      });
 
-    setPersonForm({ name: "", birthDate: "", cpf: "", phone: "" });
-    setPersonDialogOpen(false);
+      setPersonForm({ name: "", birthDate: "", cpf: "", phone: "" });
+      setPersonDialogOpen(false);
 
-    // Se o cadastro foi chamado a partir da modal de Nova Triagem, reabre a triagem já com o participante selecionado!
-    if (openTriageAfterPerson) {
-      setOpenTriageAfterPerson(false);
-      setTriageForm((prev) => ({
-        ...prev,
-        participantId: newP.id,
-        participantName: newP.name,
-      }));
-      setTriageDialogOpen(true);
-      showToast(`Participante ${newP.name} cadastrado! Retornando para a Triagem.`);
-    } else {
-      showToast(`Participante ${newP.name} cadastrado na campanha!`);
+      // Se o cadastro foi chamado a partir da modal de Nova Triagem, reabre a triagem já com o participante selecionado!
+      if (openTriageAfterPerson) {
+        setOpenTriageAfterPerson(false);
+        setTriageForm((prev) => ({
+          ...prev,
+          participantId: newP.id,
+          participantName: newP.name,
+        }));
+        setTriageDialogOpen(true);
+        showToast(`Participante ${newP.name} cadastrado e salvo no banco de dados! Retornando para a Triagem.`);
+      } else {
+        showToast(`Participante ${newP.name} cadastrado e salvo no PostgreSQL!`);
+      }
+    } catch (err: any) {
+      showToast(`Erro ao salvar participante: ${err.message}`);
     }
   };
 

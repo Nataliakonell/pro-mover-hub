@@ -3,7 +3,7 @@ import { IEventRepository } from "../../Domain/Repositories/IEventRepository";
 export class CreateEvent {
   constructor(private eventRepo: IEventRepository) {}
 
-  async execute(data: { name: string; date?: string; startDate?: string; endDate?: string; location: string }) {
+  async execute(data: { name: string; date?: string; startDate?: string; endDate?: string; location: string; pharmacyId?: string }) {
     const id = `evt-${Date.now().toString().slice(-6)}`;
     const startDate = data.startDate?.trim();
     const endDate = data.endDate?.trim();
@@ -16,6 +16,7 @@ export class CreateEvent {
       startDate: startDate || computedDate,
       endDate: endDate || startDate || computedDate,
       location: data.location.trim(),
+      pharmacyId: data.pharmacyId,
     });
   }
 }

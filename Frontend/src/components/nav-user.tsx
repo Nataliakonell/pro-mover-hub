@@ -1,8 +1,11 @@
 import {
   ChevronsUpDown,
   Settings,
+  LogOut,
+  LogIn,
+  ShieldCheck,
 } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 
 import {
   Avatar,
@@ -24,29 +27,61 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
 
 export function NavUser({
   user: userProp,
 }: {
   user?: {
-    name: string;
-    email: string;
+    name?: string;
+    email?: string;
     avatar?: string;
   };
 }) {
   const { isMobile } = useSidebar();
-  const { user: authUser } = useAuth();
+  const navigate = useNavigate();
+  const { user: authUser, isAuthenticated, isAdmin, logout } = useAuth();
 
-  const name = userProp?.name || authUser?.name || "Usuário";
-  const email = userProp?.email || authUser?.email || "usuario@conectasaude.org";
+  const handleLogout = () => {
+    logout();
+    navigate({ to: "/login" });
+  };
+
+  // Se não estiver autenticado, exibe botão direto de Login
+  if (!isAuthenticated || !authUser) {
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            asChild
+            size="lg"
+            className="hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer"
+          >
+            <Link to="/login" className="flex items-center gap-2.5">
+              <div className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary">
+                <LogIn className="size-4" />
+              </div>
+              <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+                <span className="font-semibold text-foreground">Acessar Conta</span>
+                <span className="text-xs text-muted-foreground">Fazer login</span>
+              </div>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    );
+  }
+
+  const name = authUser.name || userProp?.name || "Usuário";
+  const email = authUser.email || userProp?.email || "";
   const initials = name
     .split(" ")
     .filter(Boolean)
     .map((n) => n[0])
     .join("")
     .substring(0, 2)
-    .toUpperCase() || "CS";
+    .toUpperCase() || "US";
 
   return (
     <SidebarMenu>
@@ -66,12 +101,21 @@ export function NavUser({
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                <span className="truncate font-semibold text-foreground">{name}</span>
-                {email && (
-                  <span className="truncate text-xs text-muted-foreground">
-                    {email}
-                  </span>
-                )}
+                <div className="flex items-center gap-1.5">
+                  <span className="truncate font-semibold text-foreground">{name}</span>
+                  {isAdmin && (
+                    <Badge variant="outline" className="px-1 py-0 text-[9px] bg-primary/10 text-primary border-primary/20">
+                      Admin
+                    </Badge>
+                  )}
+                </div>
+                <div className="truncate text-xs text-muted-foreground flex items-center gap-1">
+                  {authUser?.username ? (
+                    <span>@{authUser.username}</span>
+                  ) : (
+                    <span>{email}</span>
+                  )}
+                </div>
               </div>
               <ChevronsUpDown className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
             </SidebarMenuButton>
@@ -90,7 +134,14 @@ export function NavUser({
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
-                  <span className="truncate font-semibold">{name}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="truncate font-semibold">{name}</span>
+                    {isAdmin && (
+                      <Badge variant="outline" className="px-1 py-0 text-[9px] bg-primary/10 text-primary border-primary/20">
+                        Admin
+                      </Badge>
+                    )}
+                  </div>
                   {email && <span className="truncate text-xs text-muted-foreground">{email}</span>}
                 </div>
               </div>
@@ -98,13 +149,31 @@ export function NavUser({
 
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
+              {isAdmin && (
+                <DropdownMenuItem asChild>
+                  <Link to="/administrador" className="flex items-center gap-2 cursor-pointer text-xs">
+                    <ShieldCheck className="size-3.5 text-primary" />
+                    <span>Painel do Administrador</span>
+                  </Link>
+                </DropdownMenuItem>
+              )}
+
               <DropdownMenuItem asChild>
                 <Link to="/configuracao" className="flex items-center gap-2 cursor-pointer text-xs">
                   <Settings className="size-3.5 text-muted-foreground" />
-                  <span>Configurações do Sistema</span>
+                  <span>Configurações</span>
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
+
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="flex items-center gap-2 cursor-pointer text-xs text-destructive focus:bg-destructive/10 focus:text-destructive"
+            >
+              <LogOut className="size-3.5" />
+              <span>Sair da Conta (Logout)</span>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

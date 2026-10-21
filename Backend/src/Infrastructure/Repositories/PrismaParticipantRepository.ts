@@ -29,6 +29,15 @@ export class PrismaParticipantRepository implements IParticipantRepository {
 
   async create(data: Omit<ParticipantEntity, "id" | "createdAt" | "attendances">): Promise<ParticipantEntity> {
     const newId = `PART-${Date.now().toString().slice(-4)}`;
+
+    let validEventId = null;
+    if (data.eventId) {
+      const eventExists = await prisma.event.findUnique({ where: { id: data.eventId } });
+      if (eventExists) {
+        validEventId = data.eventId;
+      }
+    }
+
     const created = await prisma.participant.create({
       data: {
         id: newId,
@@ -38,7 +47,7 @@ export class PrismaParticipantRepository implements IParticipantRepository {
         ageGroup: data.ageGroup,
         cpf: data.cpf,
         phone: data.phone,
-        eventId: data.eventId || null,
+        eventId: validEventId,
         attendances: {
           create: {
             id: `ATT-${Date.now().toString().slice(-4)}`,

@@ -263,66 +263,32 @@ export function useParticipants() {
     };
   }, []);
 
-  const addParticipant = (newP: {
+  const addParticipant = async (newP: {
     name: string;
     birthDate: string;
     cpf: string;
     phone: string;
     eventId?: string | undefined;
     eventName?: string | undefined;
-  }): Participant => {
+  }): Promise<Participant> => {
     const ageInfo = calculateAge(newP.birthDate) || { age: 0, group: "18–30" };
-    const newId = `PART-${Date.now().toString().slice(-4)}`;
-    const eventLabel = newP.eventName || "Ação de Saúde Comunitária";
 
-    const participant: Participant = {
-      id: newId,
+    // Salva obrigatoriamente no PostgreSQL através da API
+    const created = await createParticipantApi({
       name: newP.name.trim(),
       birthDate: newP.birthDate,
       age: ageInfo.age,
       ageGroup: ageInfo.group,
       cpf: newP.cpf,
       phone: newP.phone,
-      eventId: newP.eventId || null,
-      createdAt: new Date().toLocaleDateString("pt-BR"),
-      attendances: [
-        {
-          id: `ATT-${Date.now().toString().slice(-4)}`,
-          date: new Date().toLocaleDateString("pt-BR"),
-          eventName: eventLabel,
-          type: "Cadastro e Acolhimento Comunitário",
-          responsible: "Equipe Conecta Saúde",
-          status: "Concluído",
-          summary: "Cadastro inicial registrado. Elegível para triagem clínica e prontuário.",
-          medicalRecordId: `PR-${newId}`,
-        },
-      ],
-    };
+      eventId: newP.eventId || undefined,
+    });
 
-    const current = getStoredParticipants();
-    const updated = [participant, ...current];
-    saveStoredParticipants(updated);
-    setParticipants(updated);
-
-    // Salva no PostgreSQL
-    createParticipantApi({
-      name: participant.name,
-      birthDate: participant.birthDate,
-      age: participant.age,
-      ageGroup: participant.ageGroup,
-      cpf: participant.cpf,
-      phone: participant.phone,
-      eventId: participant.eventId || undefined,
-    })
-      .then(() => refreshParticipants())
-      .catch((err) => {
-        console.warn("Falha ao salvar participante no PostgreSQL:", err.message);
-      });
-
-    return participant;
+    await refreshParticipants();
+    return created;
   };
 
-  const addAttendance = (
+  const addAttendance = async (
     participantId: string,
     attData: {
       eventName: string;
@@ -333,38 +299,12 @@ export function useParticipants() {
       medicalRecordId?: string | undefined;
     }
   ) => {
-    const current = getStoredParticipants();
-    const updated = current.map((p) => {
-      if (p.id === participantId) {
-        const newRecord: AttendanceRecord = {
-          id: `ATT-${Date.now().toString().slice(-4)}`,
-          date: new Date().toLocaleDateString("pt-BR"),
-          ...attData,
-        };
-        return {
-          ...p,
-          attendances: [newRecord, ...(p.attendances || [])],
-        };
-      }
-      return p;
-    });
-    saveStoredParticipants(updated);
-    setParticipants(updated);
-
-    // Salva atendimento no PostgreSQL
-    addAttendanceApi(participantId, {
+    // Salva obrigatoriamente no PostgreSQL
+    await addAttendanceApi(participantId, {
       date: new Date().toLocaleDateString("pt-BR"),
-      eventName: attData.eventName,
-      type: attData.type,
-      responsible: attData.responsible,
-      status: attData.status,
-      summary: attData.summary,
-      medicalRecordId: attData.medicalRecordId,
-    })
-      .then(() => refreshParticipants())
-      .catch((err) => {
-        console.warn("Falha ao salvar atendimento no PostgreSQL:", err.message);
-      });
+      ...attData,
+    });
+    await refreshParticipants();
   };
 
   // Calcula a distribuição etária dinamicamente baseada nos dados reais dos participantes

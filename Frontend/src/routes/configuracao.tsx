@@ -40,12 +40,27 @@ function ConfiguracaoPage() {
   if (!isAdmin) {
     return (
       <AppLayout title="Acesso Restrito">
-        <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="flex flex-col items-center justify-center py-16 text-center max-w-md mx-auto">
           <ShieldAlert className="size-12 text-destructive mb-3" />
-          <h2 className="text-xl font-semibold">Acesso Restrito a Administradores</h2>
-          <p className="mt-2 text-sm text-muted-foreground max-w-md">
-            Seu perfil não possui permissão para acessar as configurações do sistema. Redirecionando para o Dashboard...
+          <h2 className="text-xl font-bold text-foreground">Acesso Restrito a Administradores</h2>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Seu perfil não possui permissão de Administrador para acessar as configurações clínicas. Faça login com um usuário admin.
           </p>
+          <div className="mt-6 flex flex-col sm:flex-row gap-2.5 w-full">
+            <Button
+              onClick={() => navigate({ to: "/login" })}
+              className="w-full text-xs font-semibold"
+            >
+              Fazer Login como Admin
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate({ to: "/" })}
+              className="w-full text-xs font-semibold"
+            >
+              Voltar ao Início
+            </Button>
+          </div>
         </div>
       </AppLayout>
     );

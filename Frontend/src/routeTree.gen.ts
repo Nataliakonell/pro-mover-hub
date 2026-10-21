@@ -10,7 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdministradorRouteImport } from './routes/administrador'
 import { Route as ConfiguracaoRouteImport } from './routes/configuracao'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as ParticipantesRouteImport } from './routes/participantes'
 import { Route as ProntuariosRouteImport } from './routes/prontuarios'
 import { Route as SessoesCortesiaRouteImport } from './routes/sessoes-cortesia'
@@ -20,9 +22,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdministradorRoute = AdministradorRouteImport.update({
+  id: '/administrador',
+  path: '/administrador',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ConfiguracaoRoute = ConfiguracaoRouteImport.update({
   id: '/configuracao',
   path: '/configuracao',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ParticipantesRoute = ParticipantesRouteImport.update({
@@ -43,14 +55,18 @@ const SessoesCortesiaRoute = SessoesCortesiaRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/administrador': typeof AdministradorRoute
   '/configuracao': typeof ConfiguracaoRoute
+  '/login': typeof LoginRoute
   '/participantes': typeof ParticipantesRoute
   '/prontuarios': typeof ProntuariosRoute
   '/sessoes-cortesia': typeof SessoesCortesiaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/administrador': typeof AdministradorRoute
   '/configuracao': typeof ConfiguracaoRoute
+  '/login': typeof LoginRoute
   '/participantes': typeof ParticipantesRoute
   '/prontuarios': typeof ProntuariosRoute
   '/sessoes-cortesia': typeof SessoesCortesiaRoute
@@ -58,7 +74,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/administrador': typeof AdministradorRoute
   '/configuracao': typeof ConfiguracaoRoute
+  '/login': typeof LoginRoute
   '/participantes': typeof ParticipantesRoute
   '/prontuarios': typeof ProntuariosRoute
   '/sessoes-cortesia': typeof SessoesCortesiaRoute
@@ -67,21 +85,27 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/administrador'
     | '/configuracao'
+    | '/login'
     | '/participantes'
     | '/prontuarios'
     | '/sessoes-cortesia'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/administrador'
     | '/configuracao'
+    | '/login'
     | '/participantes'
     | '/prontuarios'
     | '/sessoes-cortesia'
   id:
     | '__root__'
     | '/'
+    | '/administrador'
     | '/configuracao'
+    | '/login'
     | '/participantes'
     | '/prontuarios'
     | '/sessoes-cortesia'
@@ -89,7 +113,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdministradorRoute: typeof AdministradorRoute
   ConfiguracaoRoute: typeof ConfiguracaoRoute
+  LoginRoute: typeof LoginRoute
   ParticipantesRoute: typeof ParticipantesRoute
   ProntuariosRoute: typeof ProntuariosRoute
   SessoesCortesiaRoute: typeof SessoesCortesiaRoute
@@ -104,11 +130,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/administrador': {
+      id: '/administrador'
+      path: '/administrador'
+      fullPath: '/administrador'
+      preLoaderRoute: typeof AdministradorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/configuracao': {
       id: '/configuracao'
       path: '/configuracao'
       fullPath: '/configuracao'
       preLoaderRoute: typeof ConfiguracaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/participantes': {
@@ -137,7 +177,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdministradorRoute: AdministradorRoute,
   ConfiguracaoRoute: ConfiguracaoRoute,
+  LoginRoute: LoginRoute,
   ParticipantesRoute: ParticipantesRoute,
   ProntuariosRoute: ProntuariosRoute,
   SessoesCortesiaRoute: SessoesCortesiaRoute,

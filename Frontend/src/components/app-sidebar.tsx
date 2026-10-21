@@ -4,6 +4,7 @@ import {
   HeartPulse,
   Users,
   Settings,
+  ShieldCheck,
 } from "lucide-react";
 
 import { NavMain, type NavItem } from "@/components/nav-main";
@@ -21,7 +22,7 @@ import HeaderSidebar from "./header-sidebar";
 import { useAuth } from "@/lib/auth";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
 
   const navMain: NavItem[] = [
     {
@@ -39,6 +40,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const adminMenus: NavItem[] = [
     {
+      title: "Painel Administrador",
+      url: "/administrador",
+      icon: ShieldCheck,
+      badge: isAdmin ? "Admin" : undefined,
+    },
+    {
       title: "Configurações",
       url: "/configuracao",
       icon: Settings,
@@ -53,16 +60,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       <SidebarContent>
         <NavMain items={navMain} label="Ações Comunitárias" />
-        <NavAdmin menus={adminMenus} label="Sistema" />
+        <NavAdmin menus={adminMenus} label="Administração" />
       </SidebarContent>
 
       <SidebarFooter>
-        <NavUser
-          user={{
-            name: user.name || "Usuário",
-            email: user.email || "usuario@conectasaude.org",
-          }}
-        />
+        <NavUser />
       </SidebarFooter>
 
       <SidebarRail />

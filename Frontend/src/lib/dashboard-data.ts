@@ -14,9 +14,11 @@ export interface DashboardEvent {
   id: string;
   name: string;
   date: string;
-  startDate?: string;
-  endDate?: string;
+  startDate?: string | undefined;
+  endDate?: string | undefined;
   location: string;
+  pharmacyId?: string | null | undefined;
+  pharmacy?: any;
   metrics: {
     attended: number;
     triagesDone: number;
@@ -176,15 +178,17 @@ export function useDashboardEvents() {
 
 export async function createDashboardCampaign(data: {
   name: string;
-  date?: string;
-  startDate?: string;
-  endDate?: string;
+  date?: string | undefined;
+  startDate?: string | undefined;
+  endDate?: string | undefined;
   location: string;
+  pharmacyId?: string | undefined;
 }): Promise<DashboardEvent> {
   let createdId = `evt-${Date.now().toString().slice(-6)}`;
-  const startDate = (data.startDate || data.date || new Date().toISOString().split("T")[0]).trim();
-  const endDate = (data.endDate || startDate).trim();
+  const startDate = (data.startDate || data.date || new Date().toISOString().split("T")[0])?.trim() || "";
+  const endDate = (data.endDate || startDate)?.trim() || "";
   const dateFormatted = data.date?.trim() || formatCampaignPeriod(startDate, endDate);
+  let savedEvent: any = null;
 
   try {
     const apiResult = await createEventApi({
@@ -193,12 +197,15 @@ export async function createDashboardCampaign(data: {
       startDate,
       endDate,
       location: data.location.trim(),
+      pharmacyId: data.pharmacyId,
     });
     if (apiResult && apiResult.id) {
       createdId = apiResult.id;
+      savedEvent = apiResult;
     }
   } catch (err: any) {
-    console.warn("Backend offline ou erro ao salvar campanha:", err.message);
+    console.error("Erro ao salvar campanha no PostgreSQL:", err.message);
+    throw err;
   }
 
   const newEvent: DashboardEvent = {
@@ -208,6 +215,8 @@ export async function createDashboardCampaign(data: {
     startDate,
     endDate,
     location: data.location.trim(),
+    pharmacyId: data.pharmacyId || null,
+    pharmacy: savedEvent?.pharmacy || null,
     metrics: {
       attended: 0,
       triagesDone: 0,

@@ -14,6 +14,7 @@ model User {
   id           Int      @id @default(autoincrement())
   name         String
   email        String   @unique
+  username     String?  @unique
   passwordHash String
   role         String   @default("user")
   createdAt    DateTime @default(now())
@@ -28,11 +29,34 @@ model Event {
   startDate    String?
   endDate      String?
   location     String
+  pharmacyId   String?
   createdAt    DateTime      @default(now())
+
+  pharmacy     Pharmacy?     @relation(fields: [pharmacyId], references: [id])
   participants Participant[]
   triages      Triage[]
 
   @@map("events")
+}
+
+model Pharmacy {
+  id           String    @id // "FARM-001", etc.
+  name         String
+  cnpj         String    @unique
+  phone        String
+  email        String?
+  responsible  String
+  crf          String?
+  address      String
+  neighborhood String
+  city         String
+  status       String    @default("Ativa") // "Ativa" | "Pendente" | "Inativa"
+  notes        String?
+  createdAt    DateTime  @default(now())
+
+  events       Event[]
+
+  @@map("pharmacies")
 }
 
 model Participant {

@@ -5,5 +5,7 @@ export interface EventEntity {
   startDate?: string;
   endDate?: string;
   location: string;
+  pharmacyId?: string | null;
+  pharmacy?: any;
   createdAt?: Date;
 }

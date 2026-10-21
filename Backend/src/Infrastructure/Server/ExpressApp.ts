@@ -9,6 +9,7 @@ import { PrismaCourtesyRepository } from "../Repositories/PrismaCourtesyReposito
 import { PrismaEventRepository } from "../Repositories/PrismaEventRepository";
 import { PrismaSettingsRepository } from "../Repositories/PrismaSettingsRepository";
 import { PrismaUserRepository } from "../Repositories/PrismaUserRepository";
+import { PrismaPharmacyRepository } from "../Repositories/PrismaPharmacyRepository";
 
 // Casos de Uso
 import { GetAllParticipants } from "../../UseCases/Participants/GetAllParticipants";
@@ -26,6 +27,10 @@ import { GetSettings } from "../../UseCases/Settings/GetSettings";
 import { UpdateSettings } from "../../UseCases/Settings/UpdateSettings";
 import { LoginUser } from "../../UseCases/Auth/LoginUser";
 import { RegisterUser } from "../../UseCases/Auth/RegisterUser";
+import { GetAllPharmacies } from "../../UseCases/Pharmacies/GetAllPharmacies";
+import { CreatePharmacy } from "../../UseCases/Pharmacies/CreatePharmacy";
+import { UpdatePharmacy } from "../../UseCases/Pharmacies/UpdatePharmacy";
+import { DeletePharmacy } from "../../UseCases/Pharmacies/DeletePharmacy";
 
 // Controllers
 import { ParticipantController } from "../../Adapters/Controllers/ParticipantController";
@@ -35,6 +40,7 @@ import { CourtesyController } from "../../Adapters/Controllers/CourtesyControlle
 import { EventController } from "../../Adapters/Controllers/EventController";
 import { SettingsController } from "../../Adapters/Controllers/SettingsController";
 import { AuthController } from "../../Adapters/Controllers/AuthController";
+import { PharmacyController } from "../../Adapters/Controllers/PharmacyController";
 
 import { authMiddleware, requireAdmin } from "../../Adapters/Middlewares/AuthMiddleware";
 
@@ -52,6 +58,7 @@ const courtesyRepo = new PrismaCourtesyRepository();
 const eventRepo = new PrismaEventRepository();
 const settingsRepo = new PrismaSettingsRepository();
 const userRepo = new PrismaUserRepository();
+const pharmacyRepo = new PrismaPharmacyRepository();
 
 const participantController = new ParticipantController(
   new GetAllParticipants(participantRepo),
@@ -88,6 +95,13 @@ const settingsController = new SettingsController(
 const authController = new AuthController(
   new LoginUser(userRepo),
   new RegisterUser(userRepo)
+);
+
+const pharmacyController = new PharmacyController(
+  new GetAllPharmacies(pharmacyRepo),
+  new CreatePharmacy(pharmacyRepo),
+  new UpdatePharmacy(pharmacyRepo),
+  new DeletePharmacy(pharmacyRepo)
 );
 
 // Rota de Health Check
@@ -131,5 +145,11 @@ app.post("/api/courtesy/schedule", authMiddleware, (req, res) => courtesyControl
 // Configurações
 app.get("/api/settings", authMiddleware, (req, res) => settingsController.get(req, res));
 app.put("/api/settings", authMiddleware, requireAdmin, (req, res) => settingsController.update(req, res));
+
+// Farmácias Vinculadas ao Sistema (100% Persistidas no PostgreSQL)
+app.get("/api/pharmacies", authMiddleware, (req, res) => pharmacyController.list(req, res));
+app.post("/api/pharmacies", authMiddleware, (req, res) => pharmacyController.create(req, res));
+app.put("/api/pharmacies/:id", authMiddleware, (req, res) => pharmacyController.update(req, res));
+app.delete("/api/pharmacies/:id", authMiddleware, (req, res) => pharmacyController.delete(req, res));
 
 export default app;

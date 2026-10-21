@@ -134,59 +134,54 @@ function ParticipantesPage() {
       : 0;
 
   // Submeter cadastro de participante
-  const handleSaveParticipant = (e: FormEvent) => {
+  const handleSaveParticipant = async (e: FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.birthDate) return;
 
-    const targetEvent = events[0];
-    const newP = addParticipant({
-      name: formData.name,
-      birthDate: formData.birthDate,
-      cpf: formData.cpf,
-      phone: formData.phone,
-      eventId: targetEvent ? targetEvent.id : undefined,
-      eventName: targetEvent ? targetEvent.name : "Ação de Saúde Comunitária",
-    });
+    try {
+      const targetEvent = events[0];
+      const newP = await addParticipant({
+        name: formData.name,
+        birthDate: formData.birthDate,
+        cpf: formData.cpf,
+        phone: formData.phone,
+        eventId: targetEvent ? targetEvent.id : undefined,
+        eventName: targetEvent ? targetEvent.name : "Ação de Saúde Comunitária",
+      });
 
-    setFormData({ name: "", birthDate: "", cpf: "", phone: "" });
-    setNewParticipantOpen(false);
-    showToast(
-      `Participante ${newP.name} cadastrado com sucesso! (${newP.age} anos · Faixa [${newP.ageGroup}])`
-    );
+      setFormData({ name: "", birthDate: "", cpf: "", phone: "" });
+      setNewParticipantOpen(false);
+      showToast(
+        `Participante ${newP.name} cadastrado e salvo no banco de dados! (${newP.age} anos · Faixa [${newP.ageGroup}])`
+      );
+    } catch (err: any) {
+      showToast(`Erro ao salvar participante: ${err.message}`);
+    }
   };
 
   // Submeter novo atendimento no histórico do participante
-  const handleSaveAttendance = (e: FormEvent) => {
+  const handleSaveAttendance = async (e: FormEvent) => {
     e.preventDefault();
     if (!selectedParticipant || !attendanceForm.summary.trim()) return;
 
-    const targetEvent = events[0];
-    const eventName = attendanceForm.eventName || targetEvent?.name || "Ação de Saúde Comunitária";
+    try {
+      const targetEvent = events[0];
+      const eventName = attendanceForm.eventName || targetEvent?.name || "Ação de Saúde Comunitária";
 
-    addAttendance(selectedParticipant.id, {
-      eventName,
-      type: attendanceForm.type,
-      responsible: attendanceForm.responsible,
-      status: attendanceForm.status,
-      summary: attendanceForm.summary,
-      medicalRecordId: `PR-${selectedParticipant.id}`,
-    });
+      await addAttendance(selectedParticipant.id, {
+        eventName,
+        type: attendanceForm.type,
+        responsible: attendanceForm.responsible,
+        status: attendanceForm.status,
+        summary: attendanceForm.summary,
+        medicalRecordId: `PR-${selectedParticipant.id}`,
+      });
 
-    // Atualiza a visualização no modal aberto
-    const updated = participants.find((p) => p.id === selectedParticipant.id);
-    if (updated) {
-      setSelectedParticipant(updated);
+      setNewAttendanceOpen(false);
+      showToast("Atendimento adicionado e salvo com sucesso no PostgreSQL!");
+    } catch (err: any) {
+      showToast(`Erro ao salvar atendimento: ${err.message}`);
     }
-
-    setNewAttendanceOpen(false);
-    setAttendanceForm({
-      eventName: targetEvent?.name || "Ação de Saúde Comunitária",
-      type: "Triagem de Sinais Vitais",
-      responsible: "Equipe Conecta Saúde",
-      status: "Normal",
-      summary: "",
-    });
-    showToast("Novo atendimento adicionado ao histórico com sucesso!");
   };
 
   // Abrir detalhes do participante

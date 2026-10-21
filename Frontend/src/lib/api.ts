@@ -2,19 +2,37 @@
 
 const API_BASE = (import.meta.env as Record<string, string | undefined>)["VITE_API_URL"] || "http://localhost:5000/api";
 
+export function getAuthToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("conecta_saude_token");
+}
+
 export async function fetchFromApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
+  const token = getAuthToken();
+  const authHeader: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
   const response = await fetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      ...authHeader,
       ...(options?.headers || {}),
     },
   });
 
   if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`Erro na API (${response.status}): ${errorBody}`);
+    let errorMsg = `Erro na API (${response.status})`;
+    try {
+      const errJson = await response.json();
+      if (errJson && errJson.error) {
+        errorMsg = errJson.error;
+      }
+    } catch {
+      const errorBody = await response.text();
+      if (errorBody) errorMsg = errorBody;
+    }
+    throw new Error(errorMsg);
   }
 
   return response.json();
@@ -65,10 +83,11 @@ export async function getEventsApi() {
 
 export async function createEventApi(data: {
   name: string;
-  date?: string;
-  startDate?: string;
-  endDate?: string;
+  date?: string | undefined;
+  startDate?: string | undefined;
+  endDate?: string | undefined;
   location: string;
+  pharmacyId?: string | undefined;
 }) {
   return fetchFromApi<any>("/events", {
     method: "POST",
@@ -156,10 +175,35 @@ export async function updateSettingsApi(data: any) {
   });
 }
 
-// 7. Autenticação
-export async function loginApi(email: string, password: string) {
+// 7. Farmácias Vinculadas
+export async function getPharmaciesApi() {
+  return fetchFromApi<any[]>("/pharmacies");
+}
+
+export async function createPharmacyApi(data: any) {
+  return fetchFromApi<any>("/pharmacies", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updatePharmacyApi(id: string, data: any) {
+  return fetchFromApi<any>(`/pharmacies/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deletePharmacyApi(id: string) {
+  return fetchFromApi<void>(`/pharmacies/${id}`, {
+    method: "DELETE",
+  });
+}
+
+// 8. Autenticação
+export async function loginApi(identifier: string, password: string) {
   return fetchFromApi<{ token: string; user: any }>("/auth/login", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ identifier, password }),
   });
 }

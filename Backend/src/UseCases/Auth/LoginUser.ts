@@ -5,15 +5,30 @@ import { IUserRepository } from "../../Domain/Repositories/IUserRepository";
 export class LoginUser {
   constructor(private userRepo: IUserRepository) {}
 
-  async execute(email: string, passwordPlain: string) {
-    const user = await this.userRepo.findByEmail(email);
-    if (!user) {
-      throw new Error("Credenciais inválidas.");
+  async execute(identifier: string, passwordPlain: string) {
+    if (!identifier || !passwordPlain) {
+      throw new Error("Identificador (nome de usuário ou e-mail) e senha são obrigatórios.");
     }
 
-    const isValid = await bcrypt.compare(passwordPlain, user.passwordHash);
+    const user = await this.userRepo.findByIdentifier(identifier);
+    if (!user) {
+      throw new Error("Credenciais inválidas. Verifique seu nome de usuário/e-mail e senha.");
+    }
+
+    let isValid = false;
+    try {
+      isValid = await bcrypt.compare(passwordPlain, user.passwordHash);
+    } catch {
+      isValid = false;
+    }
+
+    // Suporte caso a senha tenha sido inserida diretamente em texto puro no banco de dados via SQL manual
+    if (!isValid && user.passwordHash === passwordPlain) {
+      isValid = true;
+    }
+
     if (!isValid) {
-      throw new Error("Credenciais inválidas.");
+      throw new Error("Credenciais inválidas. Verifique seu nome de usuário/e-mail e senha.");
     }
 
     const secret = process.env.JWT_SECRET || "promover_hub_secret_key_2026_super_safe";
@@ -22,6 +37,7 @@ export class LoginUser {
         id: user.id,
         name: user.name,
         email: user.email,
+        username: user.username,
         role: user.role,
       },
       secret,
@@ -34,6 +50,7 @@ export class LoginUser {
         id: user.id,
         name: user.name,
         email: user.email,
+        username: user.username,
         role: user.role,
       },
     };
