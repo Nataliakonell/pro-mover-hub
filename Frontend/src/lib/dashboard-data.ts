@@ -92,7 +92,6 @@ export const EMPTY_EVENT: DashboardEvent = {
     ],
     examAlterations: [
       { exam: "Pressão Arterial", count: 0 },
-      { exam: "Glicemia", count: 0 },
       { exam: "IMC / Obesidade", count: 0 },
       { exam: "SpO₂ Baixa", count: 0 },
     ],
@@ -100,7 +99,7 @@ export const EMPTY_EVENT: DashboardEvent = {
       { event: "Atual", atendimentos: 0 },
     ],
     referrals: [
-      { destination: "Studio Adriane Câmara", count: 0, color: "#1b806a" },
+      { destination: "Studio Conecta Saúde", count: 0, color: "#1b806a" },
     ],
   },
   recentTriages: [],
@@ -235,7 +234,6 @@ export async function createDashboardCampaign(data: {
       ],
       examAlterations: [
         { exam: "Pressão Arterial", count: 0 },
-        { exam: "Glicemia", count: 0 },
         { exam: "IMC / Obesidade", count: 0 },
         { exam: "SpO₂ Baixa", count: 0 },
       ],
@@ -243,7 +241,7 @@ export async function createDashboardCampaign(data: {
         { event: data.name.split(":")[0] || "Nova Ação", atendimentos: 0 },
       ],
       referrals: [
-        { destination: "Studio Adriane Câmara", count: 0, color: "#1b806a" },
+        { destination: "Studio Conecta Saúde", count: 0, color: "#1b806a" },
       ],
     },
     recentTriages: [],

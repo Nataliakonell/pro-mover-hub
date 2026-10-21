@@ -29,7 +29,6 @@ export class TriageController {
         status,
         systolic,
         diastolic,
-        glucose,
         spo2,
         heartRate,
         result,
@@ -48,10 +47,9 @@ export class TriageController {
         status: status || "Normal",
         systolic: Number(systolic) || 120,
         diastolic: Number(diastolic) || 80,
-        glucose: Number(glucose) || 90,
         spo2: Number(spo2) || 98,
         heartRate: Number(heartRate) || 72,
-        result: result || `PA ${systolic}/${diastolic} · Glicemia ${glucose}`,
+        result: result || `PA ${systolic}/${diastolic}`,
       });
 
       return res.status(201).json(created);

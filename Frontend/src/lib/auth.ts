@@ -1,20 +1,19 @@
 import { useState, useEffect } from "react";
 
-export type UserRole = "admin" | "fisioterapeuta" | "avaliador" | "recepcao";
+export type UserRole = string;
 
 export interface UserProfile {
   name: string;
   email: string;
-  role: UserRole;
+  role?: string;
 }
 
 const DEFAULT_USER: UserProfile = {
-  name: "Natália",
-  email: "natalia@conectasaude.org",
-  role: "admin",
+  name: "Usuário",
+  email: "",
 };
 
-const STORAGE_KEY = "pro_mover_user";
+const STORAGE_KEY = "conecta_saude_user";
 
 export function getStoredUser(): UserProfile {
   if (typeof window === "undefined") return DEFAULT_USER;
@@ -25,7 +24,7 @@ export function getStoredUser(): UserProfile {
     return {
       name: parsed.name || DEFAULT_USER.name,
       email: parsed.email || DEFAULT_USER.email,
-      role: parsed.role || DEFAULT_USER.role,
+      role: parsed.role,
     };
   } catch {
     return DEFAULT_USER;
@@ -35,7 +34,7 @@ export function getStoredUser(): UserProfile {
 export function saveStoredUser(user: UserProfile) {
   if (typeof window === "undefined") return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-  window.dispatchEvent(new Event("pro_mover_auth_change"));
+  window.dispatchEvent(new Event("conecta_saude_auth_change"));
 }
 
 export function useAuth() {
@@ -46,22 +45,22 @@ export function useAuth() {
     const handleAuthChange = () => {
       setUser(getStoredUser());
     };
-    window.addEventListener("pro_mover_auth_change", handleAuthChange);
+    window.addEventListener("conecta_saude_auth_change", handleAuthChange);
     window.addEventListener("storage", handleAuthChange);
     return () => {
-      window.removeEventListener("pro_mover_auth_change", handleAuthChange);
+      window.removeEventListener("conecta_saude_auth_change", handleAuthChange);
       window.removeEventListener("storage", handleAuthChange);
     };
   }, []);
 
-  const setRole = (role: UserRole) => {
-    const updated = { ...user, role };
+  const updateUser = (updated: UserProfile) => {
     saveStoredUser(updated);
+    setUser(updated);
   };
 
   return {
     user,
-    setRole,
-    isAdmin: user.role === "admin",
+    updateUser,
+    isAdmin: true, // Aberto até a implementação da autenticação definitiva
   };
 }

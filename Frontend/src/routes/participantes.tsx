@@ -511,7 +511,7 @@ function ParticipantesPage() {
                     Prontuário Clínico deste Participante
                   </p>
                   <p className="text-muted-foreground text-xs sm:text-sm">
-                    Para conferir os valores aferidos de PA, Glicemia, SpO₂ e as evoluções clínicas completas:
+                    Para conferir os valores aferidos de PA, SpO₂ e as evoluções clínicas completas:
                   </p>
                 </div>
                 <Button
@@ -846,7 +846,7 @@ function ParticipantesPage() {
               <Label htmlFor="att-resp" className="text-sm font-semibold text-foreground">Profissional Responsável</Label>
               <Input
                 id="att-resp"
-                placeholder="Ex: Dra. Adriane Câmara"
+                placeholder="Ex: Profissional de Saúde"
                 value={attendanceForm.responsible}
                 onChange={(e) => setAttendanceForm({ ...attendanceForm, responsible: e.target.value })}
                 required

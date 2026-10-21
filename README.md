@@ -139,20 +139,9 @@ npm run dev
 | :--- | :--- | :--- |
 | **`/`** | **Dashboard** | Painel principal com saudação personalizada, seletor dinâmico de evento comunitário ativo, banner informativo, 6 indicadores-chave de saúde, 6 gráficos estatísticos (incluindo distribuição etária em tempo real conectada ao PostgreSQL) e tabela das triagens mais recentes (com visualização diferenciada por perfil clínico vs. recepção). |
 | **`/participantes`** | **Participantes** | Diretório da comunidade e gestão cadastral conectado ao banco PostgreSQL. Cadastro com cálculo automático de idade e alocação de faixa etária, máscaras de CPF e WhatsApp (com botão de conversa direta `wa.me`), histórico de presenças em eventos e atalho direto para o prontuário. |
-| **`/prontuarios`** | **Prontuários** | Registro clínico com sinais vitais (PA, Glicemia, SpO₂, FC), evolução detalhada do profissional de saúde, notas de conduta e encaminhamentos médicos. Suporta filtro direto via URL (ex: `?search=Nome`). |
+| **`/prontuarios`** | **Prontuários** | Registro clínico com sinais vitais (PA, SpO₂, FC), evolução detalhada do profissional de saúde, notas de conduta e encaminhamentos médicos. Suporta filtro direto via URL (ex: `?search=Nome`). |
 | **`/sessoes-cortesia`** | **Sessões Cortesia** | Painel de controle do benefício de fisioterapia e reabilitação (regra: até 4 sessões por triagem). Tabela de participantes com saldo atualizado em tempo real, status ativo/esgotado, histórico de concessões/utilizações e diálogo de agendamento que debita do saldo quando marcado como "Realizado". |
-| **`/configuracao`** | **Configurações** | **Acesso restrito ao perfil Administrador** (outros perfis são redirecionados ao Dashboard). Permite configurar a data e o local do evento padrão, definir os parâmetros demonstrativos de alertas clínicos da triagem (PA sistólica/diastólica, Glicemia, SpO₂ e FC) com persistência no banco de dados. |
-
----
-
-## 👥 Perfis de Acesso e Permissões
-
-No topo do sistema (barra superior), você pode alternar livremente entre os 4 perfis para testar o comportamento da interface:
-
-1. **Administrador (`admin`)**: Acesso total a todas as telas, incluindo a página de Configurações do sistema.
-2. **Fisioterapeuta (`fisioterapeuta`)**: Acesso clínico com registro de triagens, acompanhamento de sessões cortesia e prontuários.
-3. **Avaliador / Voluntário (`avaliador`)**: Perfil clínico de apoio para acolhimento comunitário e aferições em ações de saúde.
-4. **Recepção (`recepcao`)**: Perfil focado em agendamentos, acolhimento e participantes; não visualiza botões clínicos restritos de triagem nem tabelas médicas confidenciais.
+| **`/configuracao`** | **Configurações** | **Acesso restrito ao perfil Administrador** (outros perfis são redirecionados ao Dashboard). Permite configurar a data e o local do evento padrão, definir os parâmetros demonstrativos de alertas clínicos da triagem (PA sistólica/diastólica, SpO₂ e FC) com persistência no banco de dados. |
 
 ---
 

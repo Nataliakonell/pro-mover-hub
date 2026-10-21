@@ -15,7 +15,7 @@ model User {
   name         String
   email        String   @unique
   passwordHash String
-  role         String   @default("admin") // "admin" | "fisioterapeuta" | "avaliador" | "recepcao"
+  role         String   @default("user")
   createdAt    DateTime @default(now())
 
   @@map("users")
@@ -25,6 +25,8 @@ model Event {
   id           String        @id // "evt-01", etc.
   name         String
   date         String
+  startDate    String?
+  endDate      String?
   location     String
   createdAt    DateTime      @default(now())
   participants Participant[]
@@ -80,7 +82,6 @@ model Triage {
   status          String       // "Normal" | "Atenção" | "Alterado"
   systolic        Int
   diastolic       Int
-  glucose         Int
   spo2            Int
   heartRate       Int
   result          String
@@ -100,7 +101,6 @@ model MedicalRecord {
   date          String
   status        String       // "Normal" | "Atenção" | "Alterado" | "Acompanhamento"
   pressure      String
-  glucose       String
   spo2          String?
   heartRate     String?
   note          String
@@ -151,7 +151,6 @@ model Settings {
   diaMaxThreshold  Int      @default(90)
   sysThreshold     Int      @default(140)
   diaThreshold     Int      @default(90)
-  glucoseThreshold Int      @default(140)
   spo2Threshold    Int      @default(92)
   hrMinThreshold   Int      @default(50)
   hrMaxThreshold   Int      @default(100)

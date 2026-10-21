@@ -145,19 +145,6 @@ export function extractAlterationsDetails(
     }
   }
 
-  // Glicemia (ex: Glicemia 150 mg/dL)
-  const gluMatch = normSummary.match(/Glicemia\s*(\d{2,3})/i);
-  if (gluMatch && gluMatch[1]) {
-    const glu = parseFloat(gluMatch[1]);
-    const minG = cfg.glucoseMin ?? 70;
-    const maxG = cfg.glucoseMax ?? 140;
-    if (glu < minG || glu > maxG) {
-      detected.push(`Glicemia Alterada (${glu} mg/dL)`);
-    } else if (glu >= 110) {
-      detected.push(`Glicemia em Atenção (${glu} mg/dL)`);
-    }
-  }
-
   // SpO2
   const spo2Match = normSummary.match(/SpO[₂2]\s*(\d{2,3})/i);
   if (spo2Match && spo2Match[1]) {

@@ -53,7 +53,7 @@ export class CourtesyController {
         courtesyRecordId,
         date,
         type: type || "Avaliação Funcional Cortesia",
-        professional: professional || "Dra. Adriane Câmara (Fisioterapeuta)",
+        professional: professional || "Profissional Responsável",
         status: status || "Agendado",
       });
 

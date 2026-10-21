@@ -15,7 +15,7 @@ export class RegisterUser {
       name: input.name,
       email: input.email,
       passwordHash,
-      role: input.role || "avaliador",
+      role: input.role || "user",
     });
 
     return {

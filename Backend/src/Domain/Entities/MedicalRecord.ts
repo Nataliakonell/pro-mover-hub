@@ -6,7 +6,6 @@ export interface MedicalRecordEntity {
   date: string;
   status: "Normal" | "Atenção" | "Alterado" | "Acompanhamento";
   pressure: string;
-  glucose: string;
   spo2?: string | null;
   heartRate?: string | null;
   note: string;

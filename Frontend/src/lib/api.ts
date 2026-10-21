@@ -92,7 +92,6 @@ export async function createTriageApi(data: {
   status: string;
   systolic: number;
   diastolic: number;
-  glucose: number;
   spo2: number;
   heartRate: number;
   result?: string | undefined;

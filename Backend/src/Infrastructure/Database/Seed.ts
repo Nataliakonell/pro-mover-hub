@@ -63,10 +63,9 @@ export async function runA2ATest(): Promise<boolean> {
         status: "Normal",
         systolic: 120,
         diastolic: 80,
-        glucose: 90,
         spo2: 98,
         heartRate: 72,
-        result: "PA 120/80 · Glicemia 90 mg/dL · IMC 22.5 (Peso normal) · Teste A2A",
+        result: "PA 120/80 · SpO₂ 98% · IMC 22.5 (Peso normal) · Teste A2A",
       }),
     });
     if (!resTriage.ok) throw new Error(`Falha no POST /api/triages: ${resTriage.status}`);
@@ -119,20 +118,10 @@ export async function runSeed() {
   await prisma.attendance.deleteMany({});
   await prisma.participant.deleteMany({});
   await prisma.event.deleteMany({});
-  console.log("[Seed] Tabelas de campanhas, participantes e triagens limpas com sucesso.");
+  await prisma.user.deleteMany({});
+  console.log("[Seed] Tabelas de campanhas, participantes, triagens e usuários limpas com sucesso.");
 
-  // 2. Usuários para autenticação dos perfis do sistema
-  const passwordHash = await bcrypt.hash("123456", 10);
-
-  for (const u of users) {
-    await prisma.user.upsert({
-      where: { email: u.email },
-      update: { name: u.name, role: u.role, passwordHash },
-      create: u,
-    });
-  }
-  console.log("[Seed] Usuários do sistema configurados.");
-
+  // 2. Configurações Iniciais do Sistema (limites de alerta e faixas de IMC)
   await prisma.settings.upsert({
     where: { id: 1 },
     update: {},
@@ -146,7 +135,6 @@ export async function runSeed() {
       diaMaxThreshold: 90,
       sysThreshold: 140,
       diaThreshold: 90,
-      glucoseThreshold: 140,
       spo2Threshold: 92,
       hrMinThreshold: 50,
       hrMaxThreshold: 100,

@@ -11,7 +11,6 @@ export interface TriageRecord {
   status: "Normal" | "Atenção" | "Alterado";
   systolic: number;
   diastolic: number;
-  glucose: number;
   spo2: number;
   heartRate: number;
   result: string;
@@ -83,7 +82,6 @@ export function useTriages(eventId?: string | null) {
     status: "Normal" | "Atenção" | "Alterado";
     systolic: number;
     diastolic: number;
-    glucose: number;
     spo2: number;
     heartRate: number;
     result: string;
@@ -113,7 +111,6 @@ export function useTriages(eventId?: string | null) {
         status: newT.status,
         systolic: newT.systolic,
         diastolic: newT.diastolic,
-        glucose: newT.glucose,
         spo2: newT.spo2,
         heartRate: newT.heartRate,
         result: newT.result,

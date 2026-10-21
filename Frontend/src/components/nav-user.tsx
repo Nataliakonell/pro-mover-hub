@@ -1,10 +1,5 @@
 import {
   ChevronsUpDown,
-  UserCheck,
-  Shield,
-  Stethoscope,
-  HeartHandshake,
-  Users,
   Settings,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
@@ -29,21 +24,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { useAuth, UserRole } from "@/lib/auth";
-
-const roleLabels: Record<UserRole, string> = {
-  admin: "Administrador",
-  fisioterapeuta: "Fisioterapeuta",
-  avaliador: "Avaliador / Voluntário",
-  recepcao: "Recepção",
-};
-
-const roleIcons: Record<UserRole, any> = {
-  admin: Shield,
-  fisioterapeuta: Stethoscope,
-  avaliador: HeartHandshake,
-  recepcao: Users,
-};
+import { useAuth } from "@/lib/auth";
 
 export function NavUser({
   user: userProp,
@@ -55,11 +36,10 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
-  const { user: authUser, setRole } = useAuth();
+  const { user: authUser } = useAuth();
 
   const name = userProp?.name || authUser?.name || "Usuário";
   const email = userProp?.email || authUser?.email || "usuario@conectasaude.org";
-  const role = authUser?.role || "admin";
   const initials = name
     .split(" ")
     .filter(Boolean)
@@ -67,8 +47,6 @@ export function NavUser({
     .join("")
     .substring(0, 2)
     .toUpperCase() || "CS";
-
-  const RoleIcon = roleIcons[role] || Shield;
 
   return (
     <SidebarMenu>
@@ -89,9 +67,11 @@ export function NavUser({
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
                 <span className="truncate font-semibold text-foreground">{name}</span>
-                <span className="truncate text-xs text-muted-foreground">
-                  {roleLabels[role]}
-                </span>
+                {email && (
+                  <span className="truncate text-xs text-muted-foreground">
+                    {email}
+                  </span>
+                )}
               </div>
               <ChevronsUpDown className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
             </SidebarMenuButton>
@@ -111,37 +91,10 @@ export function NavUser({
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
                   <span className="truncate font-semibold">{name}</span>
-                  <span className="truncate text-xs text-muted-foreground">{email}</span>
+                  {email && <span className="truncate text-xs text-muted-foreground">{email}</span>}
                 </div>
               </div>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-
-            {/* Alternar Perfil de Acesso */}
-            <DropdownMenuLabel className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Perfil de Acesso
-            </DropdownMenuLabel>
-            <DropdownMenuGroup>
-              {(["admin", "fisioterapeuta", "avaliador", "recepcao"] as UserRole[]).map((r) => {
-                const Icon = roleIcons[r];
-                const isSelected = role === r;
-                return (
-                  <DropdownMenuItem
-                    key={r}
-                    onClick={() => setRole(r)}
-                    className={`flex items-center justify-between text-xs cursor-pointer ${
-                      isSelected ? "bg-accent/70 font-semibold text-accent-foreground" : ""
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Icon className="size-3.5 text-muted-foreground" />
-                      <span>{roleLabels[r]}</span>
-                    </div>
-                    {isSelected && <UserCheck className="size-3.5 text-primary" />}
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuGroup>
 
             <DropdownMenuSeparator />
             <DropdownMenuGroup>

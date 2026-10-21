@@ -61,8 +61,6 @@ export class EventController {
           const sysMax = dbSettings?.sysMaxThreshold ?? 140;
           const diaMin = dbSettings?.diaMinThreshold ?? 60;
           const diaMax = dbSettings?.diaMaxThreshold ?? 90;
-          const gluMin = 70;
-          const gluMax = dbSettings?.glucoseThreshold ?? 140;
           const oxMin = dbSettings?.spo2Threshold ?? 95;
           const oxMax = 100;
           const hrMin = dbSettings?.hrMinThreshold ?? 50;
@@ -70,7 +68,6 @@ export class EventController {
 
           // Alterações reais detectadas nos sinais vitais
           const paAlterada = triages.filter((t) => (t.systolic && (t.systolic < sysMin || t.systolic > sysMax)) || (t.diastolic && (t.diastolic < diaMin || t.diastolic > diaMax))).length;
-          const glicemiaAlterada = triages.filter((t) => t.glucose && (t.glucose < gluMin || t.glucose > gluMax)).length;
           const spo2Alterada = triages.filter((t) => t.spo2 && (t.spo2 < oxMin || t.spo2 > oxMax)).length;
           const imcAlterada = triages.filter((t) => t.result && (t.result.includes("Sobrepeso") || t.result.includes("Obesidade") || t.result.includes("Abaixo do peso"))).length;
           const fcAlterada = triages.filter((t) => t.heartRate && (t.heartRate < hrMin || t.heartRate > hrMax)).length;
@@ -119,7 +116,6 @@ export class EventController {
               ],
               examAlterations: [
                 { exam: "Pressão Arterial", count: paAlterada },
-                { exam: "Glicemia", count: glicemiaAlterada },
                 { exam: "IMC / Obesidade", count: imcAlterada },
                 { exam: "SpO₂ (Oxigenação)", count: spo2Alterada },
                 { exam: "Frequência Cardíaca", count: fcAlterada },
@@ -128,7 +124,7 @@ export class EventController {
                 { event: ev.name.split(":")[0] || "Ação", atendimentos: participantCount },
               ],
               referrals: [
-                { destination: "Studio Adriane Câmara", count: totalCourtesySessions > 0 ? courtesyRecords.length : 0, color: "#1b806a" },
+                { destination: "Studio Conecta Saúde", count: totalCourtesySessions > 0 ? courtesyRecords.length : 0, color: "#1b806a" },
                 { destination: "Clínico Geral / UBS", count: alteredCount, color: "#0ea5e9" },
               ],
             },

@@ -8,7 +8,6 @@ export interface TriageEntity {
   status: "Normal" | "Atenção" | "Alterado";
   systolic: number;
   diastolic: number;
-  glucose: number;
   spo2: number;
   heartRate: number;
   result: string;

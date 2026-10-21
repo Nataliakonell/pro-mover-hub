@@ -8,7 +8,6 @@ export interface SettingsEntity {
   diaMaxThreshold: number;
   sysThreshold?: number;
   diaThreshold?: number;
-  glucoseThreshold: number;
   spo2Threshold: number;
   hrMinThreshold: number;
   hrMaxThreshold: number;

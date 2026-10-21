@@ -24,7 +24,6 @@ export class PrismaTriageRepository implements ITriageRepository {
         status: data.status,
         systolic: data.systolic,
         diastolic: data.diastolic,
-        glucose: data.glucose,
         spo2: data.spo2,
         heartRate: data.heartRate,
         result: data.result,

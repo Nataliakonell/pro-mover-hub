@@ -27,7 +27,6 @@ export class PrismaMedicalRecordRepository implements IMedicalRecordRepository {
         date: data.date || new Date().toLocaleDateString("pt-BR"),
         status: data.status,
         pressure: data.pressure,
-        glucose: data.glucose,
         spo2: data.spo2 || null,
         heartRate: data.heartRate || null,
         note: data.note,

@@ -94,7 +94,6 @@ function DashboardPage() {
   const { triages: campaignTriages, addTriage } = useTriages(activeCampaignId);
 
   const firstName = (user?.name || "Usuário").trim().split(" ")[0];
-  const isClinical = user.role !== "recepcao";
 
   // Modais
   const [createCampaignOpen, setCreateCampaignOpen] = useState(false);
@@ -126,7 +125,6 @@ function DashboardPage() {
     participantId: "",
     participantName: "",
     pa: "",
-    glucose: "",
     spo2: "",
     heartRate: "",
     weight: "",
@@ -164,7 +162,6 @@ function DashboardPage() {
       result: r.result,
       systolic: 0,
       diastolic: 0,
-      glucose: 0,
       spo2: 0,
       heartRate: 0,
       eventId: activeCampaign.id
@@ -174,7 +171,6 @@ function DashboardPage() {
     let altered = 0;
     let normal = 0;
     let paCount = 0;
-    let gluCount = 0;
     let spo2Count = 0;
     let imcCount = 0;
     let hrCount = 0;
@@ -182,7 +178,6 @@ function DashboardPage() {
     list.forEach((t) => {
       let sys = t.systolic || 0;
       let dia = t.diastolic || 0;
-      let glu = t.glucose || 0;
       let spo2 = t.spo2 || 0;
       let hr = t.heartRate || 0;
 
@@ -194,12 +189,6 @@ function DashboardPage() {
         if (paMatch && paMatch[1] && paMatch[2]) {
           sys = parseInt(paMatch[1]);
           dia = parseInt(paMatch[2]);
-        }
-      }
-      if (glu === 0) {
-        const gluMatch = res.match(/glicemia\s*(\d{2,3})/);
-        if (gluMatch && gluMatch[1]) {
-          glu = parseFloat(gluMatch[1]);
         }
       }
       if (spo2 === 0) {
@@ -227,18 +216,7 @@ function DashboardPage() {
         paCount++;
       }
 
-      // 2. Glicemia
-      const gluMin = settings.glucoseMin ?? 70;
-      const gluMax = settings.glucoseMax ?? 140;
-      const gluAlteredByValue = glu > 0 && (glu < gluMin || glu > gluMax);
-      const gluLimítrofe = !gluAlteredByValue && glu >= 110;
-      const gluAlteredByText = res.includes("glicemia alterada") || res.includes("glicemia de atenção") || res.includes("glicemia em atenção");
-      const isGluAltered = gluAlteredByValue || gluLimítrofe || gluAlteredByText;
-      if (isGluAltered) {
-        gluCount++;
-      }
-
-      // 3. SpO₂
+      // 2. SpO₂
       const oxMin = settings.oxygenMin ?? 95;
       const oxMax = settings.oxygenMax ?? 100;
       const spo2AlteredByValue = spo2 > 0 && (spo2 < oxMin || spo2 > oxMax);
@@ -248,7 +226,7 @@ function DashboardPage() {
         spo2Count++;
       }
 
-      // 4. IMC
+      // 3. IMC
       const isImcAltered =
         res.includes("imc alterado") ||
         res.includes("imc em atenção") ||
@@ -259,7 +237,7 @@ function DashboardPage() {
         imcCount++;
       }
 
-      // 5. Frequência Cardíaca
+      // 4. Frequência Cardíaca
       const hrAlteredByValue = hr > 0 && (hr < settings.heartRateMin || hr > settings.heartRateMax);
       const hrAlteredByText = res.includes("frequência cardíaca alterada") || res.includes("fc alterada");
       const isHrAltered = hrAlteredByValue || hrAlteredByText;
@@ -269,7 +247,7 @@ function DashboardPage() {
 
       // Determinação exata do exame como Normal vs Alterado:
       // O exame é considerado alterado se pelo menos UM parâmetro estiver fora da faixa normal
-      const hasAnyAlteration = isPaAltered || isGluAltered || isSpo2Altered || isImcAltered || isHrAltered;
+      const hasAnyAlteration = isPaAltered || isSpo2Altered || isImcAltered || isHrAltered;
       if (hasAnyAlteration) {
         altered++;
       } else {
@@ -287,7 +265,6 @@ function DashboardPage() {
       normalPct,
       alteredPct,
       paCount,
-      gluCount,
       spo2Count,
       imcCount,
       hrCount,
@@ -670,7 +647,6 @@ function DashboardPage() {
     const [sysStr, diaStr] = triageForm.pa.split("/");
     const sys = parseInt(sysStr || "") || 0;
     const dia = parseInt(diaStr || "") || 0;
-    const glu = parseFloat(triageForm.glucose) || 0;
     const ox = parseFloat(triageForm.spo2) || 0;
     const hr = parseFloat(triageForm.heartRate) || 0;
 
@@ -689,20 +665,7 @@ function DashboardPage() {
       }
     }
 
-    // 2. Regras de Glicemia (Mínima e Máxima)
-    const gluMin = settings.glucoseMin ?? 70;
-    const gluMax = settings.glucoseMax ?? 140;
-    if (glu > 0) {
-      if (glu < gluMin || glu > gluMax) {
-        alterationsList.push(`Glicemia Alterada (${glu} mg/dL)`);
-        status = "Alterado";
-      } else if (glu >= 110) {
-        alterationsList.push(`Glicemia de Atenção (${glu} mg/dL)`);
-        if (status === "Normal") status = "Atenção";
-      }
-    }
-
-    // 3. Regras de SpO2 (Mínima e Máxima)
+    // 2. Regras de SpO2 (Mínima e Máxima)
     const oxMin = settings.oxygenMin ?? 95;
     const oxMax = settings.oxygenMax ?? 100;
     if (ox > 0) {
@@ -712,7 +675,7 @@ function DashboardPage() {
       }
     }
 
-    // 4. Regras de Frequência Cardíaca
+    // 3. Regras de Frequência Cardíaca
     if (hr > 0) {
       if (hr < settings.heartRateMin || hr > settings.heartRateMax) {
         alterationsList.push(`Frequência Cardíaca Alterada (${hr} bpm)`);
@@ -720,7 +683,7 @@ function DashboardPage() {
       }
     }
 
-    // 5. Regras de IMC
+    // 4. Regras de IMC
     if (calculatedIMC) {
       if (calculatedIMC.status === "Alterado") {
         alterationsList.push(`IMC Alterado (${calculatedIMC.category} - ${calculatedIMC.value})`);
@@ -733,13 +696,12 @@ function DashboardPage() {
 
     // Monta o resumo detalhado deixando explícito o que está alterado ou se tudo está normal
     const paText = triageForm.pa ? `PA ${triageForm.pa}` : "";
-    const gliText = triageForm.glucose ? `Glicemia ${triageForm.glucose} mg/dL` : "";
     const spo2Text = triageForm.spo2 ? `SpO₂ ${triageForm.spo2}%` : "";
     const hrText = triageForm.heartRate ? `FC ${triageForm.heartRate} bpm` : "";
     const imcPart = calculatedIMC ? ` · IMC ${calculatedIMC.value} (${calculatedIMC.category})` : "";
     const obsPart = triageForm.observation.trim() ? ` · Obs: ${triageForm.observation.trim()}` : "";
 
-    const vitalsSummary = [paText, gliText, spo2Text, hrText].filter(Boolean).join(" · ");
+    const vitalsSummary = [paText, spo2Text, hrText].filter(Boolean).join(" · ");
     const diagnosisText = alterationsList.length > 0 
       ? `Alterações detectadas: ${alterationsList.join(", ")}`
       : "Parâmetros Clínicos Normais (Dentro dos limites)";
@@ -755,7 +717,6 @@ function DashboardPage() {
         status,
         systolic: sys,
         diastolic: dia,
-        glucose: Number(triageForm.glucose) || 0,
         spo2: Number(triageForm.spo2) || 0,
         heartRate: Number(triageForm.heartRate) || 0,
         result: resultString,
@@ -779,7 +740,6 @@ function DashboardPage() {
         participantId: "",
         participantName: "",
         pa: "",
-        glucose: "",
         spo2: "",
         heartRate: "",
         weight: "",
@@ -875,16 +835,14 @@ function DashboardPage() {
               <UserPlus className="size-4 text-primary" />
               Novo Participante
             </Button>
-            {isClinical && (
-              <Button
-                id="header-new-triage"
-                onClick={() => setTriageDialogOpen(true)}
-                className="gap-2 h-10 px-5 text-sm font-semibold shadow-sm"
-              >
-                <Plus className="size-4.5" />
-                Nova Triagem
-              </Button>
-            )}
+            <Button
+              id="header-new-triage"
+              onClick={() => setTriageDialogOpen(true)}
+              className="gap-2 h-10 px-5 text-sm font-semibold shadow-sm"
+            >
+              <Plus className="size-4.5" />
+              Nova Triagem
+            </Button>
           </>
         ) : (
           <Button
@@ -1321,14 +1279,12 @@ function DashboardPage() {
                 <div className="space-y-3 pt-1">
                   {[
                     { exam: "Pressão Arterial", count: dynamicTriageStats.paCount },
-                    { exam: "Glicemia", count: dynamicTriageStats.gluCount },
                     { exam: "IMC / Obesidade", count: dynamicTriageStats.imcCount },
                     { exam: "SpO₂ (Oxigenação)", count: dynamicTriageStats.spo2Count },
                     { exam: "Frequência Cardíaca", count: dynamicTriageStats.hrCount },
                   ].map((alt) => {
                     const maxVal = Math.max(
                       dynamicTriageStats.paCount,
-                      dynamicTriageStats.gluCount,
                       dynamicTriageStats.imcCount,
                       dynamicTriageStats.spo2Count,
                       dynamicTriageStats.hrCount,
@@ -1374,17 +1330,15 @@ function DashboardPage() {
                     Registros clínicos recentes com valores vitais e cálculo de IMC
                   </p>
                 </div>
-                {isClinical && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTriageDialogOpen(true)}
-                    className="h-8 px-3 text-xs gap-1.5 font-semibold text-primary"
-                  >
-                    <Plus className="size-3.5" />
-                    Nova Triagem
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setTriageDialogOpen(true)}
+                  className="h-8 px-3 text-xs gap-1.5 font-semibold text-primary"
+                >
+                  <Plus className="size-3.5" />
+                  Nova Triagem
+                </Button>
               </div>
 
               <div className="overflow-x-auto">
@@ -1621,7 +1575,7 @@ function DashboardPage() {
       </Dialog>
 
       {/* ============================================================== */}
-      {/* MODAL 2: NOVA TRIAGEM (PA, Glicemia, SpO2, FC + IMC + Obs)     */}
+      {/* MODAL 2: NOVA TRIAGEM (PA, SpO2, FC + IMC + Obs)               */}
       {/* ============================================================== */}
       <Dialog open={triageDialogOpen} onOpenChange={setTriageDialogOpen}>
         <DialogContent className="w-[95vw] sm:max-w-4xl md:max-w-5xl max-h-[92vh] overflow-y-auto p-5 sm:p-7">
@@ -1706,12 +1660,12 @@ function DashboardPage() {
               )}
             </div>
 
-            {/* Sinais Vitais Convencionais em Grid de 4 Colunas no Desktop */}
+            {/* Sinais Vitais Convencionais em Grid de 3 Colunas no Desktop */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Sinais Vitais
               </Label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-1.5 rounded-xl border border-border/70 bg-card p-3.5">
                   <Label htmlFor="t-pa" className="text-xs sm:text-sm font-semibold">
                     Pressão arterial (mmHg)
@@ -1726,24 +1680,6 @@ function DashboardPage() {
                   />
                   <p className="text-[11px] text-muted-foreground font-mono">
                     Ref: {settings.systolicMin}–{settings.systolicMax} x {settings.diastolicMin}–{settings.diastolicMax}
-                  </p>
-                </div>
-
-                <div className="space-y-1.5 rounded-xl border border-border/70 bg-card p-3.5">
-                  <Label htmlFor="t-gli" className="text-xs sm:text-sm font-semibold">
-                    Glicemia (mg/dL)
-                  </Label>
-                  <Input
-                    id="t-gli"
-                    type="number"
-                    placeholder="Ex: 98"
-                    value={triageForm.glucose}
-                    onChange={(e) => setTriageForm({ ...triageForm, glucose: e.target.value })}
-                    required
-                    className="text-sm h-11 rounded-xl"
-                  />
-                  <p className="text-[11px] text-muted-foreground font-mono">
-                    Ref: {settings.glucoseMin ?? 70}–{settings.glucoseMax} mg/dL
                   </p>
                 </div>
 
@@ -2112,7 +2048,7 @@ function DashboardPage() {
 
                           <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
                             <span>Data da Aferição: <strong className="text-foreground">{att.date}</strong></span>
-                            <span>Avaliador: <strong className="text-foreground">{att.responsible}</strong></span>
+                            <span>Responsável: <strong className="text-foreground">{att.responsible}</strong></span>
                           </div>
                         </div>
                       );
