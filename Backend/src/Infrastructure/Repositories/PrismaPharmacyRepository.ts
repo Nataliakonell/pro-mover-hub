@@ -3,10 +3,19 @@ import { PharmacyEntity } from "../../Domain/Entities/Pharmacy";
 import { prisma } from "../Database/PrismaClient";
 
 export class PrismaPharmacyRepository implements IPharmacyRepository {
-  async findAll(): Promise<PharmacyEntity[]> {
+  async findAll(filter?: { groupId?: string }): Promise<PharmacyEntity[]> {
+    const where: any = {};
+    if (filter?.groupId) {
+      where.groupId = filter.groupId;
+    }
+
     const list = await prisma.pharmacy.findMany({
+      where,
       include: {
         events: true,
+        group: {
+          select: { id: true, name: true },
+        },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -18,12 +27,15 @@ export class PrismaPharmacyRepository implements IPharmacyRepository {
       where: { id },
       include: {
         events: true,
+        group: {
+          select: { id: true, name: true },
+        },
       },
     });
     return p as any;
   }
 
-  async create(data: Omit<PharmacyEntity, "id" | "createdAt" | "events">): Promise<PharmacyEntity> {
+  async create(data: Omit<PharmacyEntity, "id" | "createdAt" | "events" | "group">): Promise<PharmacyEntity> {
     const count = await prisma.pharmacy.count();
     const newId = `FARM-${String(count + 1).padStart(3, "0")}`;
 
@@ -41,9 +53,13 @@ export class PrismaPharmacyRepository implements IPharmacyRepository {
         city: data.city,
         status: data.status || "Ativa",
         notes: data.notes || null,
+        groupId: data.groupId || null,
       },
       include: {
         events: true,
+        group: {
+          select: { id: true, name: true },
+        },
       },
     });
 
@@ -65,9 +81,13 @@ export class PrismaPharmacyRepository implements IPharmacyRepository {
         ...(data.city ? { city: data.city } : {}),
         ...(data.status ? { status: data.status } : {}),
         ...(data.notes !== undefined ? { notes: data.notes } : {}),
+        ...(data.groupId !== undefined ? { groupId: data.groupId } : {}),
       },
       include: {
         events: true,
+        group: {
+          select: { id: true, name: true },
+        },
       },
     });
     return updated as any;

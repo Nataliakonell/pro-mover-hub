@@ -1,6 +1,16 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect, type FormEvent } from "react";
-import {AlertTriangle, HeartPulse, Save, ShieldAlert, Info, CheckCircle2, Activity, Scale } from "lucide-react";
+import {
+  AlertTriangle,
+  HeartPulse,
+  Save,
+  ShieldAlert,
+  ShieldCheck,
+  CheckCircle2,
+  Activity,
+  Scale,
+  ArrowLeft,
+} from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,45 +30,44 @@ export const Route = createFileRoute("/configuracao")({
 
 function ConfiguracaoPage() {
   const navigate = useNavigate();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isAuthenticated } = useAuth();
   const { settings, updateSettings } = useSettings();
 
   const [formState, setFormState] = useState<AppSettings>(settings);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Acesso restrito: somente perfil 'admin' acessa
-  useEffect(() => {
-    if (!isAdmin) {
-      navigate({ to: "/" });
-    }
-  }, [isAdmin, navigate]);
-
   useEffect(() => {
     setFormState(settings);
   }, [settings]);
 
+  // Se o usuário não tiver role admin (ex: usuário comum), apresenta tela informativa sem expulsar abruptamente
   if (!isAdmin) {
     return (
-      <AppLayout title="Acesso Restrito">
+      <AppLayout
+        title="Configurações do Sistema"
+        subtitle="Acesso restrito ao perfil de Administrador"
+      >
         <div className="flex flex-col items-center justify-center py-16 text-center max-w-md mx-auto">
-          <ShieldAlert className="size-12 text-destructive mb-3" />
-          <h2 className="text-xl font-bold text-foreground">Acesso Restrito a Administradores</h2>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Seu perfil não possui permissão de Administrador para acessar as configurações clínicas. Faça login com um usuário admin.
+          <div className="grid size-16 place-items-center rounded-2xl bg-destructive/10 text-destructive mb-4">
+            <ShieldAlert className="size-8" />
+          </div>
+          <h2 className="text-xl font-bold text-foreground">Acesso às Configurações</h2>
+          <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+            As configurações globais do sistema e parâmetros clínicos são exclusivas para usuários com perfil de Administrador.
           </p>
-          <div className="mt-6 flex flex-col sm:flex-row gap-2.5 w-full">
+          <div className="mt-6 flex flex-col sm:flex-row gap-3 w-full">
             <Button
               onClick={() => navigate({ to: "/login" })}
-              className="w-full text-xs font-semibold"
+              className="w-full text-sm font-semibold h-10"
             >
-              Fazer Login como Admin
+              Fazer Login como Administrador
             </Button>
             <Button
               variant="outline"
-              onClick={() => navigate({ to: "/" })}
-              className="w-full text-xs font-semibold"
+              onClick={() => navigate({ to: "/administrador" })}
+              className="w-full text-sm font-semibold h-10"
             >
-              Voltar ao Início
+              Ir para o Painel do Administrador
             </Button>
           </div>
         </div>
@@ -102,10 +111,19 @@ function ConfiguracaoPage() {
 
   return (
     <AppLayout
-      title="Configurações Clínicas"
-      subtitle="Defina os parâmetros de IMC e limites demonstrativos para detecção de alterações nas triagens"
+      title="Configurações do Sistema"
+      actions={
+        <Button
+          variant="outline"
+          onClick={() => navigate({ to: "/administrador" })}
+          className="h-10 px-4 text-sm font-semibold gap-2 border-border hover:bg-muted"
+        >
+          <ArrowLeft className="size-4" />
+          <span>Voltar ao Painel Administrador</span>
+        </Button>
+      }
     >
-      <form onSubmit={handleSave} className="space-y-8 max-w-4xl pb-12">
+      <form onSubmit={handleSave} className="w-full space-y-6 sm:space-y-8 pb-12">
         {/* Bloco 2: Parâmetros demonstrativos de alerta de sinais vitais */}
         <section className="rounded-xl border border-border bg-card p-6 shadow-xs">
           <div className="flex items-center gap-3 border-b border-border pb-4 mb-5">
@@ -116,9 +134,6 @@ function ConfiguracaoPage() {
               <h3 className="font-display text-lg font-bold sm:text-xl text-foreground">
                 Parâmetros Demonstrativos de Alerta de Sinais Vitais
               </h3>
-              <p className="text-sm text-muted-foreground">
-                Valores de corte que acionam avisos visuais de risco durante a triagem.
-              </p>
             </div>
           </div>
 
@@ -343,9 +358,6 @@ function ConfiguracaoPage() {
               <h3 className="font-display text-lg font-bold sm:text-xl text-foreground">
                 Parâmetros de Classificação do IMC (Índice de Massa Corporal)
               </h3>
-              <p className="text-sm text-muted-foreground">
-                Configure os pontos de corte (kg/m²) utilizados no cálculo automático do IMC durante a triagem.
-              </p>
             </div>
           </div>
 

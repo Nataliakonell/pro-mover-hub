@@ -15,9 +15,11 @@ export function NavAdmin({
   if (!menus || menus.length === 0) return null;
 
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel>{label}</SidebarGroupLabel>
-      <SidebarMenu>
+    <SidebarGroup className="py-2">
+      <SidebarGroupLabel className="text-xs uppercase tracking-wider font-semibold text-sidebar-foreground/80 mb-1 px-3">
+        {label}
+      </SidebarGroupLabel>
+      <SidebarMenu className="gap-1.5">
         {menus.map((item) => (
           <NavMainItem key={item.title} item={item} />
         ))}

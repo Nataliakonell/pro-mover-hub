@@ -1,10 +1,22 @@
 import bcrypt from "bcryptjs";
 import { IUserRepository } from "../../Domain/Repositories/IUserRepository";
+import { generateRandomPassword } from "../../Infrastructure/Security/PasswordGenerator";
+
+export interface RegisterUserInput {
+  name: string;
+  email: string;
+  username?: string;
+  password?: string;
+  role?: string;
+  groupId?: string | null;
+  pharmacyId?: string | null;
+  mustChangePassword?: boolean;
+}
 
 export class RegisterUser {
   constructor(private userRepo: IUserRepository) {}
 
-  async execute(input: { name: string; email: string; username?: string; password: string; role?: string }) {
+  async execute(input: RegisterUserInput) {
     const existingEmail = await this.userRepo.findByEmail(input.email);
     if (existingEmail) {
       throw new Error("E-mail já cadastrado.");
@@ -17,13 +29,23 @@ export class RegisterUser {
       }
     }
 
-    const passwordHash = await bcrypt.hash(input.password, 10);
+    // Se a senha não for fornecida, gera uma senha temporária aleatória segura
+    const rawPassword = input.password && input.password.trim().length >= 4
+      ? input.password.trim()
+      : generateRandomPassword(10);
+
+    const passwordHash = await bcrypt.hash(rawPassword, 10);
+    const mustChange = input.mustChangePassword !== undefined ? input.mustChangePassword : true;
+
     const created = await this.userRepo.create({
       name: input.name,
       email: input.email,
       username: input.username,
       passwordHash,
-      role: input.role || "user",
+      role: input.role || "pharmacy_user",
+      groupId: input.groupId || null,
+      pharmacyId: input.pharmacyId || null,
+      mustChangePassword: mustChange,
     });
 
     return {
@@ -32,6 +54,10 @@ export class RegisterUser {
       email: created.email,
       username: created.username,
       role: created.role,
+      groupId: created.groupId,
+      pharmacyId: created.pharmacyId,
+      mustChangePassword: created.mustChangePassword,
+      temporaryPassword: rawPassword,
     };
   }
 }

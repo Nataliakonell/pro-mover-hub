@@ -19,6 +19,9 @@ export class CreatePharmacy {
     if (!input.name || !input.cnpj) {
       throw new Error("Nome e CNPJ da farmácia são obrigatórios.");
     }
-    return await this.pharmacyRepo.create(input);
+    return await this.pharmacyRepo.create({
+      ...input,
+      status: input.status || "Ativa",
+    });
   }
 }

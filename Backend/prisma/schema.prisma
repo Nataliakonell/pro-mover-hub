@@ -10,14 +10,35 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model PharmacyGroup {
+  id          String     @id // "GRP-001", etc.
+  name        String
+  cnpj        String?    @unique
+  responsible String?
+  phone       String?
+  email       String?
+  createdAt   DateTime   @default(now())
+
+  pharmacies  Pharmacy[]
+  users       User[]
+
+  @@map("pharmacy_groups")
+}
+
 model User {
-  id           Int      @id @default(autoincrement())
-  name         String
-  email        String   @unique
-  username     String?  @unique
-  passwordHash String
-  role         String   @default("user")
-  createdAt    DateTime @default(now())
+  id                 Int            @id @default(autoincrement())
+  name               String
+  email              String         @unique
+  username           String?        @unique
+  passwordHash       String
+  role               String         @default("pharmacy_user") // "admin" | "group_manager" | "pharmacy_user" | "client"
+  groupId            String?
+  pharmacyId         String?
+  mustChangePassword Boolean        @default(true)
+  createdAt          DateTime       @default(now())
+
+  group              PharmacyGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  pharmacy           Pharmacy?      @relation(fields: [pharmacyId], references: [id], onDelete: SetNull)
 
   @@map("users")
 }
@@ -50,11 +71,14 @@ model Pharmacy {
   address      String
   neighborhood String
   city         String
-  status       String    @default("Ativa") // "Ativa" | "Pendente" | "Inativa"
+  status       String         @default("Ativa") // "Ativa" | "Pendente" | "Inativa"
   notes        String?
-  createdAt    DateTime  @default(now())
+  groupId      String?
+  createdAt    DateTime       @default(now())
 
+  group        PharmacyGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
   events       Event[]
+  users        User[]
 
   @@map("pharmacies")
 }

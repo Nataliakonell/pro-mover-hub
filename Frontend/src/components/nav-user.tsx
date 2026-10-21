@@ -104,7 +104,7 @@ export function NavUser({
                 <div className="flex items-center gap-1.5">
                   <span className="truncate font-semibold text-foreground">{name}</span>
                   {isAdmin && (
-                    <Badge variant="outline" className="px-1 py-0 text-[9px] bg-primary/10 text-primary border-primary/20">
+                    <Badge variant="outline" className="px-1.5 py-0 text-xs bg-primary/10 text-primary border-primary/20">
                       Admin
                     </Badge>
                   )}
@@ -137,7 +137,7 @@ export function NavUser({
                   <div className="flex items-center gap-1.5">
                     <span className="truncate font-semibold">{name}</span>
                     {isAdmin && (
-                      <Badge variant="outline" className="px-1 py-0 text-[9px] bg-primary/10 text-primary border-primary/20">
+                      <Badge variant="outline" className="px-1.5 py-0 text-xs bg-primary/10 text-primary border-primary/20">
                         Admin
                       </Badge>
                     )}
@@ -151,16 +151,16 @@ export function NavUser({
             <DropdownMenuGroup>
               {isAdmin && (
                 <DropdownMenuItem asChild>
-                  <Link to="/administrador" className="flex items-center gap-2 cursor-pointer text-xs">
-                    <ShieldCheck className="size-3.5 text-primary" />
+                  <Link to="/administrador" className="flex items-center gap-2 cursor-pointer text-sm">
+                    <ShieldCheck className="size-4 text-primary" />
                     <span>Painel do Administrador</span>
                   </Link>
                 </DropdownMenuItem>
               )}
 
               <DropdownMenuItem asChild>
-                <Link to="/configuracao" className="flex items-center gap-2 cursor-pointer text-xs">
-                  <Settings className="size-3.5 text-muted-foreground" />
+                <Link to="/configuracao" className="flex items-center gap-2 cursor-pointer text-sm">
+                  <Settings className="size-4 text-muted-foreground" />
                   <span>Configurações</span>
                 </Link>
               </DropdownMenuItem>
@@ -169,9 +169,9 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={handleLogout}
-              className="flex items-center gap-2 cursor-pointer text-xs text-destructive focus:bg-destructive/10 focus:text-destructive"
+              className="flex items-center gap-2 cursor-pointer text-sm text-destructive focus:bg-destructive/10 focus:text-destructive"
             >
-              <LogOut className="size-3.5" />
+              <LogOut className="size-4" />
               <span>Sair da Conta (Logout)</span>
             </DropdownMenuItem>
           </DropdownMenuContent>

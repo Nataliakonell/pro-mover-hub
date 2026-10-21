@@ -22,7 +22,7 @@ export class LoginUser {
       isValid = false;
     }
 
-    // Suporte caso a senha tenha sido inserida diretamente em texto puro no banco de dados via SQL manual
+    // Suporte caso a senha tenha sido inserida diretamente em texto puro em emergência no banco
     if (!isValid && user.passwordHash === passwordPlain) {
       isValid = true;
     }
@@ -39,6 +39,9 @@ export class LoginUser {
         email: user.email,
         username: user.username,
         role: user.role,
+        groupId: user.groupId || null,
+        pharmacyId: user.pharmacyId || null,
+        mustChangePassword: user.mustChangePassword,
       },
       secret,
       { expiresIn: "7d" }
@@ -52,6 +55,11 @@ export class LoginUser {
         email: user.email,
         username: user.username,
         role: user.role,
+        groupId: user.groupId || null,
+        pharmacyId: user.pharmacyId || null,
+        mustChangePassword: user.mustChangePassword,
+        group: user.group || null,
+        pharmacy: user.pharmacy || null,
       },
     };
   }

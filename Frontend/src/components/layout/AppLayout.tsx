@@ -4,6 +4,7 @@ import {
   HeartPulse,
   Users,
   Settings,
+  ShieldCheck,
   Menu,
 } from "lucide-react";
 import {
@@ -13,6 +14,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { useAuth } from "@/lib/auth";
 
 interface AppLayoutProps {
   title?: ReactNode;
@@ -25,10 +27,12 @@ function MobileBottomBar() {
   const routerState = useRouterState();
   const pathname = routerState.location.pathname;
   const { toggleSidebar } = useSidebar();
+  const { isAdmin } = useAuth();
 
   const items = [
     { name: "Campanhas", href: "/", icon: HeartPulse },
     { name: "Participantes", href: "/participantes", icon: Users },
+    ...(isAdmin ? [{ name: "Admin", href: "/administrador", icon: ShieldCheck }] : []),
     { name: "Configurações", href: "/configuracao", icon: Settings },
   ];
 
@@ -108,7 +112,7 @@ export function AppLayout({
         </header>
 
         {/* Corpo principal do conteúdo */}
-        <main className="flex-1 w-full max-w-[1440px] mx-auto px-3.5 py-4 sm:px-6 sm:py-8 lg:px-8 pb-24 md:pb-8">
+        <main className="flex-1 w-full min-w-0 px-3.5 py-4 sm:px-6 sm:py-6 lg:px-8 pb-24 md:pb-8">
           {children}
         </main>
 

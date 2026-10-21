@@ -24,25 +24,27 @@ export interface NavItem {
   url: string;
   icon?: LucideIcon;
   isActive?: boolean;
-  badge?: string | number;
+  search?: Record<string, string>;
   items?: {
     title: string;
     url: string;
-    badge?: string | number;
+    search?: Record<string, string>;
   }[];
 }
 
 export function NavMain({
   items,
-  label = "Menu Principal",
+  label = "Menus principais",
 }: {
   items: NavItem[];
   label?: string;
 }) {
   return (
-    <SidebarGroup>
-      {label && <SidebarGroupLabel>{label}</SidebarGroupLabel>}
-      <SidebarMenu>
+    <SidebarGroup className="py-2">
+      <SidebarGroupLabel className="text-xs uppercase tracking-wider font-semibold text-sidebar-foreground/80 mb-1 px-3">
+        {label}
+      </SidebarGroupLabel>
+      <SidebarMenu className="gap-1.5">
         {items.map((item) => (
           <NavMainItem key={item.title} item={item} />
         ))}
@@ -54,17 +56,27 @@ export function NavMain({
 export function NavMainItem({ item }: { item: NavItem }) {
   const routerState = useRouterState();
   const pathname = routerState.location.pathname;
+  const currentSearch = (routerState.location.search || {}) as Record<string, string>;
   const { setOpenMobile, isMobile } = useSidebar();
 
   const hasSubItems = Array.isArray(item.items) && item.items.length > 0;
 
-  const isSubItemActive = (subUrl: string) => {
-    if (subUrl === "/" && pathname === "/") return true;
-    if (subUrl !== "/" && (pathname === subUrl || pathname.startsWith(subUrl + "/"))) return true;
-    return false;
+  const isSubItemActive = (subUrl: string, subSearch?: Record<string, string>) => {
+    if (subUrl !== pathname) return false;
+    if (subSearch?.tab) {
+      const currentTab = (currentSearch.tab as string) || "visao-geral";
+      return currentTab === subSearch.tab;
+    }
+    return true;
   };
 
-  const isAnySubItemActive = item.items?.some((subItem) => isSubItemActive(subItem.url)) || false;
+  const isAnySubItemActive =
+    item.items?.some((subItem) => isSubItemActive(subItem.url, subItem.search)) || false;
+
+  const isUrlActive =
+    item.url.startsWith("/") &&
+    (pathname === item.url || (item.url !== "/" && pathname.startsWith(item.url + "/")));
+  const isActive = isUrlActive || (item.url === "/" && pathname === "/");
 
   const [isOpen, setIsOpen] = useState(isAnySubItemActive || !!item.isActive);
 
@@ -72,7 +84,7 @@ export function NavMainItem({ item }: { item: NavItem }) {
     if (isAnySubItemActive) {
       setIsOpen(true);
     }
-  }, [pathname, isAnySubItemActive]);
+  }, [pathname, routerState.location.searchStr, isAnySubItemActive]);
 
   const handleLinkClick = () => {
     if (isMobile) {
@@ -82,23 +94,13 @@ export function NavMainItem({ item }: { item: NavItem }) {
 
   const buttonContent = (
     <>
-      {item.icon && <item.icon className="size-4 shrink-0" />}
-      <span className="truncate">{item.title}</span>
-      {item.badge !== undefined && (
-        <span className="ml-auto rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-          {item.badge}
-        </span>
-      )}
+      {item.icon && <item.icon className="size-5 shrink-0" />}
+      <span className="text-sm sm:text-[15px] font-medium leading-none">{item.title}</span>
     </>
   );
 
-  // Link direto sem sub-itens
   if (!hasSubItems) {
-    const isUrlActive =
-      item.url === "/"
-        ? pathname === "/"
-        : pathname === item.url || pathname.startsWith(item.url + "/");
-    const isActive = isUrlActive || !!item.isActive;
+    const isLink = item.url && item.url.startsWith("/");
 
     return (
       <SidebarMenuItem>
@@ -106,17 +108,26 @@ export function NavMainItem({ item }: { item: NavItem }) {
           asChild
           tooltip={item.title}
           isActive={isActive}
-          className="transition-colors"
+          className="h-10 px-3 text-[15px] font-medium transition-colors"
         >
-          <Link to={item.url} onClick={handleLinkClick}>
-            {buttonContent}
-          </Link>
+          {isLink ? (
+            <Link
+              to={item.url as any}
+              search={item.search ? (item.search as any) : undefined}
+              onClick={handleLinkClick}
+            >
+              {buttonContent}
+            </Link>
+          ) : (
+            <a href={item.url} onClick={handleLinkClick}>
+              {buttonContent}
+            </a>
+          )}
         </SidebarMenuButton>
       </SidebarMenuItem>
     );
   }
 
-  // Item com sub-itens colapsáveis (como no projeto do Biotério)
   return (
     <Collapsible
       open={isOpen}
@@ -129,28 +140,38 @@ export function NavMainItem({ item }: { item: NavItem }) {
           <SidebarMenuButton
             tooltip={item.title}
             isActive={isAnySubItemActive}
-            className="transition-colors"
+            className="h-10 px-3 text-[15px] font-medium transition-colors"
           >
-            {item.icon && <item.icon className="size-4 shrink-0" />}
-            <span className="truncate">{item.title}</span>
-            <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+            {item.icon && <item.icon className="size-5 shrink-0" />}
+            <span className="text-sm sm:text-[15px] font-medium leading-none">{item.title}</span>
+            <ChevronRight className="ml-auto size-4.5 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
           </SidebarMenuButton>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <SidebarMenuSub>
+          <SidebarMenuSub className="gap-1 my-1 pl-3.5 border-l-2">
             {item.items?.map((subItem) => {
-              const subActive = isSubItemActive(subItem.url);
+              const subActive = isSubItemActive(subItem.url, subItem.search);
+              const isSubLink = subItem.url && subItem.url.startsWith("/");
               return (
                 <SidebarMenuSubItem key={subItem.title}>
-                  <SidebarMenuSubButton asChild isActive={subActive}>
-                    <Link to={subItem.url} onClick={handleLinkClick}>
-                      <span className="truncate">{subItem.title}</span>
-                      {subItem.badge !== undefined && (
-                        <span className="ml-auto rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                          {subItem.badge}
-                        </span>
-                      )}
-                    </Link>
+                  <SidebarMenuSubButton
+                    asChild
+                    isActive={subActive}
+                    className="h-8.5 px-2.5 text-sm transition-colors"
+                  >
+                    {isSubLink ? (
+                      <Link
+                        to={subItem.url as any}
+                        search={subItem.search ? (subItem.search as any) : undefined}
+                        onClick={handleLinkClick}
+                      >
+                        <span className="text-sm font-medium">{subItem.title}</span>
+                      </Link>
+                    ) : (
+                      <a href={subItem.url} onClick={handleLinkClick}>
+                        <span className="text-sm font-medium">{subItem.title}</span>
+                      </a>
+                    )}
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
               );

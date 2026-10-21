@@ -200,10 +200,60 @@ export async function deletePharmacyApi(id: string) {
   });
 }
 
-// 8. Autenticação
+// 8. Autenticação & Troca de Senha
 export async function loginApi(identifier: string, password: string) {
   return fetchFromApi<{ token: string; user: any }>("/auth/login", {
     method: "POST",
     body: JSON.stringify({ identifier, password }),
+  });
+}
+
+export async function changePasswordApi(currentPassword: string, newPassword: string) {
+  return fetchFromApi<{ message: string; token: string; user: any }>("/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+}
+
+// 9. Grupos de Farmácias
+export async function getPharmacyGroupsApi() {
+  return fetchFromApi<any[]>("/pharmacy-groups");
+}
+
+export async function createPharmacyGroupApi(data: {
+  name: string;
+  cnpj?: string;
+  responsible?: string;
+  phone?: string;
+  email?: string;
+}) {
+  return fetchFromApi<any>("/pharmacy-groups", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+// 10. Gestão de Usuários
+export async function getUsersApi() {
+  return fetchFromApi<any[]>("/users");
+}
+
+export async function createUserApi(data: {
+  name: string;
+  email: string;
+  username?: string;
+  role: string;
+  groupId?: string | null;
+  pharmacyId?: string | null;
+}) {
+  return fetchFromApi<{ user: any; temporaryPassword: string }>("/users", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteUserApi(id: number) {
+  return fetchFromApi<void>(`/users/${id}`, {
+    method: "DELETE",
   });
 }

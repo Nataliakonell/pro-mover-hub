@@ -10,7 +10,8 @@
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "seed": "ts-node src/Infrastructure/Database/Seed.ts",
-    "test:a2a": "ts-node src/Infrastructure/Database/Seed.ts"
+    "test:a2a": "ts-node src/Infrastructure/Database/Seed.ts",
+    "user:create": "ts-node scripts/create-user.ts"
   },
 
   "dependencies": {

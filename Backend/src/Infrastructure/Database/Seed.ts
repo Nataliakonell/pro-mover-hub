@@ -119,7 +119,9 @@ export async function runSeed() {
   await prisma.participant.deleteMany({});
   await prisma.event.deleteMany({});
   await prisma.user.deleteMany({});
-  console.log("[Seed] Tabelas de campanhas, participantes, triagens e usuários limpas com sucesso.");
+  await prisma.pharmacy.deleteMany({});
+  await prisma.pharmacyGroup.deleteMany({});
+  console.log("[Seed] Tabelas de campanhas, participantes, triagens, usuários, farmácias e grupos limpas com sucesso.");
 
   // 2. Configurações Iniciais do Sistema (limites de alerta e faixas de IMC)
   await prisma.settings.upsert({

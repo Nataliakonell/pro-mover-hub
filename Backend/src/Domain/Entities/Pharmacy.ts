@@ -11,6 +11,11 @@ export interface PharmacyEntity {
   city: string;
   status: string;
   notes?: string | null;
+  groupId?: string | null;
+  group?: {
+    id: string;
+    name: string;
+  } | null;
   createdAt?: Date;
   events?: any[];
 }

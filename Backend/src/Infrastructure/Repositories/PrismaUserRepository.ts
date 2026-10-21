@@ -1,19 +1,15 @@
-import { IUserRepository } from "../../Domain/Repositories/IUserRepository";
+import { IUserRepository, UserFilter } from "../../Domain/Repositories/IUserRepository";
 import { UserEntity } from "../../Domain/Entities/User";
 import { prisma } from "../Database/PrismaClient";
 
-/**
- * Converte o nome completo no padrão: primeironome.ultimonome
- * Exemplo: "Natalia Konell Afonso Toffoli" -> "natalia.toffoli"
- */
 export function generateUsername(fullName: string): string {
-  if (!fullName) return "";
+  if (!fullName) return "user";
   const parts = fullName
     .trim()
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // remove acentos
-    .replace(/[^a-z0-9\s]/g, "") // remove caracteres especiais
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, "")
     .split(/\s+/)
     .filter(Boolean);
 
@@ -25,9 +21,57 @@ export function generateUsername(fullName: string): string {
 }
 
 export class PrismaUserRepository implements IUserRepository {
+  async findAll(filter?: UserFilter): Promise<UserEntity[]> {
+    const where: any = {};
+    if (filter?.groupId) {
+      where.groupId = filter.groupId;
+    }
+    if (filter?.pharmacyId) {
+      where.pharmacyId = filter.pharmacyId;
+    }
+
+    const users = await prisma.user.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      include: {
+        group: {
+          select: { id: true, name: true },
+        },
+        pharmacy: {
+          select: { id: true, name: true },
+        },
+      },
+    });
+
+    return users as any;
+  }
+
+  async findById(id: number): Promise<UserEntity | null> {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        group: {
+          select: { id: true, name: true },
+        },
+        pharmacy: {
+          select: { id: true, name: true },
+        },
+      },
+    });
+    return user as any;
+  }
+
   async findByEmail(email: string): Promise<UserEntity | null> {
     const user = await prisma.user.findUnique({
       where: { email: email.trim().toLowerCase() },
+      include: {
+        group: {
+          select: { id: true, name: true },
+        },
+        pharmacy: {
+          select: { id: true, name: true },
+        },
+      },
     });
     return user as any;
   }
@@ -35,6 +79,14 @@ export class PrismaUserRepository implements IUserRepository {
   async findByUsername(username: string): Promise<UserEntity | null> {
     const user = await prisma.user.findUnique({
       where: { username: username.trim().toLowerCase() },
+      include: {
+        group: {
+          select: { id: true, name: true },
+        },
+        pharmacy: {
+          select: { id: true, name: true },
+        },
+      },
     });
     return user as any;
   }
@@ -48,11 +100,19 @@ export class PrismaUserRepository implements IUserRepository {
           { email: clean },
         ],
       },
+      include: {
+        group: {
+          select: { id: true, name: true },
+        },
+        pharmacy: {
+          select: { id: true, name: true },
+        },
+      },
     });
     return user as any;
   }
 
-  async create(data: Omit<UserEntity, "id" | "createdAt">): Promise<UserEntity> {
+  async create(data: Omit<UserEntity, "id" | "createdAt" | "group" | "pharmacy">): Promise<UserEntity> {
     const username = data.username || generateUsername(data.name);
 
     const user = await prisma.user.create({
@@ -61,9 +121,56 @@ export class PrismaUserRepository implements IUserRepository {
         email: data.email.trim().toLowerCase(),
         username: username.trim().toLowerCase(),
         passwordHash: data.passwordHash,
-        role: data.role || "user",
+        role: data.role || "pharmacy_user",
+        groupId: data.groupId || null,
+        pharmacyId: data.pharmacyId || null,
+        mustChangePassword: data.mustChangePassword !== undefined ? data.mustChangePassword : true,
+      },
+      include: {
+        group: {
+          select: { id: true, name: true },
+        },
+        pharmacy: {
+          select: { id: true, name: true },
+        },
       },
     });
     return user as any;
+  }
+
+  async update(id: number, data: Partial<Omit<UserEntity, "id" | "createdAt" | "group" | "pharmacy">>): Promise<UserEntity> {
+    const updateData: any = { ...data };
+    if (data.email) updateData.email = data.email.trim().toLowerCase();
+    if (data.username) updateData.username = data.username.trim().toLowerCase();
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: updateData,
+      include: {
+        group: {
+          select: { id: true, name: true },
+        },
+        pharmacy: {
+          select: { id: true, name: true },
+        },
+      },
+    });
+    return user as any;
+  }
+
+  async updatePassword(id: number, passwordHash: string): Promise<void> {
+    await prisma.user.update({
+      where: { id },
+      data: {
+        passwordHash,
+        mustChangePassword: false,
+      },
+    });
+  }
+
+  async delete(id: number): Promise<void> {
+    await prisma.user.delete({
+      where: { id },
+    });
   }
 }

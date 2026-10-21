@@ -1,14 +1,19 @@
 import { useState, useEffect } from "react";
 import { loginApi } from "./api";
 
-export type UserRole = string;
+export type UserRole = "admin" | "group_manager" | "pharmacy_user" | "client" | string;
 
 export interface UserProfile {
   id?: number;
   name: string;
   email: string;
   username?: string | null;
-  role?: string;
+  role?: UserRole;
+  groupId?: string | null;
+  pharmacyId?: string | null;
+  mustChangePassword?: boolean;
+  group?: { id: string; name: string } | null;
+  pharmacy?: { id: string; name: string } | null;
 }
 
 const STORAGE_KEY_USER = "conecta_saude_user";
@@ -31,7 +36,12 @@ export function getStoredUser(): UserProfile | null {
       name: parsed.name || "Usuário",
       email: parsed.email || "",
       username: parsed.username || null,
-      role: parsed.role || "user",
+      role: parsed.role || "pharmacy_user",
+      groupId: parsed.groupId || null,
+      pharmacyId: parsed.pharmacyId || null,
+      mustChangePassword: Boolean(parsed.mustChangePassword),
+      group: parsed.group || null,
+      pharmacy: parsed.pharmacy || null,
     };
   } catch {
     return null;
@@ -53,8 +63,8 @@ export function clearAuthSession() {
 }
 
 export function useAuth() {
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(getStoredUser);
+  const [token, setToken] = useState<string | null>(getStoredToken);
 
   useEffect(() => {
     setUser(getStoredUser());
@@ -91,7 +101,11 @@ export function useAuth() {
     user,
     token,
     isAuthenticated: Boolean(user && token),
-    isAdmin: user?.role === "admin",
+    isAdmin: ["admin", "administrador", "superadmin"].includes(user?.role?.toLowerCase() || ""),
+    isGroupManager: user?.role?.toLowerCase() === "group_manager",
+    isPharmacyUser: user?.role?.toLowerCase() === "pharmacy_user",
+    isClient: user?.role?.toLowerCase() === "client",
+    mustChangePassword: Boolean(user?.mustChangePassword),
     login,
     logout,
   };

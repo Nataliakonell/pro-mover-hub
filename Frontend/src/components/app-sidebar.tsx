@@ -1,11 +1,12 @@
-// Sidebar principal de navegação da aplicação
 import * as React from "react";
 import {
   HeartPulse,
   Users,
   Settings,
   ShieldCheck,
+  LayoutDashboard,
 } from "lucide-react";
+import { useRouterState } from "@tanstack/react-router";
 
 import { NavMain, type NavItem } from "@/components/nav-main";
 import { NavAdmin } from "@/components/nav-admin";
@@ -23,13 +24,43 @@ import { useAuth } from "@/lib/auth";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user, isAdmin } = useAuth();
+  const routerState = useRouterState();
+  const pathname = routerState.location.pathname;
+  const isAdmRoute = pathname.startsWith("/administrador") || pathname.startsWith("/configuracao");
+  const showAdminView = isAdmin || isAdmRoute;
 
-  const navMain: NavItem[] = [
+  // Itens para o Administrador (sob a seção Painel Administrador)
+  const adminNavMain: NavItem[] = [
+    {
+      title: "Painel Administrador",
+      url: "#",
+      icon: ShieldCheck,
+      isActive: true,
+      items: [
+        { title: "Visão Geral", url: "/administrador", search: { tab: "visao-geral" } },
+        { title: "Farmácias Credenciadas", url: "/administrador", search: { tab: "farmacias" } },
+        { title: "Campanhas", url: "/administrador", search: { tab: "campanhas" } },
+        { title: "Participantes", url: "/administrador", search: { tab: "participantes" } },
+        { title: "Usuários e Grupos", url: "/administrador", search: { tab: "usuarios" } },
+        { title: "Configurações Gerais", url: "/configuracao" },
+      ],
+    },
+  ];
+
+  const adminMenus: NavItem[] = [
+    {
+      title: "Configurações",
+      url: "/configuracao",
+      icon: Settings,
+    },
+  ];
+
+  // Itens para a Farmácia Cadastrada
+  const pharmacyNavMain: NavItem[] = [
     {
       title: "Campanhas",
       url: "/",
       icon: HeartPulse,
-      isActive: false,
     },
     {
       title: "Participantes",
@@ -38,13 +69,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
   ];
 
-  const adminMenus: NavItem[] = [
-    {
-      title: "Painel Administrador",
-      url: "/administrador",
-      icon: ShieldCheck,
-      badge: isAdmin ? "Admin" : undefined,
-    },
+  const pharmacyMenus: NavItem[] = [
     {
       title: "Configurações",
       url: "/configuracao",
@@ -59,8 +84,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent>
-        <NavMain items={navMain} label="Ações Comunitárias" />
-        <NavAdmin menus={adminMenus} label="Administração" />
+        <NavMain
+          items={showAdminView ? adminNavMain : pharmacyNavMain}
+          label="Menus principais"
+        />
+        <NavAdmin
+          menus={showAdminView ? adminMenus : pharmacyMenus}
+          label="Administração"
+        />
       </SidebarContent>
 
       <SidebarFooter>
@@ -71,4 +102,5 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     </Sidebar>
   );
 }
+
 export default AppSidebar;
