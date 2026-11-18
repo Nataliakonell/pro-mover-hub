@@ -9,16 +9,16 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow-none hover:bg-primary/85",
-        ink: "rounded-full bg-foreground text-background shadow-none hover:bg-foreground/85",
-        soft: "rounded-full bg-secondary text-secondary-foreground shadow-none hover:bg-secondary/75",
-        teal: "rounded-full bg-info text-info-foreground shadow-none hover:bg-info/90",
-        destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
+        default: "bg-[#025373] text-white shadow-sm hover:bg-[#01415b] active:bg-[#01354a]",
+        ink: "rounded-full bg-slate-900 text-white shadow-none hover:bg-slate-800",
+        soft: "rounded-full bg-slate-100 text-slate-800 shadow-none hover:bg-slate-200",
+        teal: "rounded-full bg-cyan-600 text-white shadow-none hover:bg-cyan-700",
+        destructive: "bg-red-600 text-white shadow-sm hover:bg-red-700",
         outline:
-          "border border-input bg-background shadow-none hover:bg-accent hover:text-accent-foreground",
-        secondary: "bg-secondary text-secondary-foreground shadow-none hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+          "border border-slate-300 bg-white text-slate-800 shadow-xs hover:bg-slate-50 hover:text-slate-900",
+        secondary: "bg-[#e6f1f8] text-[#025373] shadow-none hover:bg-[#d5e7f3]",
+        ghost: "hover:bg-slate-100 hover:text-slate-900",
+        link: "text-[#025373] underline-offset-4 hover:underline",
       },
       size: {
         default: "h-9 px-4 py-2",

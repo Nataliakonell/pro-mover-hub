@@ -1,12 +1,16 @@
 import { Request, Response } from "express";
 import { GetAllEvents } from "../../UseCases/Events/GetAllEvents";
 import { CreateEvent } from "../../UseCases/Events/CreateEvent";
+import { UpdateEvent } from "../../UseCases/Events/UpdateEvent";
+import { DeleteEvent } from "../../UseCases/Events/DeleteEvent";
 import { prisma } from "../../Infrastructure/Database/PrismaClient";
 
 export class EventController {
   constructor(
     private getAllEvents: GetAllEvents,
-    private createEvent: CreateEvent
+    private createEvent: CreateEvent,
+    private updateEventUseCase?: UpdateEvent,
+    private deleteEventUseCase?: DeleteEvent
   ) {}
 
 
@@ -167,6 +171,44 @@ export class EventController {
       return res.status(201).json(created);
     } catch (error: any) {
       return res.status(500).json({ error: error.message });
+    }
+  }
+
+  async update(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { name, date, startDate, endDate, location, pharmacyId } = req.body;
+
+      if (!this.updateEventUseCase) {
+        return res.status(500).json({ error: "Caso de uso UpdateEvent não inicializado." });
+      }
+
+      const updated = await this.updateEventUseCase.execute(id, {
+        name,
+        date,
+        startDate,
+        endDate,
+        location,
+        pharmacyId,
+      });
+
+      return res.json(updated);
+    } catch (error: any) {
+      return res.status(400).json({ error: error.message });
+    }
+  }
+
+  async delete(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      if (!this.deleteEventUseCase) {
+        return res.status(500).json({ error: "Caso de uso DeleteEvent não inicializado." });
+      }
+
+      await this.deleteEventUseCase.execute(id);
+      return res.status(204).send();
+    } catch (error: any) {
+      return res.status(400).json({ error: error.message });
     }
   }
 }

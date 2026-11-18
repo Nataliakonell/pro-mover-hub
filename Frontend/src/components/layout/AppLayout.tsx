@@ -27,14 +27,24 @@ function MobileBottomBar() {
   const routerState = useRouterState();
   const pathname = routerState.location.pathname;
   const { toggleSidebar } = useSidebar();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isClient } = useAuth();
 
-  const items = [
+  const clientItems = [
+    { name: "Minhas Triagens", href: "/cliente", icon: HeartPulse },
+  ];
+
+  const staffItems = [
     { name: "Campanhas", href: "/", icon: HeartPulse },
     { name: "Participantes", href: "/participantes", icon: Users },
-    ...(isAdmin ? [{ name: "Admin", href: "/administrador", icon: ShieldCheck }] : []),
-    { name: "Configurações", href: "/configuracao", icon: Settings },
+    ...(isAdmin
+      ? [
+          { name: "Admin", href: "/administrador", icon: ShieldCheck },
+          { name: "Configurações", href: "/configuracao", icon: Settings },
+        ]
+      : []),
   ];
+
+  const items = isClient ? clientItems : staffItems;
 
   return (
     <nav
@@ -82,22 +92,22 @@ export function AppLayout({
   return (
     <SidebarProvider defaultOpen={true}>
       <AppSidebar />
-      <SidebarInset className="flex flex-col min-h-screen min-w-0 bg-background">
+      <SidebarInset className="flex flex-col min-h-screen min-w-0 bg-[#f4f8fc]">
         {/* Cabeçalho Superior com SidebarTrigger, Título e Ações */}
-        <header className="sticky top-0 z-30 flex min-h-16 shrink-0 items-center justify-between border-b border-border bg-card/95 px-3.5 sm:px-6 backdrop-blur-sm transition-[width,height] ease-linear">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+        <header className="sticky top-0 z-30 flex min-h-16 shrink-0 items-center justify-between border-b border-border/80 bg-white/90 px-4 sm:px-8 backdrop-blur-md transition-[width,height] ease-linear">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
             {/* SidebarTrigger: no desktop recolhe para mini sidebar; no mobile abre a gaveta */}
-            <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />
-            <div className="h-4 w-px bg-border shrink-0" />
+            <SidebarTrigger className="-ml-1 text-slate-700 hover:text-slate-900 hover:bg-slate-100 size-9 rounded-lg" />
+            <div className="h-5 w-px bg-border shrink-0" />
 
             <div className="min-w-0">
               {title && (
-                <div className="truncate font-display text-base sm:text-lg font-bold tracking-tight text-foreground">
+                <div className="truncate font-display text-base sm:text-lg font-bold tracking-tight text-slate-900">
                   {title}
                 </div>
               )}
               {subtitle && (
-                <p className="hidden sm:block truncate text-xs text-muted-foreground">
+                <p className="hidden sm:block truncate text-xs font-medium text-slate-500">
                   {subtitle}
                 </p>
               )}
@@ -105,14 +115,14 @@ export function AppLayout({
           </div>
 
           {actions && (
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2.5 shrink-0">
               {actions}
             </div>
           )}
         </header>
 
         {/* Corpo principal do conteúdo */}
-        <main className="flex-1 w-full min-w-0 px-3.5 py-4 sm:px-6 sm:py-6 lg:px-8 pb-24 md:pb-8">
+        <main className="flex-1 w-full min-w-0 px-4 py-5 sm:px-8 sm:py-7 lg:px-10 pb-24 md:pb-10">
           {children}
         </main>
 

@@ -3,12 +3,74 @@ import { TriageEntity } from "../../Domain/Entities/Triage";
 import { prisma } from "../Database/PrismaClient";
 
 export class PrismaTriageRepository implements ITriageRepository {
-  async findAll(eventId?: string): Promise<TriageEntity[]> {
+  async findAll(eventId?: string, participantId?: string): Promise<TriageEntity[]> {
+    const where: any = {};
+    if (eventId) {
+      where.eventId = eventId;
+    }
+    if (participantId) {
+      where.participantId = participantId;
+    }
+
     const list = await prisma.triage.findMany({
-      where: eventId ? { eventId } : undefined,
+      where: Object.keys(where).length > 0 ? where : undefined,
+      include: {
+        event: {
+          select: {
+            id: true,
+            name: true,
+            date: true,
+            startDate: true,
+            endDate: true,
+            pharmacy: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
     });
-    return list as any;
+
+    return list.map((item) => ({
+      ...item,
+      eventName: item.event?.name,
+      pharmacyName: item.event?.pharmacy?.name,
+      date: item.createdAt ? new Date(item.createdAt).toLocaleDateString("pt-BR") : undefined,
+    })) as any;
+  }
+
+  async findById(id: string): Promise<TriageEntity | null> {
+    const item = await prisma.triage.findUnique({
+      where: { id },
+      include: {
+        event: {
+          select: {
+            id: true,
+            name: true,
+            date: true,
+            startDate: true,
+            endDate: true,
+            pharmacy: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!item) return null;
+    return {
+      ...item,
+      eventName: item.event?.name,
+      pharmacyName: item.event?.pharmacy?.name,
+      date: item.createdAt ? new Date(item.createdAt).toLocaleDateString("pt-BR") : undefined,
+    } as any;
   }
 
   async create(data: Omit<TriageEntity, "id" | "createdAt">): Promise<TriageEntity> {
@@ -30,5 +92,30 @@ export class PrismaTriageRepository implements ITriageRepository {
       },
     });
     return created as any;
+  }
+
+  async update(id: string, data: Partial<Omit<TriageEntity, "id" | "createdAt">>): Promise<TriageEntity> {
+    const updateData: any = {};
+    if (data.participantId !== undefined) updateData.participantId = data.participantId;
+    if (data.participantName !== undefined) updateData.participantName = data.participantName;
+    if (data.eventId !== undefined) updateData.eventId = data.eventId;
+    if (data.time !== undefined) updateData.time = data.time;
+    if (data.responsible !== undefined) updateData.responsible = data.responsible;
+    if (data.status !== undefined) updateData.status = data.status;
+    if (data.systolic !== undefined) updateData.systolic = Number(data.systolic);
+    if (data.diastolic !== undefined) updateData.diastolic = Number(data.diastolic);
+    if (data.spo2 !== undefined) updateData.spo2 = Number(data.spo2);
+    if (data.heartRate !== undefined) updateData.heartRate = Number(data.heartRate);
+    if (data.result !== undefined) updateData.result = data.result;
+
+    const updated = await prisma.triage.update({
+      where: { id },
+      data: updateData,
+    });
+    return updated as any;
+  }
+
+  async delete(id: string): Promise<void> {
+    await prisma.triage.delete({ where: { id } });
   }
 }

@@ -46,8 +46,8 @@ function LoginPage() {
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    if (!identifier.trim() || !password) {
-      setErrorMessage("Por favor, preencha o nome de usuário (ou e-mail) e a senha.");
+    if (!identifier.trim()) {
+      setErrorMessage("Por favor, preencha seu CPF, nome de usuário ou e-mail.");
       return;
     }
 
@@ -60,12 +60,14 @@ function LoginPage() {
       setTimeout(() => {
         if (loggedUser.role === "admin") {
           navigate({ to: "/administrador" });
+        } else if (loggedUser.role === "client") {
+          navigate({ to: "/" });
         } else {
           navigate({ to: "/" });
         }
       }, 700);
     } catch (err: any) {
-      setErrorMessage(err.message || "Credenciais inválidas. Verifique seu nome de usuário e senha.");
+      setErrorMessage(err.message || "Credenciais inválidas. Verifique os dados informados.");
     } finally {
       setLoading(false);
     }
@@ -79,23 +81,28 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-muted/30 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen w-full flex items-center justify-center bg-[#f4f8fc] p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-md space-y-6">
         {/* Logotipo e Cabeçalho */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center size-14 rounded-2xl bg-primary/10 text-primary shadow-xs mb-2">
-            <HeartPulse className="size-8 stroke-[2.2]" />
+          <div className="inline-flex items-center justify-center size-16 rounded-3xl bg-[#061e38] text-cyan-400 shadow-md mb-2 p-3">
+            <img
+              src="/conecta_saude-no-bg.svg"
+              alt="Logo Conecta Saúde"
+              className="size-10 object-contain"
+            />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground font-display">
-            Conecta Saúde
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 font-display flex items-center justify-center">
+            <span>Conecta</span>
+            <span className="text-[#0284c7]">Saúde</span>
           </h1>
-          <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+          <p className="text-xs font-medium text-slate-500 max-w-xs mx-auto">
             Plataforma de gestão comunitária de saúde e triagens clínicas
           </p>
         </div>
 
         {/* Card Principal */}
-        <div className="rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-sm">
+        <div className="rounded-3xl border border-slate-200/90 bg-white p-7 sm:p-9 shadow-md">
           {isAuthenticated && user ? (
             /* Estado quando já está autenticado */
             <div className="text-center space-y-5">
@@ -167,7 +174,7 @@ function LoginPage() {
               <div className="space-y-1 mb-4">
                 <h2 className="text-lg font-bold text-foreground">Acesse sua Conta</h2>
                 <p className="text-xs text-muted-foreground">
-                  Entre com seu nome de usuário (ex: <code className="text-primary font-semibold">primeiro.ultimo</code>) ou e-mail
+                  Participante: entre apenas com seu <strong>CPF</strong>. Farmácias e Administradores: usem nome de usuário e senha.
                 </p>
               </div>
 
@@ -187,10 +194,10 @@ function LoginPage() {
                 </div>
               )}
 
-              {/* Campo Nome de Usuário / E-mail */}
+              {/* Campo Identificador (CPF / Usuário / E-mail) */}
               <div className="space-y-1.5">
                 <Label htmlFor="identifier" className="text-xs font-semibold">
-                  Nome de Usuário ou E-mail
+                  CPF, Nome de Usuário ou E-mail
                 </Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -199,30 +206,34 @@ function LoginPage() {
                     type="text"
                     autoComplete="username"
                     required
-                    placeholder="ex: natalia.toffoli ou seu.email@exemplo.com"
+                    placeholder="Digite seu CPF (apenas números) ou usuário"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
                     className="pl-9 text-xs sm:text-sm"
                   />
                 </div>
                 <span className="text-[11px] text-muted-foreground">
-                  Você pode usar seu usuário formatado (ex: <strong>natalia.toffoli</strong>) ou seu e-mail.
+                  Se você é participante cadastrado, digite apenas seu <strong>CPF</strong>.
                 </span>
               </div>
 
               {/* Campo Senha */}
               <div className="space-y-1.5">
-                <Label htmlFor="password" className="text-xs font-semibold">
-                  Senha
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-xs font-semibold">
+                    Senha
+                  </Label>
+                  <span className="text-[10px] text-muted-foreground">
+                    (Participante: opcional / use o CPF)
+                  </span>
+                </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     autoComplete="current-password"
-                    required
-                    placeholder="••••••••"
+                    placeholder="Sua senha ou deixe em branco se for participante"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-9 pr-9 text-xs sm:text-sm"
@@ -260,11 +271,17 @@ function LoginPage() {
           )}
         </div>
 
-        {/* Rodapé / Link para Início */}
-        <div className="text-center">
+        {/* Rodapé e Link para login do participante */}
+        <div className="text-center space-y-2">
+          <Link
+            to="/login-cliente"
+            className="text-xs font-semibold text-primary hover:underline transition-colors block"
+          >
+            É um participante/paciente? Acessar minhas triagens via CPF →
+          </Link>
           <Link
             to="/"
-            className="text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+            className="text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors block"
           >
             ← Voltar para a Página Inicial
           </Link>

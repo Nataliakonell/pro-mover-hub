@@ -2,12 +2,16 @@ import { Request, Response } from "express";
 import { GetAllParticipants } from "../../UseCases/Participants/GetAllParticipants";
 import { CreateParticipant } from "../../UseCases/Participants/CreateParticipant";
 import { AddAttendance } from "../../UseCases/Participants/AddAttendance";
+import { UpdateParticipant } from "../../UseCases/Participants/UpdateParticipant";
+import { DeleteParticipant } from "../../UseCases/Participants/DeleteParticipant";
 
 export class ParticipantController {
   constructor(
     private getAllParticipantsUseCase: GetAllParticipants,
     private createParticipantUseCase: CreateParticipant,
-    private addAttendanceUseCase: AddAttendance
+    private addAttendanceUseCase: AddAttendance,
+    private updateParticipantUseCase?: UpdateParticipant,
+    private deleteParticipantUseCase?: DeleteParticipant
   ) {}
 
   async list(req: Request, res: Response) {
@@ -61,6 +65,45 @@ export class ParticipantController {
       return res.status(201).json(record);
     } catch (error: any) {
       return res.status(500).json({ error: error.message });
+    }
+  }
+
+  async update(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { name, birthDate, age, ageGroup, cpf, phone, eventId } = req.body;
+
+      if (!this.updateParticipantUseCase) {
+        return res.status(500).json({ error: "Caso de uso UpdateParticipant não inicializado." });
+      }
+
+      const updated = await this.updateParticipantUseCase.execute(id, {
+        name,
+        birthDate,
+        age: age !== undefined ? Number(age) : undefined,
+        ageGroup,
+        cpf,
+        phone,
+        eventId,
+      });
+
+      return res.json(updated);
+    } catch (error: any) {
+      return res.status(400).json({ error: error.message });
+    }
+  }
+
+  async delete(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      if (!this.deleteParticipantUseCase) {
+        return res.status(500).json({ error: "Caso de uso DeleteParticipant não inicializado." });
+      }
+
+      await this.deleteParticipantUseCase.execute(id);
+      return res.status(204).send();
+    } catch (error: any) {
+      return res.status(400).json({ error: error.message });
     }
   }
 }

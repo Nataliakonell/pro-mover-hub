@@ -92,13 +92,22 @@ export class PrismaUserRepository implements IUserRepository {
   }
 
   async findByIdentifier(identifier: string): Promise<UserEntity | null> {
-    const clean = identifier.trim().toLowerCase();
-    const user = await prisma.user.findFirst({
+    const raw = identifier.trim();
+    const clean = raw.toLowerCase();
+    const digitsOnly = raw.replace(/\D/g, "");
+
+    const orConditions: any[] = [
+      { username: clean },
+      { email: clean },
+    ];
+
+    if (digitsOnly.length === 11) {
+      orConditions.push({ username: digitsOnly });
+    }
+
+    let user = await prisma.user.findFirst({
       where: {
-        OR: [
-          { username: clean },
-          { email: clean },
-        ],
+        OR: orConditions,
       },
       include: {
         group: {
@@ -109,6 +118,65 @@ export class PrismaUserRepository implements IUserRepository {
         },
       },
     });
+
+    // Se o usuário não foi encontrado em 'users', verifica se existe como 'Participant'
+    // Se o participante existir no banco pelo CPF, cria/garante a conta de usuário client sob demanda!
+    if (!user && digitsOnly.length === 11) {
+      const participant = await prisma.participant.findFirst({
+        where: {
+          OR: [
+            { cpf: raw },
+            { cpf: digitsOnly },
+            {
+              cpf: `${digitsOnly.slice(0, 3)}.${digitsOnly.slice(3, 6)}.${digitsOnly.slice(6, 9)}-${digitsOnly.slice(9, 11)}`,
+            },
+          ],
+        },
+      });
+
+      if (participant) {
+        const clientEmail = `cliente_${digitsOnly}@conectasaude.local`;
+        const bcrypt = require("bcryptjs");
+        const passwordHash = await bcrypt.hash(digitsOnly, 10);
+
+        try {
+          user = (await prisma.user.create({
+            data: {
+              name: participant.name,
+              email: clientEmail,
+              username: digitsOnly,
+              passwordHash,
+              role: "client",
+              mustChangePassword: false,
+            },
+            include: {
+              group: {
+                select: { id: true, name: true },
+              },
+              pharmacy: {
+                select: { id: true, name: true },
+              },
+            },
+          })) as any;
+        } catch {
+          // Em caso de concorrência, busca novamente
+          user = (await prisma.user.findFirst({
+            where: {
+              OR: [{ username: digitsOnly }, { email: clientEmail }],
+            },
+            include: {
+              group: {
+                select: { id: true, name: true },
+              },
+              pharmacy: {
+                select: { id: true, name: true },
+              },
+            },
+          })) as any;
+        }
+      }
+    }
+
     return user as any;
   }
 

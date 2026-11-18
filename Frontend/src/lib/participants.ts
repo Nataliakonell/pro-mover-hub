@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import {
   getParticipantsApi,
   createParticipantApi,
+  updateParticipantApi,
+  deleteParticipantApi,
   addAttendanceApi,
 } from "./api";
 import { DEFAULT_SETTINGS, type AppSettings } from "./settings";
@@ -288,6 +290,35 @@ export function useParticipants() {
     return created;
   };
 
+  const updateParticipant = async (
+    id: string,
+    data: Partial<{
+      name: string;
+      birthDate: string;
+      cpf: string;
+      phone: string;
+      eventId?: string | null;
+    }>
+  ) => {
+    let ageInfo;
+    if (data.birthDate) {
+      ageInfo = calculateAge(data.birthDate);
+    }
+    const payload: any = { ...data };
+    if (ageInfo) {
+      payload.age = ageInfo.age;
+      payload.ageGroup = ageInfo.group;
+    }
+    const updated = await updateParticipantApi(id, payload);
+    await refreshParticipants();
+    return updated;
+  };
+
+  const removeParticipant = async (id: string) => {
+    await deleteParticipantApi(id);
+    await refreshParticipants();
+  };
+
   const addAttendance = async (
     participantId: string,
     attData: {
@@ -340,6 +371,8 @@ export function useParticipants() {
   return {
     participants,
     addParticipant,
+    updateParticipant,
+    removeParticipant,
     addAttendance,
     getAgeDistribution,
     getExtraCount,

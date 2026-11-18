@@ -47,6 +47,8 @@ import {
 import { useSettings } from "@/lib/settings";
 import { useDashboardEvents } from "@/lib/dashboard-data";
 
+import { useAuth } from "@/lib/auth";
+
 export const Route = createFileRoute("/participantes")({
   head: () => ({
     meta: [
@@ -59,6 +61,26 @@ export const Route = createFileRoute("/participantes")({
 
 function ParticipantesPage() {
   const navigate = useNavigate();
+  const { isClient } = useAuth();
+
+  // Se for participante (client), bloqueia o acesso à gestão de participantes e redireciona
+  if (isClient) {
+    return (
+      <AppLayout title="Acesso Restrito" subtitle="Área exclusiva da equipe de atendimento">
+        <div className="flex flex-col items-center justify-center py-16 text-center max-w-md mx-auto">
+          <AlertCircle className="size-12 text-muted-foreground mb-4" />
+          <h2 className="text-xl font-bold text-foreground mb-2">Página Restrita</h2>
+          <p className="text-sm text-muted-foreground mb-6">
+            Como participante, você tem acesso apenas à visualização dos seus próprios exames e triagens clínicas.
+          </p>
+          <Button onClick={() => navigate({ to: "/" })} className="font-semibold">
+            Voltar para Minhas Triagens
+          </Button>
+        </div>
+      </AppLayout>
+    );
+  }
+
   const { participants, addParticipant, addAttendance } = useParticipants();
   const { events } = useDashboardEvents();
   const { settings } = useSettings();
@@ -216,77 +238,84 @@ function ParticipantesPage() {
 
         {/* 4 Cards de Métricas do Diretório de Participantes */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-2xs">
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-xs font-bold uppercase tracking-wider">Total Cadastrado</span>
-              <Users className="size-5 text-primary" />
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between text-slate-500 mb-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Total Cadastrado</span>
+              <div className="flex size-9 items-center justify-center rounded-xl bg-sky-50 text-[#0284c7]">
+                <Users className="size-4.5" />
+              </div>
             </div>
-            <div className="mt-2.5 flex items-baseline gap-2">
-              <span className="text-3xl font-bold font-display text-foreground">{totalParticipants}</span>
-              <span className="text-sm text-muted-foreground">pessoas</span>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-2xs">
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-xs font-bold uppercase tracking-wider">Atendimentos Feitos</span>
-              <Activity className="size-5 text-primary" />
-            </div>
-            <div className="mt-2.5 flex items-baseline gap-2">
-              <span className="text-3xl font-bold font-display text-foreground">{totalAttendances}</span>
-              <span className="text-sm text-muted-foreground">registros</span>
+            <div className="mt-1 flex items-baseline gap-2">
+              <span className="text-3xl font-extrabold font-display text-slate-900">{totalParticipants}</span>
+              <span className="text-xs font-medium text-slate-500">pessoas</span>
             </div>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-2xs">
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-xs font-bold uppercase tracking-wider">Média de Idade</span>
-              <Calendar className="size-5 text-primary" />
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between text-slate-500 mb-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Atendimentos Feitos</span>
+              <div className="flex size-9 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
+                <Activity className="size-4.5" />
+              </div>
             </div>
-            <div className="mt-2.5 flex items-baseline gap-2">
-              <span className="text-3xl font-bold font-display text-foreground">{averageAge}</span>
-              <span className="text-sm text-muted-foreground">anos</span>
+            <div className="mt-1 flex items-baseline gap-2">
+              <span className="text-3xl font-extrabold font-display text-slate-900">{totalAttendances}</span>
+              <span className="text-xs font-medium text-slate-500">registros</span>
             </div>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-2xs">
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-xs font-bold uppercase tracking-wider">Com WhatsApp</span>
-              <MessageCircle className="size-5 text-emerald-500" />
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between text-slate-500 mb-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Média de Idade</span>
+              <div className="flex size-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                <Calendar className="size-4.5" />
+              </div>
             </div>
-            <div className="mt-2.5 flex items-baseline gap-2">
-              <span className="text-3xl font-bold font-display text-foreground">
+            <div className="mt-1 flex items-baseline gap-2">
+              <span className="text-3xl font-extrabold font-display text-slate-900">{averageAge}</span>
+              <span className="text-xs font-medium text-slate-500">anos</span>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between text-slate-500 mb-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Com WhatsApp</span>
+              <div className="flex size-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                <MessageCircle className="size-4.5" />
+              </div>
+            </div>
+            <div className="mt-1 flex items-baseline gap-2">
+              <span className="text-3xl font-extrabold font-display text-slate-900">
                 {participants.filter((p) => p.phone.length > 5).length}
               </span>
-              <span className="text-sm text-muted-foreground">contatos</span>
+              <span className="text-xs font-medium text-slate-500">contatos</span>
             </div>
           </div>
         </div>
 
         {/* Barra de Busca e Filtros */}
-
         <div className="flex flex-col gap-3.5 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3.5 top-1/2 size-4.5 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute left-3.5 top-1/2 size-4.5 -translate-y-1/2 text-slate-400" />
             <Input
               placeholder="Buscar por nome, CPF ou WhatsApp..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 text-sm h-10"
+              className="pl-10 text-sm h-10.5 rounded-xl bg-white border-slate-200"
             />
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-            <Filter className="size-4 text-muted-foreground shrink-0" />
-            <span className="text-sm font-semibold text-muted-foreground whitespace-nowrap">Faixa Etária:</span>
+            <Filter className="size-4 text-slate-400 shrink-0" />
+            <span className="text-sm font-semibold text-slate-600 whitespace-nowrap">Faixa Etária:</span>
             {["ALL", "18–30", "31–45", "46–60", "60+"].map((group) => (
               <button
                 key={group}
                 onClick={() => setSelectedAgeGroup(group)}
-                className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors whitespace-nowrap cursor-pointer ${
+                className={`rounded-xl px-3.5 py-1.5 text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
                   selectedAgeGroup === group
-                    ? "bg-primary text-primary-foreground shadow-xs"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                    ? "bg-[#025373] text-white shadow-xs"
+                    : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                 }`}
               >
                 {group === "ALL" ? "Todas" : `${group} anos`}
@@ -296,12 +325,12 @@ function ParticipantesPage() {
         </div>
 
         {/* Tabela de Participantes */}
-        <div className="rounded-xl border border-border bg-card shadow-2xs overflow-hidden">
-          <div className="border-b border-border bg-muted/30 px-6 py-4 flex items-center justify-between">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+        <div className="rounded-2xl border border-slate-200/90 bg-white shadow-sm overflow-hidden">
+          <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4 flex items-center justify-between">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">
               Participantes Encontrados ({filteredParticipants.length})
             </h3>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs text-slate-500">
               Clique no nome ou em "Ver Histórico" para ver as participações
             </span>
           </div>
@@ -309,7 +338,7 @@ function ParticipantesPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm border-collapse">
               <thead>
-                <tr className="border-b border-border bg-muted/10 text-muted-foreground font-semibold">
+                <tr className="border-b border-slate-200/80 bg-slate-50/70 text-slate-600 font-semibold text-xs">
                   <th className="py-3.5 px-6">Participante</th>
                   <th className="py-3.5 px-4">Idade & Nascimento</th>
                   <th className="py-3.5 px-4">CPF</th>
@@ -318,35 +347,41 @@ function ParticipantesPage() {
                   <th className="py-3.5 px-6 text-right">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
+              <tbody className="divide-y divide-slate-100">
                 {filteredParticipants.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
+                    <td colSpan={6} className="py-10 text-center text-sm text-slate-500">
                       Nenhum participante encontrado com os filtros selecionados.
                     </td>
                   </tr>
                 ) : (
                   filteredParticipants.map((p) => {
                     const count = p.attendances?.length || 0;
-                    const latestAttendance = p.attendances?.[0];
+                    const initials = p.name
+                      .split(" ")
+                      .filter(Boolean)
+                      .map((n) => n[0])
+                      .join("")
+                      .substring(0, 2)
+                      .toUpperCase() || "PA";
 
                     return (
                       <tr
                         key={p.id}
-                        className="hover:bg-accent/40 transition-colors group cursor-pointer"
+                        className="hover:bg-sky-50/30 transition-colors group cursor-pointer"
                         onClick={() => handleOpenDetails(p)}
                       >
                         {/* Participante (Nome + Avatar + Badge) */}
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-3">
-                            <div className="grid size-9 place-items-center rounded-full bg-primary/15 text-primary font-bold text-xs shrink-0">
-                              {p.name.slice(0, 2).toUpperCase()}
+                            <div className="grid size-9 place-items-center rounded-full bg-[#0284c7] text-white font-bold text-xs shrink-0 shadow-2xs">
+                              {initials}
                             </div>
                             <div>
-                              <span className="font-semibold text-foreground text-sm sm:text-base group-hover:text-primary transition-colors flex items-center gap-1.5">
+                              <span className="font-semibold text-slate-900 text-sm sm:text-base group-hover:text-[#025373] transition-colors flex items-center gap-1.5">
                                 {p.name}
                               </span>
-                              <span className="text-xs text-muted-foreground">
+                              <span className="text-xs text-slate-400">
                                 Cadastrado em {p.createdAt}
                               </span>
                             </div>
@@ -356,17 +391,17 @@ function ParticipantesPage() {
                         {/* Idade & Data de Nascimento */}
                         <td className="py-4 px-4">
                           <div className="flex flex-col">
-                            <span className="font-bold text-foreground text-sm">
+                            <span className="font-bold text-slate-900 text-sm">
                               {p.age} anos
                             </span>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-xs text-slate-500">
                               {p.birthDate ? p.birthDate.split("-").reverse().join("/") : "—"} · [{p.ageGroup}]
                             </span>
                           </div>
                         </td>
 
                         {/* CPF */}
-                        <td className="py-4 px-4 font-mono font-medium text-muted-foreground text-sm">
+                        <td className="py-4 px-4 font-mono font-medium text-slate-600 text-sm">
                           {p.cpf || "Não informado"}
                         </td>
 
@@ -378,28 +413,28 @@ function ParticipantesPage() {
                               target="_blank"
                               rel="noreferrer"
                               title="Abrir conversa no WhatsApp"
-                              className="inline-flex items-center gap-1.5 text-sm text-foreground hover:text-emerald-600 font-medium transition-colors"
+                              className="inline-flex items-center gap-1.5 text-sm text-emerald-700 hover:text-emerald-800 font-semibold transition-colors font-mono"
                             >
-                              <MessageCircle className="size-4 text-emerald-500 shrink-0" />
-                              <span className="font-mono">{p.phone}</span>
+                              <MessageCircle className="size-4 text-emerald-600 shrink-0" />
+                              <span>{p.phone}</span>
                             </a>
                           ) : (
-                            <span className="text-muted-foreground">—</span>
+                            <span className="text-slate-400 text-xs">—</span>
                           )}
                         </td>
 
                         {/* Total de Atendimentos */}
                         <td className="py-4 px-4 text-center">
                           <span
-                            className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                            className={`inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-semibold ${
                               count > 1
-                                ? "bg-primary/15 text-primary border border-primary/20"
+                                ? "bg-sky-100 text-[#025373] border border-sky-200"
                                 : count === 1
-                                ? "bg-secondary text-secondary-foreground"
-                                : "bg-muted text-muted-foreground"
+                                ? "bg-slate-100 text-slate-700"
+                                : "bg-slate-50 text-slate-400"
                             }`}
                           >
-                            {count} {count === 1 ? "atendimento" : "atendimentos"}
+                            {count} {count === 1 ? "registro" : "registros"}
                           </span>
                         </td>
 

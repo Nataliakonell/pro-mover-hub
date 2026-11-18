@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getEventsApi, createEventApi } from "./api";
+import { getEventsApi, createEventApi, updateEventApi, deleteEventApi } from "./api";
 
 export interface RecentTriage {
   id: string;
@@ -169,10 +169,40 @@ export function useDashboardEvents() {
     };
   }, []);
 
+  const updateCampaign = async (
+    id: string,
+    data: {
+      name: string;
+      startDate: string;
+      endDate: string;
+      location: string;
+      pharmacyId?: string | null;
+    }
+  ) => {
+    const dateFormatted = formatCampaignPeriod(data.startDate, data.endDate);
+    const updated = await updateEventApi(id, {
+      name: data.name.trim(),
+      date: dateFormatted,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      location: data.location.trim(),
+      pharmacyId: data.pharmacyId || null,
+    });
+    await refreshEvents();
+    return updated;
+  };
+
+  const removeCampaign = async (id: string) => {
+    await deleteEventApi(id);
+    await refreshEvents();
+  };
+
   return {
     events,
     loading,
     refreshEvents,
+    updateCampaign,
+    removeCampaign,
   };
 }
 

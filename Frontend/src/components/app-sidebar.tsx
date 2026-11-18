@@ -1,10 +1,10 @@
 import * as React from "react";
 import {
-  HeartPulse,
+  Megaphone,
   Users,
   Settings,
   ShieldCheck,
-  LayoutDashboard,
+  HeartPulse,
 } from "lucide-react";
 import { useRouterState } from "@tanstack/react-router";
 
@@ -23,11 +23,20 @@ import HeaderSidebar from "./header-sidebar";
 import { useAuth } from "@/lib/auth";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isClient } = useAuth();
   const routerState = useRouterState();
   const pathname = routerState.location.pathname;
   const isAdmRoute = pathname.startsWith("/administrador") || pathname.startsWith("/configuracao");
   const showAdminView = isAdmin || isAdmRoute;
+
+  // Itens para o Participante (Role: client - apenas visualização das suas triagens)
+  const clientNavMain: NavItem[] = [
+    {
+      title: "Minhas Triagens",
+      url: "/cliente",
+      icon: HeartPulse,
+    },
+  ];
 
   // Itens para o Administrador (sob a seção Painel Administrador)
   const adminNavMain: NavItem[] = [
@@ -60,7 +69,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     {
       title: "Campanhas",
       url: "/",
-      icon: HeartPulse,
+      icon: Megaphone,
     },
     {
       title: "Participantes",
@@ -69,13 +78,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
   ];
 
-  const pharmacyMenus: NavItem[] = [
-    {
-      title: "Configurações",
-      url: "/configuracao",
-      icon: Settings,
-    },
-  ];
+  const pharmacyMenus: NavItem[] = [];
+
+  const navItems = isClient ? clientNavMain : showAdminView ? adminNavMain : pharmacyNavMain;
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -85,13 +90,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       <SidebarContent>
         <NavMain
-          items={showAdminView ? adminNavMain : pharmacyNavMain}
-          label="Menus principais"
+          items={navItems}
+          label={isClient ? "Painel do Participante" : "Menus principais"}
         />
-        <NavAdmin
-          menus={showAdminView ? adminMenus : pharmacyMenus}
-          label="Administração"
-        />
+        {!isClient && showAdminView && (
+          <NavAdmin
+            menus={adminMenus}
+            label="Administração"
+          />
+        )}
       </SidebarContent>
 
       <SidebarFooter>

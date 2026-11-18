@@ -41,10 +41,10 @@ export function NavMain({
 }) {
   return (
     <SidebarGroup className="py-2">
-      <SidebarGroupLabel className="text-xs uppercase tracking-wider font-semibold text-sidebar-foreground/80 mb-1 px-3">
+      <SidebarGroupLabel className="text-[11px] uppercase tracking-wider font-bold text-slate-400 mb-2 px-3">
         {label}
       </SidebarGroupLabel>
-      <SidebarMenu className="gap-1.5">
+      <SidebarMenu className="gap-2">
         {items.map((item) => (
           <NavMainItem key={item.title} item={item} />
         ))}
@@ -108,7 +108,11 @@ export function NavMainItem({ item }: { item: NavItem }) {
           asChild
           tooltip={item.title}
           isActive={isActive}
-          className="h-10 px-3 text-[15px] font-medium transition-colors"
+          className={`h-11 px-3.5 rounded-xl text-[15px] font-medium transition-all ${
+            isActive
+              ? "bg-[#0284c7] text-white shadow-md font-semibold hover:bg-[#0284c7] hover:text-white"
+              : "text-slate-300 hover:bg-[#0e2c4f] hover:text-white"
+          }`}
         >
           {isLink ? (
             <Link
@@ -140,7 +144,11 @@ export function NavMainItem({ item }: { item: NavItem }) {
           <SidebarMenuButton
             tooltip={item.title}
             isActive={isAnySubItemActive}
-            className="h-10 px-3 text-[15px] font-medium transition-colors"
+            className={`h-11 px-3.5 rounded-xl text-[15px] font-medium transition-all ${
+              isAnySubItemActive
+                ? "bg-[#0284c7] text-white shadow-md font-semibold hover:bg-[#0284c7] hover:text-white"
+                : "text-slate-300 hover:bg-[#0e2c4f] hover:text-white"
+            }`}
           >
             {item.icon && <item.icon className="size-5 shrink-0" />}
             <span className="text-sm sm:text-[15px] font-medium leading-none">{item.title}</span>
@@ -148,7 +156,7 @@ export function NavMainItem({ item }: { item: NavItem }) {
           </SidebarMenuButton>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <SidebarMenuSub className="gap-1 my-1 pl-3.5 border-l-2">
+          <SidebarMenuSub className="gap-1 my-1 pl-3.5 border-l-2 border-slate-700">
             {item.items?.map((subItem) => {
               const subActive = isSubItemActive(subItem.url, subItem.search);
               const isSubLink = subItem.url && subItem.url.startsWith("/");

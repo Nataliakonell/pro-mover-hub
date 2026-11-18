@@ -13,14 +13,17 @@ export class AuthController {
 
   async login(req: Request, res: Response) {
     try {
-      const { email, username, identifier, password } = req.body;
-      const userIdentifier = identifier || username || email;
+      const { email, username, identifier, cpf, password } = req.body;
+      const userIdentifier = identifier || username || email || cpf;
 
-      if (!userIdentifier || !password) {
-        return res.status(400).json({ error: "Nome de usuário/e-mail e senha são obrigatórios." });
+      if (!userIdentifier) {
+        return res.status(400).json({ error: "Identificador (CPF, nome de usuário ou e-mail) é obrigatório." });
       }
 
-      const result = await this.loginUser.execute(userIdentifier, password);
+      // Se for login de participante e a senha não tiver sido informada, usa o próprio identificador como senha
+      const effectivePassword = password || userIdentifier;
+
+      const result = await this.loginUser.execute(userIdentifier, effectivePassword);
       return res.json(result);
     } catch (error: any) {
       return res.status(401).json({ error: error.message });

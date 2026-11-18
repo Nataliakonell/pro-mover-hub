@@ -5,6 +5,7 @@ export interface AuthenticatedUser {
   id: number;
   name: string;
   email: string;
+  username?: string | null;
   role: "admin" | "group_manager" | "pharmacy_user" | "client" | string;
   groupId?: string | null;
   pharmacyId?: string | null;

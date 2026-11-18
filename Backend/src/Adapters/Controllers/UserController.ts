@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { GetAllUsers } from "../../UseCases/Users/GetAllUsers";
 import { CreateUser } from "../../UseCases/Users/CreateUser";
+import { UpdateUser } from "../../UseCases/Users/UpdateUser";
 import { DeleteUser } from "../../UseCases/Users/DeleteUser";
 import { AuthenticatedRequest } from "../Middlewares/AuthMiddleware";
 
@@ -8,7 +9,8 @@ export class UserController {
   constructor(
     private getAllUsersUseCase: GetAllUsers,
     private createUserUseCase: CreateUser,
-    private deleteUserUseCase: DeleteUser
+    private deleteUserUseCase: DeleteUser,
+    private updateUserUseCase?: UpdateUser
   ) {}
 
   async list(req: AuthenticatedRequest, res: Response) {
@@ -81,6 +83,47 @@ export class UserController {
       });
 
       return res.status(204).send();
+    } catch (error: any) {
+      return res.status(400).json({ error: error.message });
+    }
+  }
+
+  async update(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Autenticação obrigatória." });
+      }
+
+      const targetId = parseInt(req.params.id, 10);
+      if (isNaN(targetId)) {
+        return res.status(400).json({ error: "ID de usuário inválido." });
+      }
+
+      if (!this.updateUserUseCase) {
+        return res.status(500).json({ error: "Caso de uso UpdateUser não inicializado." });
+      }
+
+      const { name, email, username, password, role, groupId, pharmacyId, mustChangePassword } = req.body;
+
+      const updated = await this.updateUserUseCase.execute(
+        targetId,
+        {
+          name,
+          email,
+          username,
+          password,
+          role,
+          groupId,
+          pharmacyId,
+          mustChangePassword,
+        },
+        {
+          id: req.user.id,
+          role: req.user.role,
+        }
+      );
+
+      return res.json(updated);
     } catch (error: any) {
       return res.status(400).json({ error: error.message });
     }

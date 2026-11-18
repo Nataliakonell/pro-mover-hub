@@ -25,6 +25,7 @@ import {
   LocateFixed,
   Loader2,
   Stethoscope,
+  Megaphone,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,8 @@ import {
 } from "@/lib/participants";
 import { useTriages, TriageRecord } from "@/lib/triages";
 
+import { ClientTriagesView } from "@/components/client-triages-view";
+
 type DashboardSearch = { campanha?: string };
 
 export const Route = createFileRoute("/")({
@@ -79,13 +82,25 @@ export const Route = createFileRoute("/")({
 });
 
 function DashboardPage() {
-  const { user } = useAuth();
+  const { user, isClient } = useAuth();
+  const navigate = useNavigate();
+
+  // Se o usuário autenticado for da role 'client' (participante), redireciona para a rota exclusiva /cliente
+  useEffect(() => {
+    if (isClient) {
+      navigate({ to: "/cliente" });
+    }
+  }, [isClient, navigate]);
+
+  if (isClient) {
+    return <ClientTriagesView />;
+  }
+
   const { settings } = useSettings();
   const { participants, addParticipant, addAttendance } = useParticipants();
   const { events, refreshEvents } = useDashboardEvents();
 
   // ID da campanha em que o usuário "entrou" (null = tela inicial com lista de campanhas)
-  const navigate = useNavigate();
   const { campanha } = Route.useSearch();
   const activeCampaignId = campanha ?? null;
   const setActiveCampaignId = (id: string | null) =>
@@ -102,6 +117,22 @@ function DashboardPage() {
   const [openTriageAfterPerson, setOpenTriageAfterPerson] = useState(false);
   const [participantHistoryOpen, setParticipantHistoryOpen] = useState(false);
   const [selectedParticipantForHistory, setSelectedParticipantForHistory] = useState<Participant | null>(null);
+
+  // Modal de conclusão e envio via WhatsApp
+  const [triageSuccessModalOpen, setTriageSuccessModalOpen] = useState(false);
+  const [lastTriageData, setLastTriageData] = useState<{
+    participantName: string;
+    phone?: string;
+    status: "Normal" | "Atenção" | "Alterado";
+    pa: string;
+    spo2: string;
+    heartRate: string;
+    imc?: string;
+    imcCategory?: string;
+    obs?: string;
+    alterations: string[];
+    campaignName: string;
+  } | null>(null);
 
   // Filtros internos da campanha
   const [participantSearch, setParticipantSearch] = useState("");
@@ -734,8 +765,26 @@ function DashboardPage() {
         });
       }
 
+      // Busca o telefone do participante selecionado
+      const currentParticipant = participants.find((p) => p.id === triageForm.participantId);
+
+      setLastTriageData({
+        participantName: triageForm.participantName,
+        phone: currentParticipant?.phone || "",
+        status,
+        pa: triageForm.pa,
+        spo2: triageForm.spo2,
+        heartRate: triageForm.heartRate,
+        imc: calculatedIMC ? calculatedIMC.value : undefined,
+        imcCategory: calculatedIMC ? calculatedIMC.category : undefined,
+        obs: triageForm.observation.trim() || undefined,
+        alterations: alterationsList,
+        campaignName: activeCampaign.name,
+      });
+
       await refreshEvents();
       setTriageDialogOpen(false);
+      setTriageSuccessModalOpen(true);
       setTriageForm({
         participantId: "",
         participantName: "",
@@ -812,7 +861,7 @@ function DashboardPage() {
             id="header-back-campaigns"
             variant="ghost"
             onClick={() => setActiveCampaignId(null)}
-            className="-ml-3 gap-2 text-base font-semibold text-muted-foreground hover:text-foreground"
+            className="-ml-3 gap-2 text-base font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl"
           >
             <ArrowLeft className="size-4.5" />
             Voltar para todas as campanhas
@@ -820,12 +869,12 @@ function DashboardPage() {
         ) : (
           <>
             Bem-vindo(a), {firstName}
-            <span className="text-primary">.</span>
+            <span className="text-[#0284c7]">.</span>
           </>
         )
       }
       subtitle={
-        activeCampaignId ? undefined : "Escolha uma campanha para acompanhar ou inicie uma nova ação de saúde."
+        activeCampaignId ? undefined : "Confira um resumo das suas campanhas e ações de saúde."
       }
       actions={
         activeCampaignId ? (
@@ -834,15 +883,15 @@ function DashboardPage() {
               id="header-new-participant"
               variant="outline"
               onClick={() => setPersonDialogOpen(true)}
-              className="gap-2 h-10 px-4 text-sm font-semibold"
+              className="gap-2 h-10 px-4 text-sm font-semibold rounded-xl border-slate-300 text-slate-700 hover:bg-slate-50"
             >
-              <UserPlus className="size-4 text-primary" />
+              <UserPlus className="size-4 text-[#025373]" />
               Novo Participante
             </Button>
             <Button
               id="header-new-triage"
               onClick={() => setTriageDialogOpen(true)}
-              className="gap-2 h-10 px-5 text-sm font-semibold shadow-sm"
+              className="gap-2 h-10 px-5 text-sm font-semibold rounded-xl shadow-xs"
             >
               <Plus className="size-4.5" />
               Nova Triagem
@@ -852,7 +901,7 @@ function DashboardPage() {
           <Button
             id="header-create-campaign"
             onClick={() => setCreateCampaignOpen(true)}
-            className="gap-2 h-10 px-5 text-sm font-semibold shadow-sm"
+            className="gap-2 h-10 px-5 text-sm font-semibold rounded-xl shadow-xs"
           >
             <Plus className="size-4.5" />
             Criar Campanha
@@ -868,38 +917,53 @@ function DashboardPage() {
           <div className="space-y-8 animate-in fade-in duration-200">
 
             {/* Métricas Resumidas Gerais */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="rounded-xl border border-border bg-card p-5 shadow-2xs">
-                <div className="flex items-center justify-between text-muted-foreground mb-2">
-                  <span className="text-xs font-bold uppercase tracking-wider">Campanhas Ativas</span>
-                  <Calendar className="size-5 text-primary" />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between text-slate-500 mb-3">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Campanhas Ativas</span>
+                  <div className="flex size-11 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
+                    <Megaphone className="size-5" />
+                  </div>
                 </div>
-                <p className="font-display text-3xl font-bold text-foreground" suppressHydrationWarning>
+                <p className="font-display text-4xl font-extrabold text-slate-900" suppressHydrationWarning>
                   {events.length}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">Ações cadastradas</p>
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-sky-700">
+                  <span>+ Ver campanhas</span>
+                  <ArrowRight className="size-3.5" />
+                </div>
               </div>
 
-              <div className="rounded-xl border border-border bg-card p-5 shadow-2xs">
-                <div className="flex items-center justify-between text-muted-foreground mb-2">
-                  <span className="text-xs font-bold uppercase tracking-wider">Total de Participantes</span>
-                  <Users className="size-5 text-primary" />
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between text-slate-500 mb-3">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Total de Participantes</span>
+                  <div className="flex size-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                    <Users className="size-5" />
+                  </div>
                 </div>
-                <p className="font-display text-3xl font-bold text-foreground" suppressHydrationWarning>
+                <p className="font-display text-4xl font-extrabold text-slate-900" suppressHydrationWarning>
                   {participants.length}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">Pessoas acolhidas</p>
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-emerald-700">
+                  <span>+ Ver participantes</span>
+                  <ArrowRight className="size-3.5" />
+                </div>
               </div>
 
-              <div className="rounded-xl border border-border bg-card p-5 shadow-2xs">
-                <div className="flex items-center justify-between text-muted-foreground mb-2">
-                  <span className="text-xs font-bold uppercase tracking-wider">Triagens Realizadas</span>
-                  <ClipboardList className="size-5 text-primary" />
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between text-slate-500 mb-3">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Triagens Realizadas</span>
+                  <div className="flex size-11 items-center justify-center rounded-2xl bg-purple-50 text-purple-600">
+                    <CheckCircle2 className="size-5" />
+                  </div>
                 </div>
-                <p className="font-display text-3xl font-bold text-foreground" suppressHydrationWarning>
+                <p className="font-display text-4xl font-extrabold text-slate-900" suppressHydrationWarning>
                   {events.reduce((acc, ev) => acc + (ev.metrics?.triagesDone || 0), 0)}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">Avaliações clínicas registradas</p>
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-purple-700">
+                  <span>+ Acessar relatório</span>
+                  <ArrowRight className="size-3.5" />
+                </div>
               </div>
             </div>
 
@@ -907,36 +971,37 @@ function DashboardPage() {
             <section className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-display text-xl font-bold text-foreground">
+                  <h3 className="font-display text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <Megaphone className="size-5 text-[#025373]" />
                     Campanhas e Ações de Saúde
                   </h3>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    Clique em <strong>"Entrar na Campanha"</strong> para gerenciar participantes, gráficos e triagens
+                  <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                    Clique em uma campanha para visualizar mais detalhes, participantes e ações.
                   </p>
                 </div>
               </div>
 
               {events.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-border bg-card/60 p-10 text-center space-y-3">
-                  <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-white/70 p-10 text-center space-y-3">
+                  <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-sky-50 text-[#025373]">
                     <Calendar className="size-6" />
                   </div>
                   <div>
-                    <h4 className="font-display text-base font-bold text-foreground">Nenhuma campanha cadastrada</h4>
-                    <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-md mx-auto">
+                    <h4 className="font-display text-base font-bold text-slate-900">Nenhuma campanha cadastrada</h4>
+                    <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-md mx-auto">
                       Inicie uma ação comunitária de saúde clicando no botão abaixo para registrar participantes e triagens.
                     </p>
                   </div>
                   <Button
                     onClick={() => setCreateCampaignOpen(true)}
-                    className="gap-2 h-9 px-4 font-semibold text-xs sm:text-sm shadow-xs"
+                    className="gap-2 h-10 px-5 font-semibold text-xs sm:text-sm rounded-xl shadow-xs"
                   >
                     <Plus className="size-4" />
                     Criar Primeira Campanha
                   </Button>
                 </div>
               ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
                   {events.map((camp) => {
                     const partCount = participants.filter((p) => p.eventId === camp.id).length;
                     const triagesCount = camp.metrics?.triagesDone || 0;
@@ -944,52 +1009,60 @@ function DashboardPage() {
                     return (
                       <div
                         key={camp.id}
-                        className="group flex flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-xs hover:border-primary/40 hover:shadow-md transition-all"
+                        className="group flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm hover:border-sky-300 hover:shadow-md transition-all"
                       >
-                        <div className="space-y-3.5">
-                          <div className="flex items-start justify-between gap-2">
-                            <span className="rounded-full bg-primary/10 text-primary font-bold px-2.5 py-0.5 text-xs">
-                              Campanha
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold px-2.5 py-0.5 text-xs">
+                              <span className="size-2 rounded-full bg-emerald-500" />
+                              Campanha Ativa
                             </span>
-                            <span className="font-mono text-xs text-muted-foreground">
-                              {camp.id}
+                            <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500">
+                              <Calendar className="size-3.5 text-slate-400" />
+                              {camp.startDate ? formatDisplayDate(camp.startDate) : formatDisplayDate(camp.date)}
                             </span>
                           </div>
 
-                          <h4 className="font-display text-lg font-bold text-foreground group-hover:text-primary transition-colors leading-tight">
+                          <h4 className="font-display text-lg font-bold text-slate-900 group-hover:text-[#025373] transition-colors leading-snug">
                             {camp.name}
                           </h4>
 
-                          <div className="space-y-2 text-xs sm:text-sm text-muted-foreground pt-1">
+                          <div className="space-y-2 text-xs sm:text-sm text-slate-600 pt-1">
                             <div className="flex items-center gap-2">
-                              <Calendar className="size-4 text-primary shrink-0" />
+                              <Calendar className="size-4 text-[#0284c7] shrink-0" />
                               <span>
                                 {camp.startDate && camp.endDate ? (
                                   camp.startDate === camp.endDate ? (
-                                    <>Data: <strong className="text-foreground">{formatDisplayDate(camp.startDate)}</strong></>
+                                    <>Data: <strong className="text-slate-800 font-semibold">{formatDisplayDate(camp.startDate)}</strong></>
                                   ) : (
-                                    <>Período: <strong className="text-foreground">{formatDisplayDate(camp.startDate)} até {formatDisplayDate(camp.endDate)}</strong></>
+                                    <>Período: <strong className="text-slate-800 font-semibold">{formatDisplayDate(camp.startDate)} até {formatDisplayDate(camp.endDate)}</strong></>
                                   )
                                 ) : (
-                                  <>Data: <strong className="text-foreground">{formatDisplayDate(camp.date)}</strong></>
+                                  <>Data: <strong className="text-slate-800 font-semibold">{formatDisplayDate(camp.date)}</strong></>
                                 )}
                               </span>
                             </div>
                             <div className="flex items-start gap-2">
-                              <MapPin className="size-4 text-primary shrink-0 mt-0.5" />
-                              <span className="line-clamp-2">Endereço: <strong className="text-foreground">{camp.location}</strong></span>
+                              <MapPin className="size-4 text-[#0284c7] shrink-0 mt-0.5" />
+                              <span className="line-clamp-2">Endereço: <strong className="text-slate-800 font-semibold">{camp.location}</strong></span>
                             </div>
                           </div>
 
                           {/* Indicadores rápidos da campanha */}
-                          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/60 text-xs">
-                            <div className="rounded-lg bg-secondary/50 p-2 text-center">
-                              <p className="font-bold text-foreground text-sm">{partCount}</p>
-                              <p className="text-muted-foreground">Participantes</p>
+                          <div className="grid grid-cols-2 gap-2.5 pt-2 border-t border-slate-100 text-xs">
+                            <div className="rounded-xl bg-sky-50/70 border border-sky-100/80 p-2.5 text-center">
+                              <p className="flex items-center justify-center gap-1 text-slate-500 text-[11px] font-medium mb-0.5">
+                                <Users className="size-3.5 text-sky-600" />
+                                Participantes
+                              </p>
+                              <p className="font-extrabold text-slate-900 text-sm">{partCount}</p>
                             </div>
-                            <div className="rounded-lg bg-secondary/50 p-2 text-center">
-                              <p className="font-bold text-foreground text-sm">{triagesCount}</p>
-                              <p className="text-muted-foreground">Triagens</p>
+                            <div className="rounded-xl bg-sky-50/70 border border-sky-100/80 p-2.5 text-center">
+                              <p className="flex items-center justify-center gap-1 text-slate-500 text-[11px] font-medium mb-0.5">
+                                <Activity className="size-3.5 text-sky-600" />
+                                Triagens
+                              </p>
+                              <p className="font-extrabold text-slate-900 text-sm">{triagesCount}</p>
                             </div>
                           </div>
                         </div>
@@ -998,7 +1071,7 @@ function DashboardPage() {
                         <div className="pt-5">
                           <Button
                             onClick={() => setActiveCampaignId(camp.id)}
-                            className="w-full gap-2 h-10 font-semibold text-sm shadow-xs"
+                            className="w-full gap-2 h-11 font-semibold text-sm rounded-xl shadow-xs"
                           >
                             Entrar na Campanha
                             <ArrowRight className="size-4" />
@@ -1017,140 +1090,43 @@ function DashboardPage() {
           /* ============================================================== */
           <div className="space-y-8 animate-in fade-in duration-200">
 
-            {/* Banner da Campanha Selecionada */}
-            <section className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/15 via-primary/5 to-secondary/30 p-6 sm:p-7 shadow-xs">
-              <div className="relative flex flex-col gap-3">
-                <div className="inline-flex items-center gap-2 rounded-full bg-primary/20 px-3.5 py-1 text-xs font-semibold text-primary tracking-wide w-fit">
-                  <Sparkles className="size-3.5" />
+            {/* Banner da Campanha Selecionada com Estilo Ondulado e Suave */}
+            <section className="relative overflow-hidden rounded-3xl border border-sky-100 bg-gradient-to-r from-sky-50/90 via-blue-50/50 to-indigo-50/30 p-6 sm:p-8 shadow-sm">
+              <div className="absolute right-0 top-0 -mr-16 -mt-16 size-64 rounded-full bg-sky-200/30 blur-2xl pointer-events-none" />
+              <div className="relative flex flex-col gap-3.5">
+                <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100/80 border border-emerald-300/60 px-3 py-1 text-xs font-bold text-emerald-800 tracking-wide w-fit">
+                  <span className="size-2 rounded-full bg-emerald-500" />
                   CAMPANHA ATIVA
                 </div>
 
-                <h3 className="font-display text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+                <h3 className="font-display text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                   {activeCampaign.name}
                 </h3>
 
-                <div className="flex flex-wrap items-center gap-5 text-sm text-muted-foreground pt-1">
-                  <span className="flex items-center gap-1.5 font-medium text-foreground">
-                    <Calendar className="size-4 text-primary" />
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-600 pt-1">
+                  <span className="flex items-center gap-2 font-medium text-slate-800">
+                    <Calendar className="size-4 text-[#0284c7]" />
                     {activeCampaign.startDate && activeCampaign.endDate ? (
                       activeCampaign.startDate === activeCampaign.endDate ? (
-                        <>Data: {formatDisplayDate(activeCampaign.startDate)}</>
+                        <>Data: <strong className="font-semibold text-slate-900">{formatDisplayDate(activeCampaign.startDate)}</strong></>
                       ) : (
-                        <>Período: {formatDisplayDate(activeCampaign.startDate)} até {formatDisplayDate(activeCampaign.endDate)}</>
+                        <>Período: <strong className="font-semibold text-slate-900">{formatDisplayDate(activeCampaign.startDate)} até {formatDisplayDate(activeCampaign.endDate)}</strong></>
                       )
                     ) : (
-                      <>Data: {formatDisplayDate(activeCampaign.date)}</>
+                      <>Data: <strong className="font-semibold text-slate-900">{formatDisplayDate(activeCampaign.date)}</strong></>
                     )}
                   </span>
-                  <span className="flex items-center gap-1.5 font-medium text-foreground">
-                    <MapPin className="size-4 text-primary" />
-                    Endereço: {activeCampaign.location}
+                  <div className="hidden sm:block h-3.5 w-px bg-slate-300" />
+                  <span className="flex items-center gap-2 font-medium text-slate-800">
+                    <MapPin className="size-4 text-[#0284c7]" />
+                    Endereço: <strong className="font-semibold text-slate-900">{activeCampaign.location}</strong>
                   </span>
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <Users className="size-4" />
-                    {campaignParticipants.length} participante(s) nesta campanha
+                  <div className="hidden sm:block h-3.5 w-px bg-slate-300" />
+                  <span className="flex items-center gap-2 font-medium text-slate-800">
+                    <Users className="size-4 text-[#0284c7]" />
+                    <strong className="font-semibold text-slate-900">{campaignParticipants.length}</strong> participante(s) nesta campanha
                   </span>
                 </div>
-              </div>
-            </section>
-
-            {/* ============================================================== */}
-            {/* SEÇÃO 1: PARTICIPANTES DA CAMPANHA (com histórico mantido)      */}
-            {/* ============================================================== */}
-            <section className="rounded-2xl border border-border bg-card shadow-2xs overflow-hidden">
-              <div className="border-b border-border bg-muted/20 px-6 py-4.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h4 className="font-display text-lg font-bold text-foreground flex items-center gap-2">
-                    <Users className="size-5 text-primary" />
-                    Participantes da Campanha ({campaignParticipants.length})
-                  </h4>
-                  <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                    Consulte os participantes vinculados a esta ação e acesse o histórico de cada um
-                  </p>
-                </div>
-
-                {/* Busca rápida */}
-                <div className="relative w-full sm:w-64">
-                  <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar participante..."
-                    value={participantSearch}
-                    onChange={(e) => setParticipantSearch(e.target.value)}
-                    className="pl-9 h-9 text-xs sm:text-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm border-collapse">
-                  <thead>
-                    <tr className="border-b border-border bg-muted/10 text-muted-foreground font-semibold">
-                      <th className="py-3 px-6">Participante</th>
-                      <th className="py-3 px-4">Idade</th>
-                      <th className="py-3 px-4">CPF</th>
-                      <th className="py-3 px-4">WhatsApp</th>
-                      <th className="py-3 px-4 text-center">Atendimentos</th>
-                      <th className="py-3 px-6 text-right">Ação</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {filteredCampaignParticipants.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
-                          Nenhum participante encontrado nesta campanha.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredCampaignParticipants.map((p) => {
-                        const count = p.attendances?.length || 0;
-                        return (
-                          <tr key={p.id} className="hover:bg-accent/30 transition-colors">
-                            <td className="py-3.5 px-6 font-semibold text-foreground">
-                              {p.name}
-                            </td>
-                            <td className="py-3.5 px-4 text-muted-foreground">
-                              {p.age} anos <span className="text-xs">[{p.ageGroup}]</span>
-                            </td>
-                            <td className="py-3.5 px-4 font-mono text-muted-foreground text-xs sm:text-sm">
-                              {p.cpf || "—"}
-                            </td>
-                            <td className="py-3.5 px-4">
-                              {p.phone ? (
-                                <a
-                                  href={`https://wa.me/${cleanPhoneForWhatsApp(p.phone)}`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-foreground hover:text-emerald-600 transition-colors font-mono"
-                                >
-                                  <MessageCircle className="size-3.5 text-emerald-500" />
-                                  {p.phone}
-                                </a>
-                              ) : (
-                                <span className="text-muted-foreground text-xs">—</span>
-                              )}
-                            </td>
-                            <td className="py-3.5 px-4 text-center">
-                              <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-secondary-foreground">
-                                {count} {count === 1 ? "registro" : "registros"}
-                              </span>
-                            </td>
-                            <td className="py-3.5 px-6 text-right">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleOpenParticipantHistory(p)}
-                                className="h-8 text-xs px-3 gap-1.5 font-medium"
-                              >
-                                <History className="size-3.5 text-muted-foreground" />
-                                Ver Histórico
-                              </Button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
               </div>
             </section>
 
@@ -1159,35 +1135,38 @@ function DashboardPage() {
             {/* ============================================================== */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {/* GRÁFICO 1: FAIXA ETÁRIA */}
-              <div className="rounded-2xl border border-border bg-card p-6 shadow-2xs space-y-4">
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm space-y-4">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-display text-base font-bold text-foreground flex items-center gap-2">
-                    <BarChart3 className="size-4.5 text-primary" />
-                    Gráfico da Faixa Etária
-                  </h4>
-                  <span className="text-xs text-muted-foreground font-mono">
-                    {campaignParticipants.length} pessoas
-                  </span>
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex size-9 items-center justify-center rounded-xl bg-sky-100 text-[#0284c7]">
+                      <BarChart3 className="size-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-display text-base font-bold text-slate-900 leading-tight">
+                        Gráfico da Faixa Etária
+                      </h4>
+                      <p className="text-xs text-slate-500">
+                        Distribuição etária dos participantes
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Distribuição etária dos participantes cadastrados nesta campanha
-                </p>
 
-                <div className="space-y-3 pt-2">
+                <div className="space-y-3.5 pt-2">
                   {campaignAgeDistribution.map((item) => {
                     const max = Math.max(...campaignAgeDistribution.map((a) => a.count), 1);
                     const pct = Math.round((item.count / max) * 100);
                     return (
-                      <div key={item.age} className="space-y-1">
+                      <div key={item.age} className="space-y-1.5">
                         <div className="flex justify-between text-xs sm:text-sm">
-                          <span className="font-medium text-foreground">{item.age} anos</span>
-                          <span className="text-muted-foreground font-mono font-semibold">
+                          <span className="font-bold text-slate-800">{item.age} anos</span>
+                          <span className="text-slate-500 font-medium">
                             {item.count} participante(s)
                           </span>
                         </div>
-                        <div className="h-3 w-full overflow-hidden rounded-full bg-secondary">
+                        <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100">
                           <div
-                            className="h-full rounded-full bg-primary transition-all duration-500"
+                            className="h-full rounded-full bg-[#0284c7] transition-all duration-500"
                             style={{ width: `${pct}%` }}
                           />
                         </div>
@@ -1198,28 +1177,34 @@ function DashboardPage() {
               </div>
 
               {/* GRÁFICO 2: RESULTADOS DE EXAME (CONFORMIDADE COM PARÂMETROS NORMAIS) */}
-              <div className="rounded-2xl border border-border bg-card p-6 shadow-2xs flex flex-col justify-between">
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm flex flex-col justify-between">
                 <div>
-                  <h4 className="font-display text-base font-bold text-foreground flex items-center gap-2 mb-1">
-                    <CheckCircle2 className="size-4.5 text-primary" />
-                    Resultados de Exame
-                  </h4>
-                  <p className="text-xs text-muted-foreground">
-                    Conformidade com os parâmetros normais configurados
-                  </p>
+                  <div className="flex items-center gap-2.5 mb-1">
+                    <div className="flex size-9 items-center justify-center rounded-xl bg-cyan-100 text-cyan-700">
+                      <HeartPulse className="size-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-display text-base font-bold text-slate-900 leading-tight">
+                        Resultados de Exame
+                      </h4>
+                      <p className="text-xs text-slate-500">
+                        Conformidade com os parâmetros normais
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-around py-4">
                   <div className="relative size-32 shrink-0">
                     <svg className="size-full -rotate-90" viewBox="0 0 36 36">
                       <path
-                        className="text-warning stroke-current"
+                        className="text-amber-200 stroke-current"
                         strokeWidth="4"
                         fill="none"
                         d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                       />
                       <path
-                        className="text-primary stroke-current transition-all duration-700"
+                        className="text-[#0284c7] stroke-current transition-all duration-700"
                         strokeDasharray={`${dynamicTriageStats.normalPct}, 100`}
                         strokeWidth="4"
                         strokeLinecap="round"
@@ -1228,34 +1213,34 @@ function DashboardPage() {
                       />
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                      <span className="text-3xl font-bold font-display text-primary">
+                      <span className="text-3xl font-extrabold font-display text-slate-900">
                         {dynamicTriageStats.normalPct}%
                       </span>
-                      <span className="text-[11px] font-semibold text-muted-foreground uppercase leading-none">
-                        Normal
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider leading-none">
+                        NORMAL
                       </span>
                     </div>
                   </div>
 
                   <div className="space-y-3 text-xs sm:text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="size-3 rounded-full bg-primary shrink-0" />
+                    <div className="flex items-start gap-2.5">
+                      <span className="size-3 rounded-full bg-[#0284c7] shrink-0 mt-1" />
                       <div>
-                        <p className="font-semibold text-foreground">
+                        <p className="font-bold text-slate-900">
                           Normal ({dynamicTriageStats.normalPct}%)
                         </p>
-                        <p className="text-[11px] text-muted-foreground">
+                        <p className="text-[11px] text-slate-500">
                           {dynamicTriageStats.normal} exame(s) dentro dos limites
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="size-3 rounded-full bg-warning shrink-0" />
+                    <div className="flex items-start gap-2.5">
+                      <span className="size-3 rounded-full bg-amber-400 shrink-0 mt-1" />
                       <div>
-                        <p className="font-semibold text-foreground">
+                        <p className="font-bold text-slate-900">
                           Alterado ({dynamicTriageStats.alteredPct}%)
                         </p>
-                        <p className="text-[11px] text-muted-foreground">
+                        <p className="text-[11px] text-slate-500">
                           {dynamicTriageStats.altered} exame(s) com atenção/alteração
                         </p>
                       </div>
@@ -1263,24 +1248,28 @@ function DashboardPage() {
                   </div>
                 </div>
 
-                <p className="text-[11px] text-muted-foreground text-center border-t border-border pt-3">
+                <p className="text-[11px] text-slate-400 text-center border-t border-slate-100 pt-3">
                   Baseado nos limites clínicos definidos em Configurações
                 </p>
               </div>
 
               {/* GRÁFICO 3: ALTERAÇÕES POR TIPO DE EXAME */}
-              <div className="rounded-2xl border border-border bg-card p-6 shadow-2xs space-y-4">
-                <div>
-                  <h4 className="font-display text-base font-bold text-foreground flex items-center gap-2 mb-1">
-                    <AlertTriangle className="size-4.5 text-warning" />
-                    Alterações por Tipo de Exame
-                  </h4>
-                  <p className="text-xs text-muted-foreground">
-                    Ocorrência de valores fora dos limites clínicos
-                  </p>
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm space-y-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex size-9 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                    <AlertTriangle className="size-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-display text-base font-bold text-slate-900 leading-tight">
+                      Alterações por Tipo de Exame
+                    </h4>
+                    <p className="text-xs text-slate-500">
+                      Ocorrência de valores fora dos limites clínicos
+                    </p>
+                  </div>
                 </div>
 
-                <div className="space-y-3 pt-1">
+                <div className="space-y-3.5 pt-1">
                   {[
                     { exam: "Pressão Arterial", count: dynamicTriageStats.paCount },
                     { exam: "IMC / Obesidade", count: dynamicTriageStats.imcCount },
@@ -1299,16 +1288,16 @@ function DashboardPage() {
                       : 0;
 
                     return (
-                      <div key={alt.exam} className="space-y-1">
+                      <div key={alt.exam} className="space-y-1.5">
                         <div className="flex justify-between text-xs sm:text-sm">
-                          <span className="font-medium text-foreground">{alt.exam}</span>
-                          <span className={`font-mono font-bold ${alt.count > 0 ? "text-warning" : "text-muted-foreground"}`}>
+                          <span className="font-medium text-slate-800">{alt.exam}</span>
+                          <span className={`font-semibold ${alt.count > 0 ? "text-amber-600" : "text-slate-400"}`}>
                             {alt.count} caso{alt.count !== 1 ? "s" : ""}
                           </span>
                         </div>
-                        <div className="h-2.5 rounded-full bg-secondary overflow-hidden">
+                        <div className="h-2.5 rounded-full bg-slate-100 overflow-hidden">
                           <div
-                            className="h-full bg-warning rounded-full transition-all duration-500"
+                            className="h-full bg-amber-500 rounded-full transition-all duration-500"
                             style={{ width: `${barWidth}%` }}
                           />
                         </div>
@@ -1317,20 +1306,136 @@ function DashboardPage() {
                   })}
                 </div>
 
-                <p className="text-[11px] text-muted-foreground text-center border-t border-border pt-3">
+                <p className="text-[11px] text-slate-400 text-center border-t border-slate-100 pt-3">
                   Sinalizações visuais orientam o acolhimento preventivo
                 </p>
               </div>
             </div>
 
-            {/* SEÇÃO 5: ÚLTIMAS TRIAGENS REGISTRADAS NA CAMPANHA */}
-            <section className="rounded-2xl border border-border bg-card shadow-2xs overflow-hidden">
-              <div className="border-b border-border bg-muted/20 px-6 py-4 flex items-center justify-between">
+                        {/* ============================================================== */}
+            {/* SEÇÃO 1: PARTICIPANTES DA CAMPANHA (com histórico mantido)      */}
+            {/* ============================================================== */}
+            <section className="rounded-2xl border border-slate-200/90 bg-white shadow-sm overflow-hidden">
+              <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h4 className="font-display text-base font-bold text-foreground">
+                  <h4 className="font-display text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <div className="flex size-8 items-center justify-center rounded-lg bg-sky-100 text-[#025373]">
+                      <Users className="size-4.5" />
+                    </div>
+                    Participantes da Campanha ({campaignParticipants.length})
+                  </h4>
+                  <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                    Consulte os participantes vinculados a esta ação e acesse o histórico de cada um.
+                  </p>
+                </div>
+
+                {/* Busca rápida */}
+                <div className="relative w-full sm:w-72">
+                  <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    placeholder="Buscar participante..."
+                    value={participantSearch}
+                    onChange={(e) => setParticipantSearch(e.target.value)}
+                    className="pl-9 h-10 text-xs sm:text-sm bg-white border-slate-200 rounded-xl"
+                  />
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200/80 bg-slate-50/70 text-slate-600 font-semibold text-xs">
+                      <th className="py-3.5 px-6">Participante</th>
+                      <th className="py-3.5 px-4">Idade</th>
+                      <th className="py-3.5 px-4">CPF</th>
+                      <th className="py-3.5 px-4">WhatsApp</th>
+                      <th className="py-3.5 px-4 text-center">Atendimentos</th>
+                      <th className="py-3.5 px-6 text-right">Ação</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredCampaignParticipants.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-10 text-center text-sm text-slate-500">
+                          Nenhum participante encontrado nesta campanha.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredCampaignParticipants.map((p) => {
+                        const count = p.attendances?.length || 0;
+                        const initials = p.name
+                          .split(" ")
+                          .filter(Boolean)
+                          .map((n) => n[0])
+                          .join("")
+                          .substring(0, 2)
+                          .toUpperCase() || "PA";
+                        return (
+                          <tr key={p.id} className="hover:bg-sky-50/30 transition-colors">
+                            <td className="py-3.5 px-6 font-semibold text-slate-900">
+                              <div className="flex items-center gap-3">
+                                <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#0284c7] text-white text-xs font-bold shadow-2xs">
+                                  {initials}
+                                </div>
+                                <span className="font-semibold text-slate-900">{p.name}</span>
+                              </div>
+                            </td>
+                            <td className="py-3.5 px-4 text-slate-600">
+                              <span className="font-medium text-slate-900">{p.age} anos</span>{" "}
+                              <span className="text-xs text-slate-400">[{p.ageGroup}]</span>
+                            </td>
+                            <td className="py-3.5 px-4 font-mono text-slate-600 text-xs sm:text-sm">
+                              {p.cpf || "—"}
+                            </td>
+                            <td className="py-3.5 px-4">
+                              {p.phone ? (
+                                <a
+                                  href={`https://wa.me/${cleanPhoneForWhatsApp(p.phone)}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-emerald-700 hover:text-emerald-800 transition-colors font-mono font-medium"
+                                >
+                                  <MessageCircle className="size-4 text-emerald-600" />
+                                  {p.phone}
+                                </a>
+                              ) : (
+                                <span className="text-slate-400 text-xs">—</span>
+                              )}
+                            </td>
+                            <td className="py-3.5 px-4 text-center">
+                              <span className="inline-flex items-center rounded-lg bg-sky-100/70 border border-sky-200/60 px-2.5 py-1 text-xs font-semibold text-sky-800">
+                                {count} {count === 1 ? "registro" : "registros"}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-6 text-right">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenParticipantHistory(p)}
+                                className="h-8.5 text-xs px-3.5 gap-1.5 font-semibold text-slate-700 hover:text-[#025373] hover:border-sky-300 rounded-lg"
+                              >
+                                <History className="size-3.5 text-slate-500" />
+                                Ver Histórico
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            {/* SEÇÃO 5: ÚLTIMAS TRIAGENS REGISTRADAS NA CAMPANHA */}
+            <section className="rounded-2xl border border-slate-200/90 bg-white shadow-sm overflow-hidden">
+              <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4.5 flex items-center justify-between">
+                <div>
+                  <h4 className="font-display text-base font-bold text-slate-900 flex items-center gap-2">
+                    <History className="size-4.5 text-[#025373]" />
                     Últimas Triagens Realizadas nesta Campanha
                   </h4>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-slate-500">
                     Registros clínicos recentes com valores vitais e cálculo de IMC
                   </p>
                 </div>
@@ -1338,7 +1443,7 @@ function DashboardPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => setTriageDialogOpen(true)}
-                  className="h-8 px-3 text-xs gap-1.5 font-semibold text-primary"
+                  className="h-8.5 px-3.5 text-xs gap-1.5 font-semibold text-[#025373] border-slate-300 rounded-lg hover:bg-sky-50"
                 >
                   <Plus className="size-3.5" />
                   Nova Triagem
@@ -1348,47 +1453,47 @@ function DashboardPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm border-collapse">
                   <thead>
-                    <tr className="border-b border-border bg-muted/10 text-muted-foreground font-semibold">
-                      <th className="py-3 px-6">Participante</th>
-                      <th className="py-3 px-4">Horário</th>
-                      <th className="py-3 px-4">Responsável</th>
-                      <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-6">Resultado Clínico & IMC</th>
+                    <tr className="border-b border-slate-200/80 bg-slate-50/70 text-slate-600 font-semibold text-xs">
+                      <th className="py-3.5 px-6">Participante</th>
+                      <th className="py-3.5 px-4">Horário</th>
+                      <th className="py-3.5 px-4">Responsável</th>
+                      <th className="py-3.5 px-4">Status</th>
+                      <th className="py-3.5 px-6">Resultado Clínico & IMC</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border">
+                  <tbody className="divide-y divide-slate-100">
                     {dynamicTriageStats.list.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
+                        <td colSpan={5} className="py-10 text-center text-sm text-slate-500">
                           Nenhuma triagem registrada ainda nesta campanha. Clique em "Nova Triagem" para iniciar.
                         </td>
                       </tr>
                     ) : (
                       dynamicTriageStats.list.map((triage) => (
-                        <tr key={triage.id} className="hover:bg-accent/30 transition-colors">
-                          <td className="py-3.5 px-6 font-semibold text-foreground">
+                        <tr key={triage.id} className="hover:bg-sky-50/30 transition-colors">
+                          <td className="py-3.5 px-6 font-semibold text-slate-900">
                             {(triage as any).participantName || (triage as any).participant}
                           </td>
-                          <td className="py-3.5 px-4 font-mono text-muted-foreground text-xs sm:text-sm">
+                          <td className="py-3.5 px-4 text-slate-600 text-xs sm:text-sm">
                             {(triage as any).time || (triage as any).createdAt || "Recente"}
                           </td>
-                          <td className="py-3.5 px-4 text-muted-foreground text-xs sm:text-sm">
+                          <td className="py-3.5 px-4 text-slate-600 text-xs sm:text-sm">
                             {triage.responsible}
                           </td>
                           <td className="py-3.5 px-4">
                             <span
-                              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                              className={`inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-semibold ${
                                 triage.status === "Alterado"
-                                  ? "bg-destructive/15 text-destructive border border-destructive/20"
+                                  ? "bg-red-50 text-red-700 border border-red-200"
                                   : triage.status === "Atenção"
-                                  ? "bg-warning/20 text-warning-foreground border border-warning/30"
-                                  : "bg-primary/10 text-primary border border-primary/20"
+                                  ? "bg-amber-50 text-amber-800 border border-amber-200"
+                                  : "bg-emerald-50 text-emerald-800 border border-emerald-200"
                               }`}
                             >
                               {triage.status}
                             </span>
                           </td>
-                          <td className="py-3.5 px-6 text-foreground font-mono text-xs sm:text-sm">
+                          <td className="py-3.5 px-6 text-slate-700 text-xs sm:text-sm leading-relaxed">
                             {triage.result}
                           </td>
                         </tr>
@@ -1816,6 +1921,138 @@ function DashboardPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ============================================================== */}
+      {/* MODAL: SUCESSO DA TRIAGEM & ENCAMINHAR NO WHATSAPP             */}
+      {/* ============================================================== */}
+      <Dialog open={triageSuccessModalOpen} onOpenChange={setTriageSuccessModalOpen}>
+        <DialogContent className="w-[95vw] sm:max-w-lg p-6 sm:p-7">
+          <div className="flex flex-col items-center text-center space-y-3 pb-2">
+            <div className="size-14 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center border border-emerald-500/20 shadow-xs">
+              <CheckCircle2 className="size-8" />
+            </div>
+            <div>
+              <DialogTitle className="font-display text-xl sm:text-2xl font-bold text-foreground">
+                Triagem Concluída com Sucesso!
+              </DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm text-muted-foreground mt-1">
+                Os dados de <strong>{lastTriageData?.participantName}</strong> foram registrados com segurança no sistema.
+              </DialogDescription>
+            </div>
+          </div>
+
+          {lastTriageData && (
+            <div className="space-y-4 my-2">
+              {/* Card Resumo da Triagem */}
+              <div className="rounded-xl border border-border/70 bg-muted/30 p-4 space-y-2.5 text-xs sm:text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Classificação Geral:</span>
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                      lastTriageData.status === "Alterado"
+                        ? "bg-rose-500/15 text-rose-600 dark:text-rose-400"
+                        : lastTriageData.status === "Atenção"
+                        ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                        : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                    }`}
+                  >
+                    {lastTriageData.status}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 pt-1 border-t border-border/50 text-center font-mono">
+                  <div className="bg-background rounded-lg p-2 border border-border/40">
+                    <span className="text-[10px] text-muted-foreground block font-sans">PA</span>
+                    <strong className="text-foreground">{lastTriageData.pa || "-"}</strong>
+                  </div>
+                  <div className="bg-background rounded-lg p-2 border border-border/40">
+                    <span className="text-[10px] text-muted-foreground block font-sans">SpO₂</span>
+                    <strong className="text-foreground">{lastTriageData.spo2 ? `${lastTriageData.spo2}%` : "-"}</strong>
+                  </div>
+                  <div className="bg-background rounded-lg p-2 border border-border/40">
+                    <span className="text-[10px] text-muted-foreground block font-sans">FC</span>
+                    <strong className="text-foreground">{lastTriageData.heartRate ? `${lastTriageData.heartRate} bpm` : "-"}</strong>
+                  </div>
+                </div>
+
+                {lastTriageData.imc && (
+                  <div className="flex items-center justify-between text-xs pt-1 border-t border-border/50">
+                    <span className="text-muted-foreground">Índice IMC:</span>
+                    <span className="font-semibold text-foreground">
+                      {lastTriageData.imc} kg/m² ({lastTriageData.imcCategory})
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Botão de Encaminhamento via WhatsApp */}
+              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 space-y-3">
+                <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-semibold text-sm">
+                  <MessageCircle className="size-5 shrink-0" />
+                  <span>Enviar resultados para o WhatsApp</span>
+                </div>
+
+                {lastTriageData.phone ? (
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Contato cadastrado: <strong className="text-foreground font-mono">{lastTriageData.phone}</strong>
+                  </p>
+                ) : (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 leading-relaxed">
+                    Este participante não possui telefone cadastrado. O WhatsApp Web abrirá para você escolher o contato.
+                  </p>
+                )}
+
+                {(() => {
+                  const cleanedPhone = lastTriageData.phone ? cleanPhoneForWhatsApp(lastTriageData.phone) : "";
+                  const waMessage = 
+`Olá, *${lastTriageData.participantName}*! 👋
+Aqui estão os resultados da sua *Triagem de Saúde* realizada na campanha *${lastTriageData.campaignName}*:
+
+🩺 *Sinais Vitais:*
+• *Pressão Arterial (PA):* ${lastTriageData.pa || "N/A"} mmHg
+• *Oxigenação (SpO₂):* ${lastTriageData.spo2 ? `${lastTriageData.spo2}%` : "N/A"}
+• *Freq. Cardíaca (FC):* ${lastTriageData.heartRate ? `${lastTriageData.heartRate} bpm` : "N/A"}${
+  lastTriageData.imc ? `\n• *IMC:* ${lastTriageData.imc} kg/m² (${lastTriageData.imcCategory})` : ""
+}${lastTriageData.obs ? `\n• *Observações:* ${lastTriageData.obs}` : ""}
+
+📊 *Avaliação Geral:* ${lastTriageData.status}
+${lastTriageData.alterations.length > 0 ? `⚠️ *Pontos de Atenção:* ${lastTriageData.alterations.join("; ")}\n` : ""}
+Obrigado por participar! Cuide bem da sua saúde. 💚
+_Equipe Conecta Saúde_`;
+
+                  const waUrl = cleanedPhone
+                    ? `https://wa.me/${cleanedPhone}?text=${encodeURIComponent(waMessage)}`
+                    : `https://wa.me/?text=${encodeURIComponent(waMessage)}`;
+
+                  return (
+                    <a
+                      href={waUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={() => setTriageSuccessModalOpen(false)}
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm transition-colors"
+                    >
+                      <MessageCircle className="size-4.5" />
+                      Encaminhar no WhatsApp do Cliente
+                    </a>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setTriageSuccessModalOpen(false)}
+              className="w-full sm:w-auto h-10 text-sm rounded-xl font-medium"
+            >
+              Concluir sem enviar
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

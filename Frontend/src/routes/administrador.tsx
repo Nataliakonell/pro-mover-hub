@@ -92,8 +92,8 @@ function AdministradorPage() {
 
   // Dados das áreas solicitadas
   const { pharmacies, addPharmacy, updatePharmacy, removePharmacy } = usePharmacies();
-  const { events, refreshEvents } = useDashboardEvents();
-  const { participants } = useParticipants();
+  const { events, refreshEvents, updateCampaign, removeCampaign } = useDashboardEvents();
+  const { participants, updateParticipant, removeParticipant } = useParticipants();
 
   // Controle de Abas sincronizado com a URL (?tab=...) e fallback para window.location.search
   const getInitialTab = (): string => {
@@ -258,6 +258,7 @@ function AdministradorPage() {
   const [campaignSearch, setCampaignSearch] = useState("");
   const [campaignPharmacyFilter, setCampaignPharmacyFilter] = useState<string>("ALL");
   const [isAddCampaignOpen, setIsAddCampaignOpen] = useState(false);
+  const [editingCampaign, setEditingCampaign] = useState<DashboardEvent | null>(null);
 
   const [campaignForm, setCampaignForm] = useState({
     name: "",
@@ -266,6 +267,40 @@ function AdministradorPage() {
     endDate: new Date().toISOString().split("T")[0],
     location: "",
   });
+
+  const resetCampaignForm = () => {
+    setCampaignForm({
+      name: "",
+      pharmacyId: "",
+      startDate: new Date().toISOString().split("T")[0],
+      endDate: new Date().toISOString().split("T")[0],
+      location: "",
+    });
+    setEditingCampaign(null);
+  };
+
+  const handleOpenEditCampaign = (c: DashboardEvent) => {
+    setEditingCampaign(c);
+    setCampaignForm({
+      name: c.name,
+      pharmacyId: c.pharmacyId || "",
+      startDate: c.startDate || new Date().toISOString().split("T")[0],
+      endDate: c.endDate || c.startDate || new Date().toISOString().split("T")[0],
+      location: c.location || "",
+    });
+    setIsAddCampaignOpen(true);
+  };
+
+  const handleDeleteCampaign = async (id: string, name: string) => {
+    if (window.confirm(`Deseja realmente excluir a campanha "${name}" do banco de dados?`)) {
+      try {
+        await removeCampaign(id);
+        showToast(`Campanha "${name}" excluída com sucesso.`);
+      } catch (err: any) {
+        showToast(`Erro ao excluir campanha: ${err.message}`);
+      }
+    }
+  };
 
   // Mapeia campanhas às suas farmácias reais do banco de dados
   const campaignsWithPharmacy = useMemo(() => {
@@ -303,24 +338,29 @@ function AdministradorPage() {
       (selectedPharm ? `${selectedPharm.name} - ${selectedPharm.address}, ${selectedPharm.neighborhood}` : "Polo Comunitário de Saúde");
 
     try {
-      await createDashboardCampaign({
-        name: campaignForm.name.trim(),
-        startDate: campaignForm.startDate,
-        endDate: campaignForm.endDate,
-        location: locationFinal,
-        pharmacyId: campaignForm.pharmacyId || undefined,
-      });
+      if (editingCampaign) {
+        await updateCampaign(editingCampaign.id, {
+          name: campaignForm.name.trim(),
+          startDate: campaignForm.startDate,
+          endDate: campaignForm.endDate,
+          location: locationFinal,
+          pharmacyId: campaignForm.pharmacyId || null,
+        });
+        showToast(`Campanha "${campaignForm.name}" atualizada com sucesso!`);
+      } else {
+        await createDashboardCampaign({
+          name: campaignForm.name.trim(),
+          startDate: campaignForm.startDate,
+          endDate: campaignForm.endDate,
+          location: locationFinal,
+          pharmacyId: campaignForm.pharmacyId || undefined,
+        });
+        showToast(`Campanha salva com sucesso no banco de dados!`);
+      }
 
       await refreshEvents();
       setIsAddCampaignOpen(false);
-      setCampaignForm({
-        name: "",
-        pharmacyId: "",
-        startDate: new Date().toISOString().split("T")[0],
-        endDate: new Date().toISOString().split("T")[0],
-        location: "",
-      });
-      showToast(`Campanha salva com sucesso no banco de dados!`);
+      resetCampaignForm();
     } catch (err: any) {
       showToast(`Erro ao salvar campanha: ${err.message}`);
     }
@@ -331,6 +371,72 @@ function AdministradorPage() {
   // ---------------------------------------------------------
   const [participantSearch, setParticipantSearch] = useState("");
   const [ageGroupFilter, setAgeGroupFilter] = useState<string>("ALL");
+  const [isAddParticipantOpen, setIsAddParticipantOpen] = useState(false);
+  const [editingParticipant, setEditingParticipant] = useState<Participant | null>(null);
+
+  const [participantForm, setParticipantForm] = useState({
+    name: "",
+    birthDate: "",
+    cpf: "",
+    phone: "",
+    eventId: "",
+  });
+
+  const resetParticipantForm = () => {
+    setParticipantForm({
+      name: "",
+      birthDate: "",
+      cpf: "",
+      phone: "",
+      eventId: "",
+    });
+    setEditingParticipant(null);
+  };
+
+  const handleOpenEditParticipant = (p: Participant) => {
+    setEditingParticipant(p);
+    setParticipantForm({
+      name: p.name,
+      birthDate: p.birthDate,
+      cpf: p.cpf,
+      phone: p.phone,
+      eventId: p.eventId || "",
+    });
+    setIsAddParticipantOpen(true);
+  };
+
+  const handleDeleteParticipant = async (id: string, name: string) => {
+    if (window.confirm(`Deseja realmente excluir o participante "${name}" do banco de dados?`)) {
+      try {
+        await removeParticipant(id);
+        showToast(`Participante "${name}" excluído com sucesso.`);
+      } catch (err: any) {
+        showToast(`Erro ao excluir participante: ${err.message}`);
+      }
+    }
+  };
+
+  const handleSaveParticipant = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!participantForm.name.trim() || !participantForm.birthDate) return;
+
+    try {
+      if (editingParticipant) {
+        await updateParticipant(editingParticipant.id, {
+          name: participantForm.name.trim(),
+          birthDate: participantForm.birthDate,
+          cpf: participantForm.cpf,
+          phone: participantForm.phone,
+          eventId: participantForm.eventId || null,
+        });
+        showToast(`Participante "${participantForm.name}" atualizado com sucesso!`);
+      }
+      setIsAddParticipantOpen(false);
+      resetParticipantForm();
+    } catch (err: any) {
+      showToast(`Erro ao salvar participante: ${err.message}`);
+    }
+  };
 
   const filteredParticipants = useMemo(() => {
     return participants.filter((part) => {
@@ -349,18 +455,20 @@ function AdministradorPage() {
   // ---------------------------------------------------------
   // 4. Estados e Hooks para USUÁRIOS E GRUPOS (Multi-Tenant)
   // ---------------------------------------------------------
-  const { users, addUser, removeUser } = useUsers();
+  const { users, addUser, updateUser, removeUser } = useUsers();
   const { groups, addGroup } = usePharmacyGroups();
 
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState<string>("ALL");
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<any | null>(null);
   const [isAddGroupOpen, setIsAddGroupOpen] = useState(false);
 
   const [userForm, setUserForm] = useState({
     name: "",
     email: "",
     username: "",
+    password: "",
     role: "pharmacy_user",
     groupId: "",
     pharmacyId: "",
@@ -382,34 +490,69 @@ function AdministradorPage() {
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [copiedPassword, setCopiedPassword] = useState(false);
 
+  const resetUserForm = () => {
+    setUserForm({
+      name: "",
+      email: "",
+      username: "",
+      password: "",
+      role: "pharmacy_user",
+      groupId: "",
+      pharmacyId: "",
+    });
+    setEditingUser(null);
+  };
+
+  const handleOpenEditUser = (u: any) => {
+    setEditingUser(u);
+    setUserForm({
+      name: u.name,
+      email: u.email,
+      username: u.username || "",
+      password: "",
+      role: u.role || "pharmacy_user",
+      groupId: u.groupId || "",
+      pharmacyId: u.pharmacyId || "",
+    });
+    setIsAddUserOpen(true);
+  };
+
   const handleSaveUser = async (e: FormEvent) => {
     e.preventDefault();
     if (!userForm.name.trim() || !userForm.email.trim()) return;
 
     try {
-      const res = await addUser({
-        name: userForm.name.trim(),
-        email: userForm.email.trim().toLowerCase(),
-        username: userForm.username.trim() || undefined,
-        role: userForm.role,
-        groupId: userForm.groupId || null,
-        pharmacyId: userForm.pharmacyId || null,
-      });
+      if (editingUser) {
+        await updateUser(editingUser.id, {
+          name: userForm.name.trim(),
+          email: userForm.email.trim().toLowerCase(),
+          username: userForm.username.trim() || undefined,
+          password: userForm.password ? userForm.password.trim() : undefined,
+          role: userForm.role,
+          groupId: userForm.groupId || null,
+          pharmacyId: userForm.pharmacyId || null,
+        });
+        showToast(`Usuário "${userForm.name}" atualizado com sucesso!`);
+        setIsAddUserOpen(false);
+        resetUserForm();
+      } else {
+        const res = await addUser({
+          name: userForm.name.trim(),
+          email: userForm.email.trim().toLowerCase(),
+          username: userForm.username.trim() || undefined,
+          role: userForm.role,
+          groupId: userForm.groupId || null,
+          pharmacyId: userForm.pharmacyId || null,
+        });
 
-      setCreatedUserResult(res);
-      setIsAddUserOpen(false);
-      setUserForm({
-        name: "",
-        email: "",
-        username: "",
-        role: "pharmacy_user",
-        groupId: "",
-        pharmacyId: "",
-      });
-      setIsSuccessModalOpen(true);
-      showToast(`Usuário "${res.user.name}" cadastrado com sucesso!`);
+        setCreatedUserResult(res);
+        setIsAddUserOpen(false);
+        resetUserForm();
+        setIsSuccessModalOpen(true);
+        showToast(`Usuário "${res.user.name}" cadastrado com sucesso!`);
+      }
     } catch (err: any) {
-      showToast(`Erro ao cadastrar usuário: ${err.message}`);
+      showToast(`Erro ao salvar usuário: ${err.message}`);
     }
   };
 
@@ -636,35 +779,6 @@ function AdministradorPage() {
           <span>{toastMessage}</span>
         </div>
       )}
-
-      {/* Barra de Abas de Navegação Superior do Administrador */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 mb-6 border-b border-border/80">
-        {[
-          { id: "visao-geral", label: "Visão Geral", icon: Sparkles },
-          { id: "farmacias", label: "Farmácias Credenciadas", icon: Building2 },
-          { id: "campanhas", label: "Campanhas", icon: HeartPulse },
-          { id: "participantes", label: "Participantes", icon: Users },
-          { id: "usuarios", label: "Usuários e Grupos", icon: UserCheck },
-        ].map((tab) => {
-          const isActive = activeTab === tab.id;
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => handleTabChange(tab.id)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all shrink-0 cursor-pointer ${
-                isActive
-                  ? "bg-primary text-primary-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-              }`}
-            >
-              <Icon className="size-4 shrink-0" />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
 
       {/* ========================================================= */}
       {/* 1. VISÃO GERAL */}
@@ -1207,7 +1321,7 @@ function AdministradorPage() {
                   </div>
 
                   {/* Métricas e Botão de Ação */}
-                  <div className="flex items-center justify-between md:justify-end gap-4 pt-3 md:pt-0 border-t md:border-t-0 border-border">
+                  <div className="flex items-center justify-between md:justify-end gap-3 pt-3 md:pt-0 border-t md:border-t-0 border-border">
                     <div className="text-left md:text-right">
                       <div className="text-sm text-muted-foreground">Atendimentos Registrados</div>
                       <div className="text-lg font-bold text-foreground">
@@ -1215,9 +1329,25 @@ function AdministradorPage() {
                       </div>
                     </div>
 
-                    <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary bg-primary/10 px-3.5 py-2 rounded-lg">
-                      <HeartPulse className="size-3.5" />
-                      Ação Registrada
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleOpenEditCampaign(camp)}
+                        className="h-8 w-8 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                        title="Editar Campanha"
+                      >
+                        <Edit3 className="size-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDeleteCampaign(camp.id, camp.name)}
+                        className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        title="Excluir Campanha"
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -1307,9 +1437,26 @@ function AdministradorPage() {
                       )}
                     </div>
 
-                    <Badge variant="outline" className="text-xs text-muted-foreground">
-                      Cadastrado
-                    </Badge>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleOpenEditParticipant(part)}
+                        className="size-8 text-muted-foreground hover:text-foreground"
+                        title="Editar participante"
+                      >
+                        <Edit className="size-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteParticipant(part.id, part.name)}
+                        className="size-8 text-rose-500 hover:text-rose-600 hover:bg-rose-500/10"
+                        title="Excluir participante"
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))
@@ -1327,7 +1474,7 @@ function AdministradorPage() {
                     <th className="py-3 px-4 font-semibold">Idade / Faixa</th>
                     <th className="py-3 px-4 font-semibold">Contato / WhatsApp</th>
                     <th className="py-3 px-4 font-semibold text-center">Atendimentos</th>
-                    <th className="py-3 px-4 font-semibold text-right">Status</th>
+                    <th className="py-3 px-4 font-semibold text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
@@ -1375,9 +1522,26 @@ function AdministradorPage() {
                           </span>
                         </td>
                         <td className="py-3.5 px-4 text-right">
-                          <Badge variant="secondary" className="text-xs">
-                            Cadastrado
-                          </Badge>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleOpenEditParticipant(part)}
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                              title="Editar Participante"
+                            >
+                              <Edit3 className="size-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDeleteParticipant(part.id, part.name)}
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                              title="Excluir Participante"
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -1587,17 +1751,28 @@ function AdministradorPage() {
                           </td>
 
                           <td className="py-3.5 px-4 text-right">
-                            {!isCurrentUser && (
+                            <div className="flex items-center justify-end gap-1">
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => handleDeleteUser(u.id, u.name)}
-                                className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                title="Excluir Usuário"
+                                onClick={() => handleOpenEditUser(u)}
+                                className="h-8 w-8 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                title="Editar Usuário"
                               >
-                                <Trash2 className="size-4" />
+                                <Edit3 className="size-4" />
                               </Button>
-                            )}
+                              {!isCurrentUser && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDeleteUser(u.id, u.name)}
+                                  className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                  title="Excluir Usuário"
+                                >
+                                  <Trash2 className="size-4" />
+                                </Button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );
@@ -1763,9 +1938,12 @@ function AdministradorPage() {
       </Dialog>
 
       {/* ========================================================= */}
-      {/* MODAL: NOVA CAMPANHA VINCULADA À FARMÁCIA */}
+      {/* MODAL: NOVA OU EDITAR CAMPANHA VINCULADA À FARMÁCIA */}
       {/* ========================================================= */}
-      <Dialog open={isAddCampaignOpen} onOpenChange={setIsAddCampaignOpen}>
+      <Dialog open={isAddCampaignOpen} onOpenChange={(open) => {
+        setIsAddCampaignOpen(open);
+        if (!open) resetCampaignForm();
+      }}>
         <DialogContent className="sm:max-w-3xl">
           <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
             <div className="flex items-center gap-2.5">
@@ -1773,8 +1951,12 @@ function AdministradorPage() {
                 <HeartPulse className="h-4 w-4" />
               </div>
               <div>
-                <DialogTitle>Nova Campanha da Farmácia</DialogTitle>
-                <DialogDescription>Crie uma ação de saúde comunitária vinculada a uma farmácia credenciada.</DialogDescription>
+                <DialogTitle>{editingCampaign ? "Editar Campanha da Farmácia" : "Nova Campanha da Farmácia"}</DialogTitle>
+                <DialogDescription>
+                  {editingCampaign
+                    ? "Altere os dados da ação comunitária (nome, datas, local e farmácia vinculada)."
+                    : "Crie uma ação de saúde comunitária vinculada a uma farmácia credenciada."}
+                </DialogDescription>
               </div>
             </div>
           </div>
@@ -1861,7 +2043,10 @@ function AdministradorPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsAddCampaignOpen(false)}
+                onClick={() => {
+                  setIsAddCampaignOpen(false);
+                  resetCampaignForm();
+                }}
                 className="h-9 px-4 text-sm font-medium rounded-md"
               >
                 Cancelar
@@ -1870,7 +2055,7 @@ function AdministradorPage() {
                 type="submit"
                 className="h-9 px-4 text-sm font-medium rounded-md shadow-sm"
               >
-                Criar Campanha
+                {editingCampaign ? "Salvar Alterações" : "Criar Campanha"}
               </Button>
             </div>
           </form>
@@ -1878,9 +2063,122 @@ function AdministradorPage() {
       </Dialog>
 
       {/* ========================================================= */}
-      {/* MODAL: NOVO USUÁRIO MULTI-TENANT */}
+      {/* MODAL: EDITAR / NOVO PARTICIPANTE */}
       {/* ========================================================= */}
-      <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
+      <Dialog open={isAddParticipantOpen} onOpenChange={(open) => {
+        setIsAddParticipantOpen(open);
+        if (!open) resetParticipantForm();
+      }}>
+        <DialogContent className="sm:max-w-lg">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                <Users className="h-4 w-4" />
+              </div>
+              <div>
+                <DialogTitle>{editingParticipant ? "Editar Participante" : "Cadastrar Participante"}</DialogTitle>
+                <DialogDescription>
+                  {editingParticipant ? "Atualize os dados cadastrais do participante no PostgreSQL." : "Insira os dados do participante."}
+                </DialogDescription>
+              </div>
+            </div>
+          </div>
+
+          <form onSubmit={handleSaveParticipant} className="flex flex-col flex-1 overflow-hidden">
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              <div>
+                <Label className="block text-sm font-medium text-foreground mb-1">Nome Completo *</Label>
+                <Input
+                  required
+                  placeholder="Ex: Maria Aparecida da Silva"
+                  value={participantForm.name}
+                  onChange={(e) => setParticipantForm({ ...participantForm, name: e.target.value })}
+                  className="h-9 text-sm"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="block text-sm font-medium text-foreground mb-1">Data de Nascimento *</Label>
+                  <Input
+                    required
+                    type="date"
+                    value={participantForm.birthDate}
+                    onChange={(e) => setParticipantForm({ ...participantForm, birthDate: e.target.value })}
+                    className="h-9 text-sm"
+                  />
+                </div>
+                <div>
+                  <Label className="block text-sm font-medium text-foreground mb-1">CPF *</Label>
+                  <Input
+                    required
+                    placeholder="000.000.000-00"
+                    value={participantForm.cpf}
+                    onChange={(e) => setParticipantForm({ ...participantForm, cpf: formatCPF(e.target.value) })}
+                    className="h-9 text-sm font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="block text-sm font-medium text-foreground mb-1">WhatsApp / Telefone *</Label>
+                  <Input
+                    required
+                    placeholder="(00) 00000-0000"
+                    value={participantForm.phone}
+                    onChange={(e) => setParticipantForm({ ...participantForm, phone: formatPhone(e.target.value) })}
+                    className="h-9 text-sm font-mono"
+                  />
+                </div>
+                <div>
+                  <Label className="block text-sm font-medium text-foreground mb-1">Campanha Vinculada</Label>
+                  <select
+                    value={participantForm.eventId}
+                    onChange={(e) => setParticipantForm({ ...participantForm, eventId: e.target.value })}
+                    className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs"
+                  >
+                    <option value="">Sem campanha específica</option>
+                    {events.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 px-6 py-4 border-t border-border bg-muted/40 shrink-0 justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsAddParticipantOpen(false);
+                  resetParticipantForm();
+                }}
+                className="h-9 px-4 text-sm font-medium rounded-md"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                className="h-9 px-4 text-sm font-medium rounded-md shadow-sm"
+              >
+                {editingParticipant ? "Salvar Alterações" : "Cadastrar Participante"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ========================================================= */}
+      {/* MODAL: EDITAR / NOVO USUÁRIO MULTI-TENANT */}
+      {/* ========================================================= */}
+      <Dialog open={isAddUserOpen} onOpenChange={(open) => {
+        setIsAddUserOpen(open);
+        if (!open) resetUserForm();
+      }}>
         <DialogContent className="sm:max-w-xl">
           <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
             <div className="flex items-center gap-2.5">
@@ -1888,8 +2186,12 @@ function AdministradorPage() {
                 <UserPlus className="h-4 w-4" />
               </div>
               <div>
-                <DialogTitle>Cadastrar Novo Usuário</DialogTitle>
-                <DialogDescription>Uma senha temporária randômica será gerada com exigência de troca no 1º login.</DialogDescription>
+                <DialogTitle>{editingUser ? "Editar Usuário" : "Cadastrar Novo Usuário"}</DialogTitle>
+                <DialogDescription>
+                  {editingUser
+                    ? "Atualize as permissões ou dados cadastrais do usuário."
+                    : "Uma senha temporária randômica será gerada com exigência de troca no 1º login."}
+                </DialogDescription>
               </div>
             </div>
           </div>
@@ -1929,6 +2231,19 @@ function AdministradorPage() {
                   />
                 </div>
               </div>
+
+              {editingUser && (
+                <div>
+                  <Label className="block text-sm font-medium text-foreground mb-1">Nova Senha (deixe em branco para manter a atual)</Label>
+                  <Input
+                    type="password"
+                    placeholder="••••••••"
+                    value={userForm.password}
+                    onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                    className="h-9 text-sm"
+                  />
+                </div>
+              )}
 
               <div>
                 <Label className="block text-sm font-medium text-foreground mb-1">Perfil de Acesso (Role) *</Label>
@@ -1994,19 +2309,24 @@ function AdministradorPage() {
                 </div>
               )}
 
-              <div className="p-3 bg-muted/60 border border-border rounded-lg text-xs text-muted-foreground flex items-center gap-2">
-                <KeyRound className="size-4 text-primary shrink-0" />
-                <span>
-                  O sistema gerará uma <strong>senha aleatória segura</strong> no PostgreSQL e exigirá a troca imediata assim que o usuário fizer o primeiro login.
-                </span>
-              </div>
+              {!editingUser && (
+                <div className="p-3 bg-muted/60 border border-border rounded-lg text-xs text-muted-foreground flex items-center gap-2">
+                  <KeyRound className="size-4 text-primary shrink-0" />
+                  <span>
+                    O sistema gerará uma <strong>senha aleatória segura</strong> no PostgreSQL e exigirá a troca imediata assim que o usuário fizer o primeiro login.
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2 px-6 py-4 border-t border-border bg-muted/40 shrink-0 justify-end">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsAddUserOpen(false)}
+                onClick={() => {
+                  setIsAddUserOpen(false);
+                  resetUserForm();
+                }}
                 className="h-9 px-4 text-sm font-medium rounded-md"
               >
                 Cancelar
@@ -2015,7 +2335,7 @@ function AdministradorPage() {
                 type="submit"
                 className="h-9 px-4 text-sm font-medium rounded-md shadow-sm"
               >
-                Gerar Credencial e Salvar
+                {editingUser ? "Salvar Alterações" : "Gerar Credencial e Salvar"}
               </Button>
             </div>
           </form>

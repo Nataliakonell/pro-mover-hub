@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdministradorRouteImport } from './routes/administrador'
+import { Route as ClienteRouteImport } from './routes/cliente'
 import { Route as ConfiguracaoRouteImport } from './routes/configuracao'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as LoginClienteRouteImport } from './routes/login-cliente'
 import { Route as ParticipantesRouteImport } from './routes/participantes'
 import { Route as ProntuariosRouteImport } from './routes/prontuarios'
 import { Route as SessoesCortesiaRouteImport } from './routes/sessoes-cortesia'
@@ -27,6 +29,11 @@ const AdministradorRoute = AdministradorRouteImport.update({
   path: '/administrador',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClienteRoute = ClienteRouteImport.update({
+  id: '/cliente',
+  path: '/cliente',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ConfiguracaoRoute = ConfiguracaoRouteImport.update({
   id: '/configuracao',
   path: '/configuracao',
@@ -35,6 +42,11 @@ const ConfiguracaoRoute = ConfiguracaoRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginClienteRoute = LoginClienteRouteImport.update({
+  id: '/login-cliente',
+  path: '/login-cliente',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ParticipantesRoute = ParticipantesRouteImport.update({
@@ -56,8 +68,10 @@ const SessoesCortesiaRoute = SessoesCortesiaRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/administrador': typeof AdministradorRoute
+  '/cliente': typeof ClienteRoute
   '/configuracao': typeof ConfiguracaoRoute
   '/login': typeof LoginRoute
+  '/login-cliente': typeof LoginClienteRoute
   '/participantes': typeof ParticipantesRoute
   '/prontuarios': typeof ProntuariosRoute
   '/sessoes-cortesia': typeof SessoesCortesiaRoute
@@ -65,8 +79,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/administrador': typeof AdministradorRoute
+  '/cliente': typeof ClienteRoute
   '/configuracao': typeof ConfiguracaoRoute
   '/login': typeof LoginRoute
+  '/login-cliente': typeof LoginClienteRoute
   '/participantes': typeof ParticipantesRoute
   '/prontuarios': typeof ProntuariosRoute
   '/sessoes-cortesia': typeof SessoesCortesiaRoute
@@ -75,8 +91,10 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/administrador': typeof AdministradorRoute
+  '/cliente': typeof ClienteRoute
   '/configuracao': typeof ConfiguracaoRoute
   '/login': typeof LoginRoute
+  '/login-cliente': typeof LoginClienteRoute
   '/participantes': typeof ParticipantesRoute
   '/prontuarios': typeof ProntuariosRoute
   '/sessoes-cortesia': typeof SessoesCortesiaRoute
@@ -86,8 +104,10 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/administrador'
+    | '/cliente'
     | '/configuracao'
     | '/login'
+    | '/login-cliente'
     | '/participantes'
     | '/prontuarios'
     | '/sessoes-cortesia'
@@ -95,8 +115,10 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/administrador'
+    | '/cliente'
     | '/configuracao'
     | '/login'
+    | '/login-cliente'
     | '/participantes'
     | '/prontuarios'
     | '/sessoes-cortesia'
@@ -104,8 +126,10 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/administrador'
+    | '/cliente'
     | '/configuracao'
     | '/login'
+    | '/login-cliente'
     | '/participantes'
     | '/prontuarios'
     | '/sessoes-cortesia'
@@ -114,8 +138,10 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdministradorRoute: typeof AdministradorRoute
+  ClienteRoute: typeof ClienteRoute
   ConfiguracaoRoute: typeof ConfiguracaoRoute
   LoginRoute: typeof LoginRoute
+  LoginClienteRoute: typeof LoginClienteRoute
   ParticipantesRoute: typeof ParticipantesRoute
   ProntuariosRoute: typeof ProntuariosRoute
   SessoesCortesiaRoute: typeof SessoesCortesiaRoute
@@ -137,6 +163,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdministradorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cliente': {
+      id: '/cliente'
+      path: '/cliente'
+      fullPath: '/cliente'
+      preLoaderRoute: typeof ClienteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/configuracao': {
       id: '/configuracao'
       path: '/configuracao'
@@ -149,6 +182,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login-cliente': {
+      id: '/login-cliente'
+      path: '/login-cliente'
+      fullPath: '/login-cliente'
+      preLoaderRoute: typeof LoginClienteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/participantes': {
@@ -178,8 +218,10 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdministradorRoute: AdministradorRoute,
+  ClienteRoute: ClienteRoute,
   ConfiguracaoRoute: ConfiguracaoRoute,
   LoginRoute: LoginRoute,
+  LoginClienteRoute: LoginClienteRoute,
   ParticipantesRoute: ParticipantesRoute,
   ProntuariosRoute: ProntuariosRoute,
   SessoesCortesiaRoute: SessoesCortesiaRoute,

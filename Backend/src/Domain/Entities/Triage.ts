@@ -3,7 +3,10 @@ export interface TriageEntity {
   participantId?: string | null;
   participantName: string;
   eventId: string;
+  eventName?: string;
+  pharmacyName?: string;
   time: string;
+  date?: string;
   responsible: string;
   status: "Normal" | "Atenção" | "Alterado";
   systolic: number;
@@ -12,4 +15,15 @@ export interface TriageEntity {
   heartRate: number;
   result: string;
   createdAt?: Date;
+  event?: {
+    id: string;
+    name: string;
+    date?: string;
+    startDate?: string | null;
+    endDate?: string | null;
+    pharmacy?: {
+      id: string;
+      name: string;
+    } | null;
+  } | null;
 }

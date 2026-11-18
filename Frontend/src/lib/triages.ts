@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
-import { getTriagesApi, createTriageApi } from "./api";
+import { getTriagesApi, createTriageApi, updateTriageApi, deleteTriageApi } from "./api";
 
 export interface TriageRecord {
   id: string;
   participantId?: string | undefined;
   participantName: string;
   eventId: string;
+  eventName?: string | undefined;
+  pharmacyName?: string | undefined;
+  date?: string | undefined;
   time: string;
   responsible: string;
   status: "Normal" | "Atenção" | "Alterado";
@@ -127,12 +130,40 @@ export function useTriages(eventId?: string | null) {
     return record;
   };
 
+  const updateTriage = async (
+    id: string,
+    data: Partial<{
+      participantId: string | null;
+      participantName: string;
+      eventId: string;
+      time: string;
+      responsible: string;
+      status: "Normal" | "Atenção" | "Alterado";
+      systolic: number;
+      diastolic: number;
+      spo2: number;
+      heartRate: number;
+      result: string;
+    }>
+  ) => {
+    const updated = await updateTriageApi(id, data);
+    await refreshTriages();
+    return updated;
+  };
+
+  const removeTriage = async (id: string) => {
+    await deleteTriageApi(id);
+    await refreshTriages();
+  };
+
   const campaignTriages = eventId ? triages.filter((t) => t.eventId === eventId) : triages;
 
   return {
     triages: campaignTriages,
     allTriages: triages,
     addTriage,
+    updateTriage,
+    removeTriage,
     refreshTriages,
   };
 }

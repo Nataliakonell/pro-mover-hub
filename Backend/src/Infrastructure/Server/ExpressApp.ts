@@ -16,14 +16,20 @@ import { PrismaPharmacyGroupRepository } from "../Repositories/PrismaPharmacyGro
 import { GetAllParticipants } from "../../UseCases/Participants/GetAllParticipants";
 import { CreateParticipant } from "../../UseCases/Participants/CreateParticipant";
 import { AddAttendance } from "../../UseCases/Participants/AddAttendance";
+import { UpdateParticipant } from "../../UseCases/Participants/UpdateParticipant";
+import { DeleteParticipant } from "../../UseCases/Participants/DeleteParticipant";
 import { GetAllTriages } from "../../UseCases/Triages/GetAllTriages";
 import { CreateTriage } from "../../UseCases/Triages/CreateTriage";
+import { UpdateTriage } from "../../UseCases/Triages/UpdateTriage";
+import { DeleteTriage } from "../../UseCases/Triages/DeleteTriage";
 import { GetAllMedicalRecords } from "../../UseCases/MedicalRecords/GetAllMedicalRecords";
 import { CreateMedicalRecord } from "../../UseCases/MedicalRecords/CreateMedicalRecord";
 import { GetCourtesyRecords } from "../../UseCases/Courtesy/GetCourtesyRecords";
 import { ScheduleSession } from "../../UseCases/Courtesy/ScheduleSession";
 import { GetAllEvents } from "../../UseCases/Events/GetAllEvents";
 import { CreateEvent } from "../../UseCases/Events/CreateEvent";
+import { UpdateEvent } from "../../UseCases/Events/UpdateEvent";
+import { DeleteEvent } from "../../UseCases/Events/DeleteEvent";
 import { GetSettings } from "../../UseCases/Settings/GetSettings";
 import { UpdateSettings } from "../../UseCases/Settings/UpdateSettings";
 import { LoginUser } from "../../UseCases/Auth/LoginUser";
@@ -39,6 +45,7 @@ import { UpdatePharmacyGroup } from "../../UseCases/PharmacyGroups/UpdatePharmac
 import { DeletePharmacyGroup } from "../../UseCases/PharmacyGroups/DeletePharmacyGroup";
 import { GetAllUsers } from "../../UseCases/Users/GetAllUsers";
 import { CreateUser } from "../../UseCases/Users/CreateUser";
+import { UpdateUser } from "../../UseCases/Users/UpdateUser";
 import { DeleteUser } from "../../UseCases/Users/DeleteUser";
 
 // Controllers
@@ -80,12 +87,16 @@ const pharmacyGroupRepo = new PrismaPharmacyGroupRepository();
 const participantController = new ParticipantController(
   new GetAllParticipants(participantRepo),
   new CreateParticipant(participantRepo),
-  new AddAttendance(participantRepo)
+  new AddAttendance(participantRepo),
+  new UpdateParticipant(participantRepo),
+  new DeleteParticipant(participantRepo)
 );
 
 const triageController = new TriageController(
   new GetAllTriages(triageRepo),
-  new CreateTriage(triageRepo)
+  new CreateTriage(triageRepo),
+  new UpdateTriage(triageRepo),
+  new DeleteTriage(triageRepo)
 );
 
 const medicalRecordController = new MedicalRecordController(
@@ -101,7 +112,9 @@ const courtesyController = new CourtesyController(
 
 const eventController = new EventController(
   new GetAllEvents(eventRepo),
-  new CreateEvent(eventRepo)
+  new CreateEvent(eventRepo),
+  new UpdateEvent(eventRepo),
+  new DeleteEvent(eventRepo)
 );
 
 const settingsController = new SettingsController(
@@ -132,7 +145,8 @@ const pharmacyGroupController = new PharmacyGroupController(
 const userController = new UserController(
   new GetAllUsers(userRepo),
   new CreateUser(userRepo),
-  new DeleteUser(userRepo)
+  new DeleteUser(userRepo),
+  new UpdateUser(userRepo)
 );
 
 // Rota de Health Check
@@ -172,6 +186,9 @@ app.get("/api/users", authMiddleware, requireGroupManager, (req, res) =>
 app.post("/api/users", authMiddleware, requireGroupManager, (req, res) =>
   userController.create(req, res)
 );
+app.put("/api/users/:id", authMiddleware, requireGroupManager, (req, res) =>
+  userController.update(req, res)
+);
 app.delete("/api/users/:id", authMiddleware, requireGroupManager, (req, res) =>
   userController.delete(req, res)
 );
@@ -179,17 +196,23 @@ app.delete("/api/users/:id", authMiddleware, requireGroupManager, (req, res) =>
 // Eventos Comunitários
 app.get("/api/events", authMiddleware, (req, res) => eventController.list(req, res));
 app.post("/api/events", authMiddleware, (req, res) => eventController.create(req, res));
+app.put("/api/events/:id", authMiddleware, (req, res) => eventController.update(req, res));
+app.delete("/api/events/:id", authMiddleware, (req, res) => eventController.delete(req, res));
 
 // Participantes
 app.get("/api/participants", authMiddleware, (req, res) => participantController.list(req, res));
 app.post("/api/participants", authMiddleware, (req, res) => participantController.create(req, res));
+app.put("/api/participants/:id", authMiddleware, (req, res) => participantController.update(req, res));
+app.delete("/api/participants/:id", authMiddleware, (req, res) => participantController.delete(req, res));
 app.post("/api/participants/:id/attendances", authMiddleware, (req, res) =>
   participantController.addAttendance(req, res)
 );
 
 // Triagens Clínicas
-app.get("/api/triages", authMiddleware, (req, res) => triageController.list(req, res));
-app.post("/api/triages", authMiddleware, (req, res) => triageController.create(req, res));
+app.get("/api/triages", authMiddleware, requireAuth, (req, res) => triageController.list(req, res));
+app.post("/api/triages", authMiddleware, requireAuth, (req, res) => triageController.create(req, res));
+app.put("/api/triages/:id", authMiddleware, requireAuth, (req, res) => triageController.update(req, res));
+app.delete("/api/triages/:id", authMiddleware, requireAuth, (req, res) => triageController.delete(req, res));
 
 // Prontuários Médicos
 app.get("/api/medical-records", authMiddleware, (req, res) => medicalRecordController.list(req, res));

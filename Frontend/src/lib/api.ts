@@ -22,6 +22,16 @@ export async function fetchFromApi<T>(endpoint: string, options?: RequestInit): 
   });
 
   if (!response.ok) {
+    if (response.status === 401 && typeof window !== "undefined") {
+      // Se a sessão expirou ou o token é inválido, limpa e redireciona para login
+      localStorage.removeItem("conecta_saude_token");
+      localStorage.removeItem("conecta_saude_user");
+      window.dispatchEvent(new Event("conecta_saude_auth_change"));
+      if (!window.location.pathname.includes("/login")) {
+        window.location.href = "/login";
+      }
+    }
+
     let errorMsg = `Erro na API (${response.status})`;
     try {
       const errJson = await response.json();
@@ -55,6 +65,30 @@ export async function createParticipantApi(data: {
   return fetchFromApi<any>("/participants", {
     method: "POST",
     body: JSON.stringify(data),
+  });
+}
+
+export async function updateParticipantApi(
+  id: string,
+  data: Partial<{
+    name: string;
+    birthDate: string;
+    age: number;
+    ageGroup: string;
+    cpf: string;
+    phone: string;
+    eventId?: string | null;
+  }>
+) {
+  return fetchFromApi<any>(`/participants/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteParticipantApi(id: string) {
+  return fetchFromApi<void>(`/participants/${id}`, {
+    method: "DELETE",
   });
 }
 
@@ -95,10 +129,36 @@ export async function createEventApi(data: {
   });
 }
 
+export async function updateEventApi(
+  id: string,
+  data: Partial<{
+    name: string;
+    date: string;
+    startDate: string;
+    endDate: string;
+    location: string;
+    pharmacyId: string | null;
+  }>
+) {
+  return fetchFromApi<any>(`/events/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteEventApi(id: string) {
+  return fetchFromApi<void>(`/events/${id}`, {
+    method: "DELETE",
+  });
+}
+
 
 // 3. Triagens Clínicas
-export async function getTriagesApi(eventId?: string) {
-  const query = eventId ? `?eventId=${encodeURIComponent(eventId)}` : "";
+export async function getTriagesApi(eventId?: string, participantId?: string) {
+  const params = new URLSearchParams();
+  if (eventId) params.append("eventId", eventId);
+  if (participantId) params.append("participantId", participantId);
+  const query = params.toString() ? `?${params.toString()}` : "";
   return fetchFromApi<any[]>(`/triages${query}`);
 }
 
@@ -118,6 +178,34 @@ export async function createTriageApi(data: {
   return fetchFromApi<any>("/triages", {
     method: "POST",
     body: JSON.stringify(data),
+  });
+}
+
+export async function updateTriageApi(
+  id: string,
+  data: Partial<{
+    participantId: string | null;
+    participantName: string;
+    eventId: string;
+    time: string;
+    responsible: string;
+    status: string;
+    systolic: number;
+    diastolic: number;
+    spo2: number;
+    heartRate: number;
+    result: string;
+  }>
+) {
+  return fetchFromApi<any>(`/triages/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteTriageApi(id: string) {
+  return fetchFromApi<void>(`/triages/${id}`, {
+    method: "DELETE",
   });
 }
 
@@ -248,6 +336,25 @@ export async function createUserApi(data: {
 }) {
   return fetchFromApi<{ user: any; temporaryPassword: string }>("/users", {
     method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateUserApi(
+  id: number,
+  data: Partial<{
+    name: string;
+    email: string;
+    username: string;
+    password?: string;
+    role: string;
+    groupId?: string | null;
+    pharmacyId?: string | null;
+    mustChangePassword?: boolean;
+  }>
+) {
+  return fetchFromApi<any>(`/users/${id}`, {
+    method: "PUT",
     body: JSON.stringify(data),
   });
 }

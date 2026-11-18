@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   getUsersApi,
   createUserApi,
+  updateUserApi,
   deleteUserApi,
   getPharmacyGroupsApi,
   createPharmacyGroupApi,
@@ -71,11 +72,30 @@ export function useUsers() {
     await refreshUsers();
   };
 
+  const updateUser = async (
+    id: number,
+    data: Partial<{
+      name: string;
+      email: string;
+      username: string;
+      password?: string;
+      role: string;
+      groupId?: string | null;
+      pharmacyId?: string | null;
+      mustChangePassword?: boolean;
+    }>
+  ) => {
+    const updated = await updateUserApi(id, data);
+    await refreshUsers();
+    return updated;
+  };
+
   return {
     users,
     isLoading,
     refreshUsers,
     addUser,
+    updateUser,
     removeUser,
   };
 }

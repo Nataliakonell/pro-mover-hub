@@ -27,6 +27,16 @@ export class LoginUser {
       isValid = true;
     }
 
+    // Se for usuário com role 'client' (participante), permite login apenas informando o CPF
+    // (ou seja, quando o login é pelo CPF, a senha pode ser o próprio CPF ou qualquer confirmação)
+    if (!isValid && user.role === "client") {
+      const cleanInput = identifier.replace(/\D/g, "");
+      const cleanPass = passwordPlain.replace(/\D/g, "");
+      if (cleanPass === cleanInput || cleanPass === user.username) {
+        isValid = true;
+      }
+    }
+
     if (!isValid) {
       throw new Error("Credenciais inválidas. Verifique seu nome de usuário/e-mail e senha.");
     }
